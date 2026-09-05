@@ -1,84 +1,42 @@
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
-import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
+import { getAiCoachAdvice } from "./server/aiCoach";
+import { isAuthorizedWebhookRequest, processRevenueCatWebhookPayload } from "./server/revenuecatWebhook";
 
-dotenv.config();
+// This project's convention (matching Vite's own env loading) is `.env.local`
+// for local secrets — there is no plain `.env` file. Plain `dotenv.config()`
+// only looks for `.env` and would silently load nothing.
+dotenv.config({ path: ".env.local" });
 
+// This Express server is for LOCAL development and any non-Netlify deployment
+// (e.g. Cloud Run, Render, Railway). The production Netlify deployment uses
+// the equivalent Netlify Functions in netlify/functions/ instead — Netlify's
+// standard hosting does not run a persistent Node server like this one. Both
+// share their actual logic via server/aiCoach.ts and server/revenuecatWebhook.ts
+// so the two runtimes can't drift out of sync.
 async function startServer() {
   const app = express();
   const PORT = 3000;
 
   app.use(express.json());
 
+  // RevenueCat webhook — keeps a lightweight, queryable mirror of Sprout+
+  // subscription status in Supabase. Never processes secrets client-side;
+  // this route only runs in this Node process.
+  app.post("/api/revenuecat-webhook", async (req, res) => {
+    if (!isAuthorizedWebhookRequest(req.header("Authorization"))) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    const result = await processRevenueCatWebhookPayload(req.body);
+    return res.status(result.status).json(result.body);
+  });
+
   // Optional Gemini AI Business Coach for Student Entrepreneurs
   app.post("/api/ai-coach", async (req, res) => {
-    try {
-      const { businessName, category, university, metrics, recentOrders, recentExpenses, userQuestion } = req.body;
-      const apiKey = process.env.GEMINI_API_KEY;
-
-      if (!apiKey) {
-        return res.status(200).json({
-          fallback: true,
-          advice: "🌱 (AI Key offline) Rule-based Tip: Maintain a gross profit margin above 35% and record every supply trip to UP Diliman / Divisoria / Shopee to keep accurate cost-per-item calculations!"
-        });
-      }
-
-      const ai = new GoogleGenAI({
-        apiKey,
-        httpOptions: {
-          headers: {
-            'User-Agent': 'aistudio-build',
-          },
-        },
-      });
-
-      const systemPrompt = `You are "Oliver the Sprout Owl" (and Frankie the Business Fox), the friendly, encouraging, and astute business coach for student-led small businesses in the Philippines on SproutSquad.
-Your role:
-- Speak in an approachable, warm, encouraging tone with occasional relatable Philippine student business context (e.g., campus pickups, GCash/Maya, balancing exams/acads with inventory, sourcing from Divisoria/Taytay/Shopee, packaging costs, stall fees).
-- Provide practical, data-driven, step-by-step advice tailored directly to their numbers (Revenue, Expenses, Profit Margin, Stock, Health Score).
-- Keep responses concise, scannable, and actionable with bullet points and clear takeaways.
-- Always include 1 immediate actionable next step they can do in under 15 minutes.`;
-
-      const prompt = `Student Business Overview:
-- Name: ${businessName || "Student Business"}
-- Campus / University: ${university || "Philippines Campus"}
-- Category: ${category || "General Products"}
-- Financial Performance:
-  * Total Revenue: ₱${metrics?.revenue?.toLocaleString() || 0}
-  * Total Expenses: ₱${metrics?.expenses?.toLocaleString() || 0}
-  * Net Profit: ₱${metrics?.profit?.toLocaleString() || 0}
-  * Profit Margin: ${metrics?.profitMargin || 0}%
-  * Health Score: ${metrics?.healthScore || 0}/100
-  * Recent Expense Breakdown: ${JSON.stringify(recentExpenses || [])}
-  * Recent Orders Count: ${recentOrders?.length || 0}
-
-User Question / Context:
-"${userQuestion || "Analyze our current numbers and recommend 2-3 specific improvements for this week."}"
-
-Provide an empathetic, sharp, and structured breakdown for this young student entrepreneur.`;
-
-      const response = await ai.models.generateContent({
-        model: "gemini-3.7-flash",
-        contents: prompt,
-        config: {
-          systemInstruction: systemPrompt,
-          temperature: 0.7,
-        },
-      });
-
-      res.json({
-        advice: response.text,
-        fallback: false,
-      });
-    } catch (error: any) {
-      console.error("AI Coach error:", error);
-      res.status(500).json({
-        error: error.message || "Failed to generate coaching insights",
-        fallback: true,
-      });
-    }
+    const result = await getAiCoachAdvice(req.body);
+    return res.status(result.status).json(result.body);
   });
 
   // Health check

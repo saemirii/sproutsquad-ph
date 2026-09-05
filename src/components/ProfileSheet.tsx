@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
-import { Check, KeyRound, LogOut, Save, Upload, UserRound, X } from 'lucide-react';
+import { Check, KeyRound, LogOut, Save, Sparkles, Upload, UserRound, X } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { CampusUniversity } from '../types';
 
 interface ProfileSheetProps {
   onClose: () => void;
+  onOpenSubscription: () => void;
 }
 
 const campuses: CampusUniversity[] = [
   'MGC New Life Christian Academy',
 ];
 
-export const ProfileSheet: React.FC<ProfileSheetProps> = ({ onClose }) => {
+export const ProfileSheet: React.FC<ProfileSheetProps> = ({ onClose, onOpenSubscription }) => {
   const {
     currentUser, updateCurrentUser, businesses, activeBusiness,
     setActiveBusiness, accessibleBusinessIds, unlockBusiness, signOut,
@@ -69,6 +70,20 @@ export const ProfileSheet: React.FC<ProfileSheetProps> = ({ onClose }) => {
             </label>
           </div>
         </div>
+
+        <button
+          onClick={onOpenSubscription}
+          className="btn-bouncy w-full rounded-2xl bg-gradient-to-r from-[#194E3B] to-[#0E2B25] p-3.5 text-left flex items-center gap-3 hover:brightness-110 transition-all"
+        >
+          <span className="shrink-0 w-9 h-9 rounded-xl bg-white/10 text-[#B8E6D5] flex items-center justify-center">
+            <Sparkles className="w-4.5 h-4.5" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-xs font-black text-white">Upgrade to Sprout+ or Bloom+</span>
+            <span className="block text-[10px] text-[#B8E6D5]">Unlock coupons, scheduling, mentoring & more</span>
+          </span>
+          <span className="shrink-0 text-[10px] font-black text-[#194E3B] bg-[#B8E6D5] rounded-full px-2.5 py-1">View</span>
+        </button>
 
         <div className="space-y-3">
           <label className="block text-[11px] font-bold text-[#54453C]">Name<input value={name} onChange={(event) => setName(event.target.value)} className="mt-1 w-full rounded-xl border border-[#E5DACD] bg-white px-3 py-2.5 text-xs outline-none focus:ring-2 focus:ring-[#B8E6D5]" /></label>

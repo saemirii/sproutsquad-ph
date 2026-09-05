@@ -5,6 +5,8 @@ import { IosTabBar, IosActiveTab } from './IosTabBar';
 import { DynamicIslandAlert } from './DynamicIsland';
 import { isSoundEnabled, setSoundEnabled, playIosTap } from '../../utils/haptics';
 import { ProfileSheet } from '../ProfileSheet';
+import { SubscriptionPage } from '../SubscriptionPage';
+import { useApp } from '../../context/AppContext';
 
 interface IPhoneFrameProps {
   children: React.ReactNode;
@@ -29,6 +31,7 @@ export const IPhoneFrame: React.FC<IPhoneFrameProps> = ({
   const [finish, setFinish] = useState<DeviceFinish>('gold');
   const [soundOn, setSoundOn] = useState(isSoundEnabled());
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const { isSubscriptionPageOpen, openSubscriptionPage, closeSubscriptionPage } = useApp();
 
   const toggleSound = () => {
     const next = !soundOn;
@@ -156,7 +159,17 @@ export const IPhoneFrame: React.FC<IPhoneFrameProps> = ({
             {children}
           </div>
 
-          {isProfileOpen && <ProfileSheet onClose={() => setIsProfileOpen(false)} />}
+          {isProfileOpen && (
+            <ProfileSheet
+              onClose={() => setIsProfileOpen(false)}
+              onOpenSubscription={() => {
+                setIsProfileOpen(false);
+                openSubscriptionPage();
+              }}
+            />
+          )}
+
+          {isSubscriptionPageOpen && <SubscriptionPage onClose={closeSubscriptionPage} />}
 
           {/* iOS Bottom Tab Bar & Home Indicator */}
           <IosTabBar activeTab={activeTab} onTabChange={onTabChange} />

@@ -17,6 +17,7 @@ import {
 import { useApp } from '../../context/AppContext';
 import { Product, ProductCategory } from '../../types';
 import { formatPHP } from '../../utils/analytics';
+import { InfoTip } from '../InfoTip';
 
 export const ProductManager: React.FC = () => {
   const {
@@ -185,8 +186,18 @@ export const ProductManager: React.FC = () => {
                 <th className="py-3.5 px-4">Product</th>
                 <th className="py-3.5 px-4">Category</th>
                 <th className="py-3.5 px-4">Selling Price</th>
-                <th className="py-3.5 px-4">COGS (Unit Cost)</th>
-                <th className="py-3.5 px-4">Unit Profit & Margin</th>
+                <th className="py-3.5 px-4">
+                  <span className="inline-flex items-center gap-1">
+                    COGS (Unit Cost)
+                    <InfoTip text="Cost of Goods Sold — what it costs YOU to make one unit (materials + packaging). Not your selling price." />
+                  </span>
+                </th>
+                <th className="py-3.5 px-4">
+                  <span className="inline-flex items-center gap-1">
+                    Unit Profit &amp; Margin
+                    <InfoTip align="right" text="Profit per unit = Selling Price − COGS. Margin % = that profit divided by the selling price." />
+                  </span>
+                </th>
                 <th className="py-3.5 px-4">Stock</th>
                 <th className="py-3.5 px-4">Sold</th>
                 <th className="py-3.5 px-4 text-right">Actions</th>
@@ -399,6 +410,7 @@ export const ProductManager: React.FC = () => {
                   <div className="flex items-center gap-1.5 text-xs font-bold text-[#3B2F27]">
                     <Calculator className="w-4 h-4 text-[#194E3B]" />
                     <span>COGS & Margin Pricing Calculator</span>
+                    <InfoTip align="right" text="COGS = Cost of Goods Sold, what it costs you to make ONE unit. Enter your costs and target margin below, and this suggests a selling price that hits it." />
                   </div>
                   <span className="text-[10px] font-bold text-[#7A341A] bg-[#FFD3BA] px-2 py-0.5 rounded-md">
                     Target {calcTargetMargin}% Margin
@@ -407,8 +419,9 @@ export const ProductManager: React.FC = () => {
 
                 <div className="grid grid-cols-3 gap-2 text-xs">
                   <div>
-                    <label className="block text-[10px] font-semibold text-[#6E5D52] mb-0.5">
+                    <label className="flex items-center gap-1 text-[10px] font-semibold text-[#6E5D52] mb-0.5">
                       Raw Materials / Unit (₱)
+                      <InfoTip text="The cost of ingredients or materials to make ONE unit of this product." />
                     </label>
                     <input
                       type="number"
@@ -418,8 +431,9 @@ export const ProductManager: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-semibold text-[#6E5D52] mb-0.5">
+                    <label className="flex items-center gap-1 text-[10px] font-semibold text-[#6E5D52] mb-0.5">
                       Box & Stickers / Unit (₱)
+                      <InfoTip text="Packaging cost per unit — boxes, stickers, tags, thank-you notes, etc." />
                     </label>
                     <input
                       type="number"
@@ -429,8 +443,9 @@ export const ProductManager: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-semibold text-[#6E5D52] mb-0.5">
+                    <label className="flex items-center gap-1 text-[10px] font-semibold text-[#6E5D52] mb-0.5">
                       Target Margin %
+                      <InfoTip text="The % of your selling price you want to keep as profit after covering costs. 35%+ is a healthy target." />
                     </label>
                     <input
                       type="number"
@@ -445,9 +460,11 @@ export const ProductManager: React.FC = () => {
                   <div>
                     <span className="text-[#6E5D52]">Calculated COGS: </span>
                     <strong className="text-[#8C3A27] font-bold">{formatPHP(calculatedTotalCOGS)}</strong>
+                    <InfoTip text="Materials + Packaging per unit — what it costs you to make one item." />
                     <span className="mx-2 text-[#A39284]">|</span>
                     <span className="text-[#6E5D52]">Suggested Price: </span>
                     <strong className="text-[#207559] font-bold">{formatPHP(calculatedSuggestedPrice)}</strong>
+                    <InfoTip text="Selling price needed to hit your target margin. Formula: COGS ÷ (1 − target margin%)." align="right" />
                   </div>
 
                   <button
@@ -477,8 +494,9 @@ export const ProductManager: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-[#54453C] mb-1">
+                  <label className="flex items-center gap-1 text-[11px] font-bold text-[#54453C] mb-1">
                     Cost of Goods Sold / Unit (₱ PHP)
+                    <InfoTip text="COGS = what it costs you to make one unit (materials + packaging combined). This should always be lower than your selling price." />
                   </label>
                   <input
                     type="number"

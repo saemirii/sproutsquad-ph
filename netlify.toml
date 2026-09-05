@@ -1,0 +1,21 @@
+[build]
+  command = "npm run build:netlify"
+  publish = "dist"
+  functions = "netlify/functions"
+
+# `netlify dev`'s framework auto-detection tries to proxy a live Vite dev
+# server, which doesn't match this project's custom Express-based `npm run
+# dev` — this forces it to just serve the already-built `dist/` + functions
+# directly instead (closer to real production behavior anyway).
+[dev]
+  framework = "#static"
+  publish = "dist"
+  functions = "netlify/functions"
+
+# Client-side routing fallback: any path that isn't a static asset or a
+# function (functions are matched first via their own `config.path`) falls
+# back to index.html so the SPA's own React state/tab handling takes over.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

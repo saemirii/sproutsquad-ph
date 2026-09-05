@@ -185,6 +185,13 @@ export function calculateBusinessMetrics(
     lowStockCount: lowStockProducts.length,
     healthScore,
     healthStatus,
+    healthScoreBreakdown: {
+      marginScore,
+      expenseScore,
+      orderScore,
+      inventoryScore,
+      academyScore,
+    },
     insights,
   };
 }

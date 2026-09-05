@@ -20,6 +20,7 @@ import {
 import { useApp } from '../../context/AppContext';
 import { formatPHP } from '../../utils/analytics';
 import { HealthInsight } from '../../types';
+import { InfoTip } from '../InfoTip';
 
 interface SellerOverviewProps {
   onOpenAiCoach: (initialPrompt?: string) => void;
@@ -44,6 +45,7 @@ export const SellerOverview: React.FC<SellerOverviewProps> = ({ onOpenAiCoach })
     orderCount,
     healthScore,
     healthStatus,
+    healthScoreBreakdown,
     insights,
     unitsSold,
     lowStockCount
@@ -139,7 +141,10 @@ export const SellerOverview: React.FC<SellerOverviewProps> = ({ onOpenAiCoach })
         {/* Net Profit */}
         <div className="bg-white p-5 rounded-3xl border border-[#EDE4D8] shadow-xs space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-[#8C7A6D]">Net Profit</span>
+            <span className="text-xs font-bold text-[#8C7A6D] flex items-center gap-1">
+              Net Profit
+              <InfoTip text="What you actually keep after paying all expenses. Formula: Total Revenue − Total Expenses." />
+            </span>
             <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black ${
               isProfitPositive ? 'bg-[#B8E6D5] text-[#194E3B]' : 'bg-[#FEE2E2] text-[#991B1B]'
             }`}>
@@ -162,7 +167,10 @@ export const SellerOverview: React.FC<SellerOverviewProps> = ({ onOpenAiCoach })
         {/* Profit Margin */}
         <div className="bg-white p-5 rounded-3xl border border-[#EDE4D8] shadow-xs space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-[#8C7A6D]">Profit Margin</span>
+            <span className="text-xs font-bold text-[#8C7A6D] flex items-center gap-1">
+              Profit Margin
+              <InfoTip text="The % of each sale you keep as profit after costs. Formula: (Net Profit ÷ Revenue) × 100. Higher is better — 35%+ is a healthy target for student businesses." />
+            </span>
             <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black ${
               profitMargin >= 35 ? 'bg-[#B8E6D5] text-[#194E3B]' : 'bg-[#FEF3C7] text-[#92400E]'
             }`}>
@@ -194,8 +202,9 @@ export const SellerOverview: React.FC<SellerOverviewProps> = ({ onOpenAiCoach })
               <div className="flex items-center gap-2">
                 <span className="text-xl">🌱</span>
                 <div>
-                  <h3 className="font-extrabold text-base text-[#3B2F27] font-['Nunito',sans-serif]">
+                  <h3 className="font-extrabold text-base text-[#3B2F27] font-['Nunito',sans-serif] flex items-center gap-1.5">
                     Business Health Score
+                    <InfoTip align="right" text="A 0–100 score blending 5 things: profit margin (35 pts), expense efficiency (25 pts), order fulfillment (20 pts), inventory readiness (10 pts), and Sprout Academy progress (10 pts). It's a quick check on your shop's fundamentals, not just how much you've sold." />
                   </h3>
                   <p className="text-[11px] text-[#8C7A6D]">
                     Algorithmic health rating from student commerce data
@@ -250,44 +259,45 @@ export const SellerOverview: React.FC<SellerOverviewProps> = ({ onOpenAiCoach })
                   <span className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-[#207559]" />
                     <span>Profit Margin Ratio (Max 35 pts)</span>
+                    <InfoTip align="right" text="Rewards a higher profit margin. 45%+ margin scores the full 35 pts; it tapers down the lower your margin gets, and hits 0 if you're not profitable." />
                   </span>
-                  <span className="font-bold">
-                    {profitMargin >= 45 ? '35/35' : profitMargin >= 30 ? '28/35' : '15/35'}
-                  </span>
+                  <span className="font-bold">{healthScoreBreakdown.marginScore}/35</span>
                 </div>
 
                 <div className="flex justify-between items-center text-[#54453C]">
                   <span className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-[#E07A5F]" />
                     <span>Packaging & Sourcing Efficiency (Max 25 pts)</span>
+                    <InfoTip align="right" text="Starts at 25 pts, then loses points if packaging costs eat up too much of your total expenses (over 18% or 25%), or if you're spending more than you earn." />
                   </span>
-                  <span className="font-bold">
-                    {packagingRatio <= 15 ? '25/25' : packagingRatio <= 25 ? '18/25' : '12/25'}
-                  </span>
+                  <span className="font-bold">{healthScoreBreakdown.expenseScore}/25</span>
                 </div>
 
                 <div className="flex justify-between items-center text-[#54453C]">
                   <span className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-[#3B82F6]" />
                     <span>Order Fulfillment Velocity (Max 20 pts)</span>
+                    <InfoTip align="right" text="Rewards actually completing orders, not just receiving them. Based on the share of your orders marked Completed, plus a small bonus just for having order activity." />
                   </span>
-                  <span className="font-bold">18/20</span>
+                  <span className="font-bold">{healthScoreBreakdown.orderScore}/20</span>
                 </div>
 
                 <div className="flex justify-between items-center text-[#54453C]">
                   <span className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-[#F59E0B]" />
                     <span>Inventory Buffer & Readiness (Max 10 pts)</span>
+                    <InfoTip align="right" text="Starts at 10 pts, then loses points if any product is out of stock, or if more than 2 products are running low (6 units or fewer)." />
                   </span>
-                  <span className="font-bold">{lowStockCount === 0 ? '10/10' : '7/10'}</span>
+                  <span className="font-bold">{healthScoreBreakdown.inventoryScore}/10</span>
                 </div>
 
                 <div className="flex justify-between items-center text-[#54453C]">
                   <span className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-[#8B5CF6]" />
                     <span>Academy Knowledge Mastery (Max 10 pts)</span>
+                    <InfoTip align="right" text="Earn 3 pts for every Sprout Academy lesson you complete, capped at 10 pts. The fastest factor to improve — finish a lesson to see it move." />
                   </span>
-                  <span className="font-bold">10/10</span>
+                  <span className="font-bold">{healthScoreBreakdown.academyScore}/10</span>
                 </div>
               </div>
             </div>

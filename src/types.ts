@@ -145,6 +145,14 @@ export interface HealthInsight {
   category: 'Margin' | 'Inventory' | 'Packaging' | 'Volume' | 'Cashflow';
 }
 
+export interface HealthScoreBreakdown {
+  marginScore: number; // 0 - 35
+  expenseScore: number; // 0 - 25
+  orderScore: number; // 0 - 20
+  inventoryScore: number; // 0 - 10
+  academyScore: number; // 0 - 10
+}
+
 export interface BusinessMetrics {
   revenue: number;
   expenses: number;
@@ -157,6 +165,7 @@ export interface BusinessMetrics {
   lowStockCount: number;
   healthScore: number; // 0 - 100
   healthStatus: 'Thriving Sprout' | 'Growing Seedling' | 'Sprouting Sprout' | 'Needs Nurturing';
+  healthScoreBreakdown: HealthScoreBreakdown;
   insights: HealthInsight[];
 }
 

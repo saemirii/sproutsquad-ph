@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import confetti from 'canvas-confetti';
 import {
   Business,
@@ -25,6 +25,20 @@ import {
 import { calculateBusinessMetrics } from '../utils/analytics';
 import { safeSetItem } from '../utils/safeStorage';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import type { Offerings, Package } from '@revenuecat/purchases-js';
+import {
+  identifyRevenueCatUser,
+  resetRevenueCatUser,
+  fetchSproutPlusOfferings,
+  purchaseSproutPlus,
+  fetchCustomerInfo,
+  buildSubscriptionStatus,
+  isUserCancelledError,
+  describePurchasesError,
+  isRevenueCatConfigured,
+  DEFAULT_SUBSCRIPTION_STATUS,
+  type SproutPlusStatus,
+} from '../lib/revenuecat';
 import {
   businessToRow,
   rowToBusiness,
@@ -110,6 +124,21 @@ interface AppContextType {
   resetToDefaultData: () => void;
   isRemoteDataLoading: boolean;
   signOut: () => void;
+
+  // Sprout+ Subscription (RevenueCat)
+  subscription: SproutPlusStatus;
+  hasSproutPlus: boolean;
+  isSubscriptionPageOpen: boolean;
+  openSubscriptionPage: () => void;
+  closeSubscriptionPage: () => void;
+  offerings: Offerings | null;
+  isRevenueCatReady: boolean;
+  isOfferingsLoading: boolean;
+  offeringsError: string | null;
+  loadSproutPlusOfferings: () => Promise<void>;
+  isPurchasingSproutPlus: boolean;
+  purchaseSproutPlusPackage: (pkg: Package) => Promise<{ success: boolean; cancelled?: boolean; message?: string }>;
+  restoreSproutPlusPurchases: () => Promise<{ success: boolean; message?: string }>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -261,6 +290,14 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
 
   const [isAiCoachLoading, setIsAiCoachLoading] = useState<boolean>(false);
 
+  // Sprout+ Subscription (RevenueCat) state
+  const [subscription, setSubscription] = useState<SproutPlusStatus>(DEFAULT_SUBSCRIPTION_STATUS);
+  const [offerings, setOfferings] = useState<Offerings | null>(null);
+  const [isOfferingsLoading, setIsOfferingsLoading] = useState(false);
+  const [offeringsError, setOfferingsError] = useState<string | null>(null);
+  const [isPurchasingSproutPlus, setIsPurchasingSproutPlus] = useState(false);
+  const [isSubscriptionPageOpen, setIsSubscriptionPageOpen] = useState(false);
+
   const updateCurrentUser = (updated: Partial<User>) => {
     setCurrentUser((previous) => ({ ...previous, ...updated }));
     if (supabase && authUser) {
@@ -306,6 +343,105 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
       email: authUser.email || previous.email,
     }));
   }, [authUser]);
+
+  // Identify this user with RevenueCat using their stable SproutSquad user id,
+  // so the same person always maps to the same RevenueCat customer — never a
+  // randomly generated one. Skipped entirely if RevenueCat isn't configured.
+  //
+  // isRevenueCatReady only flips true once this settles (success or failure).
+  // Anything that calls the SDK (like loading offerings) must wait for it —
+  // React runs a child's effects before its parent's, so without this guard
+  // a page mounted alongside this provider could call the SDK before
+  // `configure()` has actually run, and see a misleading "not configured" error.
+  const [isRevenueCatReady, setIsRevenueCatReady] = useState(!isRevenueCatConfigured);
+  useEffect(() => {
+    if (!authUser?.id || !isRevenueCatConfigured) return;
+    let cancelled = false;
+    identifyRevenueCatUser(authUser.id)
+      .then((customerInfo) => {
+        if (cancelled) return;
+        setSubscription(buildSubscriptionStatus(customerInfo));
+      })
+      .catch((error) => console.error('Failed to identify RevenueCat user', error))
+      .finally(() => { if (!cancelled) setIsRevenueCatReady(true); });
+    return () => { cancelled = true; };
+  }, [authUser?.id]);
+
+  // Best-effort refresh of subscription status: the Web SDK has no push
+  // listener for entitlement changes, so re-check whenever the tab regains
+  // focus (e.g. user just finished managing billing in another tab).
+  useEffect(() => {
+    if (!authUser?.id || !isRevenueCatConfigured) return;
+    const handleFocus = () => {
+      fetchCustomerInfo()
+        .then((customerInfo) => setSubscription(buildSubscriptionStatus(customerInfo)))
+        .catch((error) => console.error('Failed to refresh RevenueCat customer info', error));
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [authUser?.id]);
+
+  const loadSproutPlusOfferings = useCallback(async () => {
+    // Not a failure to retry — there's simply no RevenueCat key configured.
+    // Leave both offerings and offeringsError null so the UI shows its
+    // distinct "not configured" message instead of a misleading retry button.
+    if (!isRevenueCatConfigured) return;
+    // RevenueCat hasn't finished configuring yet (see isRevenueCatReady above).
+    // Callers re-invoke once it flips true; don't show an error meanwhile.
+    if (!isRevenueCatReady) return;
+
+    setIsOfferingsLoading(true);
+    setOfferingsError(null);
+    try {
+      const result = await fetchSproutPlusOfferings();
+      setOfferings(result);
+    } catch (error) {
+      console.error('Failed to load Sprout+ offerings', error);
+      setOfferingsError(describePurchasesError(error));
+    } finally {
+      setIsOfferingsLoading(false);
+    }
+  }, [isRevenueCatReady]);
+
+  // A ref (not state) guards against double-submission so the check is never
+  // subject to a stale closure, regardless of when this callback was created.
+  const isPurchasingRef = useRef(false);
+  const purchaseSproutPlusPackage = useCallback(async (pkg: Package) => {
+    if (isPurchasingRef.current) return { success: false, message: 'A purchase is already in progress.' };
+    isPurchasingRef.current = true;
+    setIsPurchasingSproutPlus(true);
+    try {
+      const result = await purchaseSproutPlus(pkg);
+      setSubscription(buildSubscriptionStatus(result.customerInfo));
+      return { success: true };
+    } catch (error) {
+      if (isUserCancelledError(error)) {
+        return { success: false, cancelled: true };
+      }
+      console.error('Sprout+ purchase failed', error);
+      return { success: false, message: describePurchasesError(error) };
+    } finally {
+      isPurchasingRef.current = false;
+      setIsPurchasingSproutPlus(false);
+    }
+  }, []);
+
+  const restoreSproutPlusPurchases = useCallback(async () => {
+    try {
+      // The Web Billing SDK ties purchases to the identified app user id directly
+      // (there's no separate device/store receipt to "restore" like on mobile),
+      // so refreshing customer info for the current user is the web equivalent.
+      const customerInfo = await fetchCustomerInfo();
+      const status = buildSubscriptionStatus(customerInfo);
+      setSubscription(status);
+      return status.hasSproutPlus
+        ? { success: true, message: 'Sprout+ is active on this account.' }
+        : { success: true, message: 'No active Sprout+ subscription was found for this account.' };
+    } catch (error) {
+      console.error('Failed to restore Sprout+ purchases', error);
+      return { success: false, message: describePurchasesError(error) };
+    }
+  }, []);
 
   // Load real data from Supabase (businesses/products are shared marketplace data,
   // orders/expenses/profile are scoped to this user via RLS).
@@ -869,7 +1005,25 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
         triggerConfetti,
         resetToDefaultData,
         isRemoteDataLoading,
-        signOut: () => onSignOut?.(),
+        signOut: () => {
+          // Reset RevenueCat's identified user *before* the auth sign-out completes,
+          // so the next person on this browser/tab never inherits this user's
+          // entitlements. Best-effort — sign-out proceeds regardless of outcome.
+          void resetRevenueCatUser().finally(() => onSignOut?.());
+        },
+        subscription,
+        hasSproutPlus: subscription.hasSproutPlus,
+        isSubscriptionPageOpen,
+        openSubscriptionPage: () => setIsSubscriptionPageOpen(true),
+        closeSubscriptionPage: () => setIsSubscriptionPageOpen(false),
+        offerings,
+        isRevenueCatReady,
+        isOfferingsLoading,
+        offeringsError,
+        loadSproutPlusOfferings,
+        isPurchasingSproutPlus,
+        purchaseSproutPlusPackage,
+        restoreSproutPlusPurchases,
       }}
     >
       {children}

@@ -14,6 +14,15 @@ import { useApp } from '../../context/AppContext';
 import { CampusUniversity, ProductCategory } from '../../types';
 import { triggerConfetti } from '../../utils/confetti';
 import { makeDefaultShopDraft } from '../../utils/shop';
+import { SproutPlusGate } from '../SproutPlusGate';
+import {
+  RefreshCw,
+  CalendarClock,
+  Percent,
+  Boxes,
+  FileSpreadsheet,
+  Rocket,
+} from 'lucide-react';
 
 export const BusinessSettings: React.FC = () => {
   const { activeBusiness, businesses, currentUser, createBusiness, updateBusinessProfile } = useApp();
@@ -305,6 +314,37 @@ export const BusinessSettings: React.FC = () => {
           </button>
         </div>
       </form>
+
+      {/* Sprout+ Tools */}
+      <div className="bg-white rounded-3xl border border-[#EDE4D8] p-6 sm:p-8 shadow-xs space-y-4">
+        <div>
+          <h3 className="text-xs font-bold uppercase tracking-wider text-[#8A796D]">Sprout+ Tools</h3>
+          <p className="mt-1 text-[11px] text-[#7A6B5F]">Advanced tools for growing student shops</p>
+        </div>
+
+        <SproutPlusGate featureName="This toolkit">
+          <div className="space-y-2.5">
+            {[
+              { icon: <RefreshCw className="w-4 h-4" />, title: 'Real-Time Inventory Tracking' },
+              { icon: <CalendarClock className="w-4 h-4" />, title: 'Pre-Order System' },
+              { icon: <Percent className="w-4 h-4" />, title: 'Discount & Coupon Generator' },
+              { icon: <Boxes className="w-4 h-4" />, title: 'Bundle Builder' },
+              { icon: <FileSpreadsheet className="w-4 h-4" />, title: 'Order Export' },
+              { icon: <Rocket className="w-4 h-4" />, title: 'Product Drop Scheduler' },
+            ].map((tool) => (
+              <div key={tool.title} className="flex items-center gap-2.5 rounded-xl border border-[#EDE4D8] bg-[#FAF7F2] p-3">
+                <span className="shrink-0 w-8 h-8 rounded-lg bg-[#B8E6D5] text-[#194E3B] flex items-center justify-center">
+                  {tool.icon}
+                </span>
+                <p className="text-xs font-bold text-[#3B2F27] flex-1">{tool.title}</p>
+                <span className="text-[10px] font-black uppercase tracking-wide text-[#8C7A6D] bg-white border border-[#E5DACD] rounded-full px-2 py-0.5">
+                  Coming soon
+                </span>
+              </div>
+            ))}
+          </div>
+        </SproutPlusGate>
+      </div>
     </div>
   );
 };
