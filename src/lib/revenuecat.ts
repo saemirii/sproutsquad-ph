@@ -18,7 +18,12 @@ export const isRevenueCatConfigured = Boolean(REVENUECAT_PUBLIC_KEY);
 
 // Both sprout_plus_monthly and sprout_plus_yearly grant this single entitlement.
 // Feature access must always be checked against the entitlement, never the product id.
-export const SPROUT_PLUS_ENTITLEMENT = 'sprout_plus';
+// NOTE: this must exactly match the entitlement identifier configured in the
+// RevenueCat dashboard (Project > Entitlements) — a mismatch here means every
+// purchase event gets silently skipped as "unrelated entitlement" even though
+// a real purchase succeeded. Confirmed live against the dashboard's actual
+// configured name.
+export const SPROUT_PLUS_ENTITLEMENT = 'sproutsquad_membership';
 
 export const SPROUT_PLUS_PRODUCTS = {
   monthly: 'sprout_plus_monthly',

@@ -6,7 +6,10 @@ import { supabaseAdmin } from "./supabaseAdmin";
 // so the two runtimes never drift out of sync with each other.
 
 const REVENUECAT_WEBHOOK_AUTHORIZATION = process.env.REVENUECAT_WEBHOOK_AUTHORIZATION;
-const SPROUT_PLUS_ENTITLEMENT = "sprout_plus";
+// Must exactly match the entitlement identifier configured in the RevenueCat
+// dashboard (Project > Entitlements) — confirmed live against the actual
+// configured name, same constant kept in sync with src/lib/revenuecat.ts.
+const SPROUT_PLUS_ENTITLEMENT = "sproutsquad_membership";
 
 // Timing-safe comparison so a malformed/short guess can't be distinguished
 // from a correct-length wrong guess via response timing.

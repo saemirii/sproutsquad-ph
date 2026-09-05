@@ -52,7 +52,9 @@ Sprout+ (the paid tier) is powered by RevenueCat's Web Billing SDK. This section
 | `REVENUECAT_WEBHOOK_AUTHORIZATION` | Server only (`server.ts` webhook handler) | **Yes** — shared secret, must match the RevenueCat dashboard's webhook Authorization header |
 
 **Products & entitlement:** two products, one entitlement — feature access is always checked via the entitlement, never the product id:
-- `sprout_plus_monthly`, `sprout_plus_yearly` → both grant → `sprout_plus`
+- `sprout_plus_monthly`, `sprout_plus_yearly` → both grant → `sproutsquad_membership`
+
+The entitlement identifier is **not** `sprout_plus` despite the constant's name (`SPROUT_PLUS_ENTITLEMENT` in `src/lib/revenuecat.ts` and `server/revenuecatWebhook.ts`) — it was originally spec'd as `sprout_plus`, but the live RevenueCat dashboard actually has it configured as `sproutsquad_membership`. This was a real bug caught live: every purchase event (including a genuine `INITIAL_PURCHASE`) was being silently skipped as "unrelated entitlement" until the constant was corrected to match. **If you ever rename the entitlement in the dashboard, update the constant in both files to match** — a mismatch here breaks `hasSproutPlus` entirely, not just cosmetic labeling.
 
 **User identity:** the Supabase auth user's `id` (same one used everywhere else in the app) is used directly as the RevenueCat App User ID (`identifyRevenueCatUser` in `AppContext.tsx`, on login). On sign-out, RevenueCat is reset to a fresh anonymous identity (`resetRevenueCatUser`) so the next person on the same browser never inherits the previous user's entitlements.
 
@@ -62,7 +64,7 @@ Sprout+ (the paid tier) is powered by RevenueCat's Web Billing SDK. This section
 
 **Restore purchases:** the Web SDK ties purchases directly to the identified app user id (there's no separate device receipt to restore, unlike mobile). "Restore Purchases" re-fetches customer info for the current user and updates the UI — this is the web equivalent.
 
-**Cancellation/expiration:** a cancelled subscription keeps `sprout_plus` active (and features unlocked) until the entitlement's `expirationDate` actually passes — `SubscriptionPage` shows a "Cancelling" badge and end date in the meantime, never revoking access early.
+**Cancellation/expiration:** a cancelled subscription keeps the entitlement active (and features unlocked) until its `expirationDate` actually passes — `SubscriptionPage` shows a "Cancelling" badge and end date in the meantime, never revoking access early.
 
 **Webhooks:** `POST /api/revenuecat-webhook` — served by `server.ts` (Express) locally/on a Node host, or by [`netlify/functions/revenuecat-webhook.mts`](netlify/functions/revenuecat-webhook.mts) on Netlify (see "Deploying to Netlify" above); both call the same shared logic in [`server/revenuecatWebhook.ts`](server/revenuecatWebhook.ts). Verifies the `Authorization` header against `REVENUECAT_WEBHOOK_AUTHORIZATION` (timing-safe comparison), then handles `INITIAL_PURCHASE`, `RENEWAL`, `CANCELLATION`, `UNCANCELLATION`, `EXPIRATION`, `BILLING_ISSUE`, `REFUND`. Idempotent: each event's `id` is recorded in `revenuecat_webhook_events` first, and a duplicate delivery is detected (unique-constraint violation) and skipped — verified live against the real Supabase project, including the update-not-duplicate path (a second event for the same user correctly updates the existing row).
 
@@ -77,7 +79,7 @@ Sprout+ (the paid tier) is powered by RevenueCat's Web Billing SDK. This section
 ### Testing Sprout+ locally
 
 1. Sign up at [app.revenuecat.com](https://app.revenuecat.com), connect Stripe (or Paddle), and create a Web Billing app.
-2. Create products `sprout_plus_monthly` / `sprout_plus_yearly`, an entitlement `sprout_plus` attached to both, and an Offering with a `monthly` and `annual` package.
+2. Create products `sprout_plus_monthly` / `sprout_plus_yearly`, an entitlement attached to both (whatever you name it — just make sure it matches `SPROUT_PLUS_ENTITLEMENT` in both `src/lib/revenuecat.ts` and `server/revenuecatWebhook.ts`), and an Offering with a `monthly` and `annual` package.
 3. Copy the Web Billing **public** API key into `VITE_REVENUECAT_PUBLIC_KEY` in `.env.local`.
 4. Run the app, sign in, open the profile sheet → "Upgrade to Sprout+ or Bloom+" → confirm real prices load and a sandbox purchase completes.
 5. For webhooks: set `SUPABASE_SERVICE_ROLE_KEY` (Supabase → Project Settings → API), run the migration above, generate a random string for `REVENUECAT_WEBHOOK_AUTHORIZATION`, set the same value in RevenueCat → Project Settings → Webhooks (URL: `https://<your-deployed-app>/api/revenuecat-webhook`, Authorization header: that value).
@@ -87,7 +89,7 @@ Sprout+ (the paid tier) is powered by RevenueCat's Web Billing SDK. This section
 
 - [x] RevenueCat project + Web Billing app configured — verified live: a current Offering exists with Monthly/Annual packages and priced products.
 - [ ] **Check product identifiers**: they currently come back as `Monthly` / `Yearly`, not the spec'd `sprout_plus_monthly` / `sprout_plus_yearly`. Entitlement-gating (`hasSproutPlus`) works either way, but the "Your current plan" badge and plan-name labels on the pricing cards won't match correctly until either the dashboard products are renamed or [`SPROUT_PLUS_PRODUCTS`](src/lib/revenuecat.ts) is updated to the real IDs.
-- [ ] Confirm the entitlement is named exactly `sprout_plus` in the dashboard and attached to both products.
+- [x] Entitlement confirmed — it's actually named `sproutsquad_membership` in the dashboard (not `sprout_plus`, the original spec name). Caught live via the `revenuecat_webhook_events.skip_reason` ledger (every event showed `unrelated_entitlement`); fixed by updating `SPROUT_PLUS_ENTITLEMENT` in both `src/lib/revenuecat.ts` and `server/revenuecatWebhook.ts` to match.
 - [x] `VITE_REVENUECAT_PUBLIC_KEY` set locally (`.env.local`) — verified working against the live RevenueCat account.
 - [x] `supabase/migration_5_sprout_plus_subscriptions.sql` has been run against the production Supabase project (verified: the table exists and RLS is enforced).
 - [x] `SUPABASE_SERVICE_ROLE_KEY` set locally — verified working: a real webhook call correctly wrote/updated a row.
