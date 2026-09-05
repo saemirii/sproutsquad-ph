@@ -1,0 +1,21 @@
+{
+  "name": "SproutSquad iOS",
+  "short_name": "SproutSquad",
+  "description": "Student Business Operating System & Campus Marketplace",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFF9E6",
+  "theme_color": "#B8E6D5",
+  "icons": [
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

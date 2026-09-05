@@ -1,0 +1,6 @@
+{
+  "name": "SproutSquad",
+  "description": "iOS app for Philippine student-led businesses combining a campus marketplace, financial analytics, Business Health Score, Oliver AI co-pilot, and practical academy.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

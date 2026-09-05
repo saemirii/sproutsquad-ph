@@ -1,0 +1,164 @@
+import { Business, Product, Order, Expense, CampusUniversity, ProductCategory, OrderStatus, DeliveryMethod, FulfillmentType, ExpenseCategory } from '../types';
+
+export const businessToRow = (b: Business) => ({
+  id: b.id,
+  seller_id: b.sellerId,
+  name: b.name,
+  handle: b.handle,
+  tagline: b.tagline,
+  description: b.description,
+  logo: b.logo,
+  banner: b.banner,
+  university: b.university,
+  campus_pickup_spots: b.campusPickupSpots,
+  category: b.category,
+  gcash_number: b.gcashNumber,
+  maya_number: b.mayaNumber,
+  instagram_handle: b.instagramHandle,
+  tiktok_handle: b.tiktokHandle,
+  rating: b.rating,
+  review_count: b.reviewCount,
+  established_date: b.establishedDate,
+  badges: b.badges,
+  bes_key: b.besKey,
+});
+
+// 1x1 transparent pixel — used while the (large, separately-fetched) logo/image
+// hasn't arrived yet, so <img> tags don't flash a broken-image icon meanwhile.
+const BLANK_IMAGE = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
+
+export const rowToBusiness = (row: any): Business => ({
+  id: row.id,
+  sellerId: row.seller_id,
+  name: row.name,
+  handle: row.handle,
+  tagline: row.tagline,
+  description: row.description,
+  logo: row.logo || BLANK_IMAGE,
+  banner: row.banner,
+  university: row.university as CampusUniversity,
+  campusPickupSpots: row.campus_pickup_spots || [],
+  category: row.category as ProductCategory,
+  gcashNumber: row.gcash_number,
+  mayaNumber: row.maya_number || undefined,
+  instagramHandle: row.instagram_handle || undefined,
+  tiktokHandle: row.tiktok_handle || undefined,
+  rating: Number(row.rating),
+  reviewCount: row.review_count,
+  establishedDate: row.established_date,
+  badges: row.badges || [],
+  besKey: row.bes_key || undefined,
+});
+
+export const productToRow = (p: Product) => ({
+  id: p.id,
+  business_id: p.businessId,
+  business_name: p.businessName,
+  university: p.university,
+  name: p.name,
+  description: p.description,
+  price: p.price,
+  cost_price: p.costPrice,
+  category: p.category,
+  inventory_count: p.inventoryCount,
+  image_url: p.imageUrl,
+  tags: p.tags,
+  is_available: p.isAvailable,
+  unit: p.unit,
+  sku: p.sku,
+  sold_count: p.soldCount,
+});
+
+export const rowToProduct = (row: any): Product => ({
+  id: row.id,
+  businessId: row.business_id,
+  businessName: row.business_name,
+  university: row.university as CampusUniversity,
+  name: row.name,
+  description: row.description,
+  price: Number(row.price),
+  costPrice: Number(row.cost_price),
+  category: row.category as ProductCategory,
+  inventoryCount: row.inventory_count,
+  imageUrl: row.image_url || BLANK_IMAGE,
+  tags: row.tags || [],
+  isAvailable: row.is_available,
+  unit: row.unit,
+  sku: row.sku || undefined,
+  soldCount: row.sold_count,
+});
+
+export const orderToRow = (o: Order) => ({
+  id: o.id,
+  order_number: o.orderNumber,
+  customer_id: o.customerId,
+  customer_name: o.customerName,
+  customer_contact: o.customerContact,
+  customer_university: o.customerUniversity,
+  business_id: o.businessId,
+  business_name: o.businessName,
+  items: o.items,
+  total_amount: o.totalAmount,
+  total_cost: o.totalCost,
+  payment_method: o.paymentMethod,
+  payment_status: o.paymentStatus,
+  fulfillment_type: o.fulfillmentType,
+  delivery_method: o.deliveryMethod,
+  delivery_date: o.deliveryDate,
+  meetup_location: o.meetupLocation,
+  order_status: o.orderStatus,
+  notes: o.notes,
+  created_at: o.createdAt,
+});
+
+export const rowToOrder = (row: any): Order => ({
+  id: row.id,
+  orderNumber: row.order_number,
+  customerId: row.customer_id,
+  customerName: row.customer_name || '',
+  customerContact: row.customer_contact || '',
+  customerUniversity: (row.customer_university || 'All Campuses') as CampusUniversity,
+  businessId: row.business_id,
+  businessName: row.business_name,
+  items: row.items || [],
+  totalAmount: Number(row.total_amount),
+  totalCost: Number(row.total_cost),
+  paymentMethod: row.payment_method,
+  paymentStatus: row.payment_status,
+  fulfillmentType: row.fulfillment_type as FulfillmentType,
+  deliveryMethod: row.delivery_method as DeliveryMethod,
+  deliveryDate: row.delivery_date || undefined,
+  meetupLocation: row.meetup_location,
+  orderStatus: row.order_status as OrderStatus,
+  createdAt: row.created_at,
+  notes: row.notes || undefined,
+});
+
+export const expenseToRow = (e: Expense) => ({
+  id: e.id,
+  business_id: e.businessId,
+  date: e.date,
+  description: e.description,
+  amount: e.amount,
+  category: e.category,
+  supplier_or_store: e.supplierOrStore,
+  notes: e.notes,
+});
+
+export const rowToExpense = (row: any): Expense => ({
+  id: row.id,
+  businessId: row.business_id,
+  date: row.date,
+  description: row.description,
+  amount: Number(row.amount),
+  category: row.category as ExpenseCategory,
+  supplierOrStore: row.supplier_or_store || undefined,
+  notes: row.notes || undefined,
+});
+
+export const rowToProfile = (row: any) => ({
+  name: row.full_name || undefined,
+  email: row.email || undefined,
+  university: (row.university || undefined) as CampusUniversity | undefined,
+  avatar: row.avatar || undefined,
+});

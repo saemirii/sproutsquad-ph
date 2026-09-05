@@ -1,0 +1,126 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    background-color: #FFF9E6;
+    color: #6B5B4F;
+    font-family: 'Poppins', 'Inter', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Nunito', 'Quicksand', sans-serif;
+  }
+}
+
+@keyframes floatGentle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+@keyframes bounceMicro {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(0.96); }
+}
+
+.animate-float-gentle {
+  animation: floatGentle 3s ease-in-out infinite;
+}
+
+.btn-bouncy {
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.btn-bouncy:hover {
+  transform: translateY(-1.5px);
+}
+.btn-bouncy:active {
+  transform: translateY(1px) scale(0.97);
+}
+
+/* Sprout-to-flower loading animation: one shared 6s clock, everything faded
+   out at both the 0% and 100% edges so the loop never visibly jumps. */
+.sprout-bloom-sway {
+  animation: sproutBob 3s ease-in-out infinite;
+}
+@keyframes sproutBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.sprout-bloom-fade {
+  animation: sproutFade 6s ease-in-out infinite;
+}
+@keyframes sproutFade {
+  0%, 96%, 100% { opacity: 0; }
+  4%, 90% { opacity: 1; }
+}
+
+.sprout-stem {
+  stroke-dasharray: 1;
+  animation: sproutStemGrow 6s ease-out infinite;
+}
+@keyframes sproutStemGrow {
+  0%, 4% { stroke-dashoffset: 1; }
+  32%, 100% { stroke-dashoffset: 0; }
+}
+
+.sprout-leaf-left {
+  animation: sproutLeafLeft 6s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+}
+@keyframes sproutLeafLeft {
+  0%, 26% { transform: scale(0) rotate(-15deg); opacity: 0; }
+  40%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+.sprout-leaf-right {
+  animation: sproutLeafRight 6s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+}
+@keyframes sproutLeafRight {
+  0%, 34% { transform: scale(0) rotate(15deg); opacity: 0; }
+  48%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+.sprout-bud {
+  animation: sproutBudPop 6s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+}
+@keyframes sproutBudPop {
+  0%, 50% { transform: scale(0); opacity: 0; }
+  62%, 100% { transform: scale(1); opacity: 1; }
+}
+
+.sprout-petal-0 {
+  animation: sproutPetalBloom 6s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+}
+.sprout-petal-1 {
+  animation: sproutPetalBloomMid 6s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+}
+.sprout-petal-2 {
+  animation: sproutPetalBloomLate 6s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+}
+@keyframes sproutPetalBloom {
+  0%, 58% { transform: scale(0) rotate(-20deg); opacity: 0; }
+  72%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+@keyframes sproutPetalBloomMid {
+  0%, 61% { transform: scale(0) rotate(-20deg); opacity: 0; }
+  75%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+@keyframes sproutPetalBloomLate {
+  0%, 64% { transform: scale(0) rotate(-20deg); opacity: 0; }
+  78%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+/* Custom scrollbar for pleasant browsing */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #FFF9E6;
+}
+::-webkit-scrollbar-thumb {
+  background: #E5DACD;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #B8E6D5;
+}
