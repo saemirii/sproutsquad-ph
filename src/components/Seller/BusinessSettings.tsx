@@ -15,6 +15,7 @@ import { CampusUniversity, ProductCategory } from '../../types';
 import { triggerConfetti } from '../../utils/confetti';
 import { makeDefaultShopDraft } from '../../utils/shop';
 import { SproutPlusGate } from '../SproutPlusGate';
+import { CouponManager } from './CouponManager';
 import {
   RefreshCw,
   CalendarClock,
@@ -316,34 +317,51 @@ export const BusinessSettings: React.FC = () => {
       </form>
 
       {/* Sprout+ Tools */}
-      <div className="bg-white rounded-3xl border border-[#EDE4D8] p-6 sm:p-8 shadow-xs space-y-4">
+      <div className="bg-white rounded-3xl border border-[#EDE4D8] p-6 sm:p-8 shadow-xs space-y-5">
         <div>
           <h3 className="text-xs font-bold uppercase tracking-wider text-[#8A796D]">Sprout+ Tools</h3>
           <p className="mt-1 text-[11px] text-[#7A6B5F]">Advanced tools for growing student shops</p>
         </div>
 
-        <SproutPlusGate featureName="This toolkit">
-          <div className="space-y-2.5">
-            {[
-              { icon: <RefreshCw className="w-4 h-4" />, title: 'Real-Time Inventory Tracking' },
-              { icon: <CalendarClock className="w-4 h-4" />, title: 'Pre-Order System' },
-              { icon: <Percent className="w-4 h-4" />, title: 'Discount & Coupon Generator' },
-              { icon: <Boxes className="w-4 h-4" />, title: 'Bundle Builder' },
-              { icon: <FileSpreadsheet className="w-4 h-4" />, title: 'Order Export' },
-              { icon: <Rocket className="w-4 h-4" />, title: 'Product Drop Scheduler' },
-            ].map((tool) => (
-              <div key={tool.title} className="flex items-center gap-2.5 rounded-xl border border-[#EDE4D8] bg-[#FAF7F2] p-3">
-                <span className="shrink-0 w-8 h-8 rounded-lg bg-[#B8E6D5] text-[#194E3B] flex items-center justify-center">
-                  {tool.icon}
-                </span>
-                <p className="text-xs font-bold text-[#3B2F27] flex-1">{tool.title}</p>
-                <span className="text-[10px] font-black uppercase tracking-wide text-[#8C7A6D] bg-white border border-[#E5DACD] rounded-full px-2 py-0.5">
-                  Coming soon
-                </span>
-              </div>
-            ))}
+        <div>
+          <div className="flex items-center gap-2 mb-2.5">
+            <span className="shrink-0 w-8 h-8 rounded-lg bg-[#B8E6D5] text-[#194E3B] flex items-center justify-center">
+              <Percent className="w-4 h-4" />
+            </span>
+            <p className="text-xs font-bold text-[#3B2F27]">Discount & Coupon Generator</p>
           </div>
-        </SproutPlusGate>
+          <SproutPlusGate featureName="The coupon generator">
+            <CouponManager />
+          </SproutPlusGate>
+        </div>
+
+        <div className="rounded-xl border border-[#EDE4D8] bg-[#FAF7F2] p-3 flex items-center gap-2.5">
+          <span className="shrink-0 w-8 h-8 rounded-lg bg-[#B8E6D5] text-[#194E3B] flex items-center justify-center">
+            <FileSpreadsheet className="w-4 h-4" />
+          </span>
+          <p className="text-[11px] text-[#6B5B4F] flex-1">
+            <span className="font-bold text-[#3B2F27]">Order Export</span> moved to the Orders tab — look for "Export CSV" above your order list.
+          </p>
+        </div>
+
+        <div className="space-y-2.5">
+          {[
+            { icon: <RefreshCw className="w-4 h-4" />, title: 'Real-Time Inventory Tracking' },
+            { icon: <CalendarClock className="w-4 h-4" />, title: 'Pre-Order System' },
+            { icon: <Boxes className="w-4 h-4" />, title: 'Bundle Builder' },
+            { icon: <Rocket className="w-4 h-4" />, title: 'Product Drop Scheduler' },
+          ].map((tool) => (
+            <div key={tool.title} className="flex items-center gap-2.5 rounded-xl border border-[#EDE4D8] bg-[#FAF7F2] p-3">
+              <span className="shrink-0 w-8 h-8 rounded-lg bg-[#B8E6D5] text-[#194E3B] flex items-center justify-center">
+                {tool.icon}
+              </span>
+              <p className="text-xs font-bold text-[#3B2F27] flex-1">{tool.title}</p>
+              <span className="text-[10px] font-black uppercase tracking-wide text-[#8C7A6D] bg-white border border-[#E5DACD] rounded-full px-2 py-0.5">
+                Coming soon
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

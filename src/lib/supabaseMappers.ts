@@ -1,4 +1,4 @@
-import { Business, Product, Order, Expense, CampusUniversity, ProductCategory, OrderStatus, DeliveryMethod, FulfillmentType, ExpenseCategory } from '../types';
+import { Business, Product, Order, Expense, Coupon, CampusUniversity, ProductCategory, OrderStatus, DeliveryMethod, FulfillmentType, ExpenseCategory, DiscountType } from '../types';
 
 export const businessToRow = (b: Business) => ({
   id: b.id,
@@ -109,6 +109,8 @@ export const orderToRow = (o: Order) => ({
   order_status: o.orderStatus,
   notes: o.notes,
   created_at: o.createdAt,
+  coupon_code: o.couponCode,
+  discount_amount: o.discountAmount,
 });
 
 export const rowToOrder = (row: any): Order => ({
@@ -132,6 +134,8 @@ export const rowToOrder = (row: any): Order => ({
   orderStatus: row.order_status as OrderStatus,
   createdAt: row.created_at,
   notes: row.notes || undefined,
+  couponCode: row.coupon_code || undefined,
+  discountAmount: row.discount_amount ? Number(row.discount_amount) : undefined,
 });
 
 export const expenseToRow = (e: Expense) => ({
@@ -154,6 +158,31 @@ export const rowToExpense = (row: any): Expense => ({
   category: row.category as ExpenseCategory,
   supplierOrStore: row.supplier_or_store || undefined,
   notes: row.notes || undefined,
+});
+
+export const couponToRow = (c: Coupon) => ({
+  id: c.id,
+  business_id: c.businessId,
+  code: c.code,
+  discount_type: c.discountType,
+  discount_value: c.discountValue,
+  is_active: c.isActive,
+  max_redemptions: c.maxRedemptions,
+  redemption_count: c.redemptionCount,
+  expires_at: c.expiresAt,
+});
+
+export const rowToCoupon = (row: any): Coupon => ({
+  id: row.id,
+  businessId: row.business_id,
+  code: row.code,
+  discountType: row.discount_type as DiscountType,
+  discountValue: Number(row.discount_value),
+  isActive: row.is_active,
+  maxRedemptions: row.max_redemptions === null || row.max_redemptions === undefined ? null : Number(row.max_redemptions),
+  redemptionCount: row.redemption_count,
+  expiresAt: row.expires_at || null,
+  createdAt: row.created_at,
 });
 
 export const rowToProfile = (row: any) => ({

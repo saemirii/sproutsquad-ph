@@ -112,6 +112,23 @@ export interface Order {
   orderStatus: OrderStatus;
   createdAt: string;
   notes?: string;
+  couponCode?: string;
+  discountAmount?: number;
+}
+
+export type DiscountType = 'percentage' | 'fixed';
+
+export interface Coupon {
+  id: string;
+  businessId: string;
+  code: string;
+  discountType: DiscountType;
+  discountValue: number; // % (1-100) for 'percentage', PHP amount for 'fixed'
+  isActive: boolean;
+  maxRedemptions: number | null; // null = unlimited
+  redemptionCount: number;
+  expiresAt: string | null; // ISO date string, null = never expires
+  createdAt: string;
 }
 
 export type ExpenseCategory =

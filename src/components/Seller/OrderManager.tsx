@@ -10,16 +10,27 @@ import {
   Filter,
   CreditCard,
   MessageCircle,
-  Truck
+  Truck,
+  Download,
+  Lock
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { OrderStatus } from '../../types';
 import { formatPHP } from '../../utils/analytics';
 import { triggerConfetti } from '../../utils/confetti';
+import { exportOrdersToCsv } from '../../utils/exportOrders';
 
 export const OrderManager: React.FC = () => {
-  const { sellerOrders, updateOrderStatus } = useApp();
+  const { sellerOrders, updateOrderStatus, hasSproutPlus, openSubscriptionPage, activeBusiness } = useApp();
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<OrderStatus | 'All'>('All');
+
+  const handleExport = () => {
+    if (!hasSproutPlus) {
+      openSubscriptionPage();
+      return;
+    }
+    exportOrdersToCsv(filteredOrders, activeBusiness.name);
+  };
 
   const filteredOrders = sellerOrders.filter(
     (o) => selectedStatusFilter === 'All' || o.orderStatus === selectedStatusFilter
@@ -76,6 +87,20 @@ export const OrderManager: React.FC = () => {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Export */}
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={handleExport}
+          title={hasSproutPlus ? 'Download this list as a CSV file' : 'Sprout+ feature — tap to view plans'}
+          className="btn-bouncy inline-flex items-center gap-1.5 rounded-xl bg-white border border-[#E5DACD] hover:bg-[#FAF7F2] text-[#3B2F27] text-xs font-bold px-3 py-2"
+        >
+          {hasSproutPlus ? <Download className="w-3.5 h-3.5 text-[#207559]" /> : <Lock className="w-3.5 h-3.5 text-[#8C7A6D]" />}
+          Export CSV
+          {!hasSproutPlus && <span className="text-[9px] font-black uppercase text-[#7A341A] bg-[#FFD3BA] rounded-full px-1.5 py-0.5">Sprout+</span>}
+        </button>
       </div>
 
       {/* Orders List */}
@@ -187,6 +212,12 @@ export const OrderManager: React.FC = () => {
                         </div>
                       ))}
                     </div>
+                    {order.couponCode && (
+                      <div className="flex justify-between items-center text-[11px] text-[#207559] font-semibold">
+                        <span>Coupon "{order.couponCode}"</span>
+                        <span>−{formatPHP(order.discountAmount || 0)}</span>
+                      </div>
+                    )}
                     <div className="pt-1.5 border-t border-[#EDE4D8] flex justify-between font-black text-[#207559] text-xs">
                       <span>Total Amount:</span>
                       <span>{formatPHP(order.totalAmount)}</span>

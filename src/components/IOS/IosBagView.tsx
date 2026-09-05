@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShoppingBag, Trash2, Plus, Minus, MapPin, CheckCircle2, ArrowRight, Clock, Store } from 'lucide-react';
+import { ShoppingBag, Trash2, Plus, Minus, MapPin, CheckCircle2, ArrowRight, Clock, Store, Tag, X } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { formatPHP } from '../../utils/analytics';
 import { CampusUniversity, PaymentMethod, FulfillmentType, Order } from '../../types';
@@ -26,6 +26,7 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
     placeOrder,
     orders,
     currentUser,
+    validateCoupon,
   } = useApp();
 
   const [activeSegment, setActiveSegment] = useState<'bag' | 'orders'>('bag');
@@ -37,6 +38,31 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
   const [meetupLocation, setMeetupLocation] = useState('Gonzaga Hall Entrance / Main Quad');
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [couponInput, setCouponInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
+  const [couponError, setCouponError] = useState('');
+
+  const handleApplyCoupon = () => {
+    setCouponError('');
+    const businessIdsInCart = Array.from(new Set(cart.map((item) => item.product.businessId)));
+
+    for (const businessId of businessIdsInCart) {
+      const subtotalForBusiness = cart
+        .filter((item) => item.product.businessId === businessId)
+        .reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+      const result = validateCoupon(couponInput, businessId, subtotalForBusiness);
+      if ('coupon' in result) {
+        setAppliedCoupon({ code: result.coupon.code, discount: result.discount });
+        playIosSuccess();
+        return;
+      }
+    }
+    setAppliedCoupon(null);
+    setCouponError('That coupon code is not valid for the items in your bag.');
+  };
+
+  const discount = appliedCoupon?.discount || 0;
+  const finalTotal = Math.max(0, cartTotal - discount);
 
   const campusPickupSpots: Record<CampusUniversity, string[]> = {
     'MGC New Life Christian Academy': ['Main Gate', 'Student Center', 'Covered Court', 'Library Entrance'],
@@ -69,10 +95,13 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
         fulfillmentType,
         meetupLocation,
         notes,
+        couponCode: appliedCoupon?.code,
       });
 
       setIsSubmitting(false);
       setActiveSegment('orders');
+      setAppliedCoupon(null);
+      setCouponInput('');
       if (onOrderCompleted) {
         onOrderCompleted(createdOrders);
       }
@@ -299,6 +328,49 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
                 </div>
               </div>
 
+              {/* Coupon Code */}
+              <div className="bg-white rounded-3xl border border-[#EDE4D8] p-4 shadow-xs">
+                {appliedCoupon ? (
+                  <div className="flex items-center justify-between gap-2 bg-[#EAF6F0] border border-[#9FD9C3] rounded-xl px-3 py-2">
+                    <span className="flex items-center gap-1.5 text-xs font-black text-[#194E3B]">
+                      <Tag className="w-3.5 h-3.5" />
+                      {appliedCoupon.code} applied — −{formatPHP(appliedCoupon.discount)}
+                    </span>
+                    <button
+                      onClick={() => { setAppliedCoupon(null); setCouponInput(''); setCouponError(''); }}
+                      className="p-1 rounded-lg text-[#207559] hover:bg-white/60"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold text-[#6B5B4F] flex items-center gap-1.5">
+                      <Tag className="w-3.5 h-3.5 text-[#8C7A6D]" />
+                      Have a coupon code?
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={couponInput}
+                        onChange={(e) => { setCouponInput(e.target.value); setCouponError(''); }}
+                        placeholder="e.g. WELCOME10"
+                        className="min-w-0 flex-1 bg-[#FAF3DE] border border-[#EDE4D8] rounded-xl px-2.5 py-2 text-xs font-bold uppercase tracking-wide text-[#3B2F27]"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleApplyCoupon}
+                        disabled={!couponInput.trim()}
+                        className="px-3.5 py-2 bg-[#B8E6D5] hover:bg-[#A3DEC9] text-[#194E3B] font-black text-xs rounded-xl disabled:opacity-50"
+                      >
+                        Apply
+                      </button>
+                    </div>
+                    {couponError && <p className="text-[11px] text-[#991B1B]">{couponError}</p>}
+                  </div>
+                )}
+              </div>
+
               {/* Order Breakdown & Submit */}
               <div className="bg-white rounded-3xl border border-[#EDE4D8] p-4 space-y-3 shadow-xs">
                 <div className="space-y-1.5 text-xs">
@@ -306,13 +378,19 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
                     <span>Items Subtotal:</span>
                     <span>{formatPHP(cartTotal)}</span>
                   </div>
+                  {discount > 0 && (
+                    <div className="flex justify-between text-[#207559] font-bold">
+                      <span>Coupon Discount:</span>
+                      <span>−{formatPHP(discount)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-[#194E3B] font-bold">
                     <span>Campus Meetup Fee:</span>
                     <span>FREE ₱0</span>
                   </div>
                   <div className="pt-2 border-t border-[#EDE4D8] flex justify-between font-black text-sm text-[#3B2F27]">
                     <span>Total Amount:</span>
-                    <span className="text-[#194E3B]">{formatPHP(cartTotal)}</span>
+                    <span className="text-[#194E3B]">{formatPHP(finalTotal)}</span>
                   </div>
                 </div>
 
@@ -322,7 +400,7 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
                   className="w-full py-3.5 bg-[#B8E6D5] hover:bg-[#A3DEC9] text-[#194E3B] font-black text-xs rounded-2xl shadow-xs active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>Confirm Campus Order ({formatPHP(cartTotal)}) ✨</span>
+                  <span>Confirm Campus Order ({formatPHP(finalTotal)}) ✨</span>
                 </button>
               </div>
             </div>

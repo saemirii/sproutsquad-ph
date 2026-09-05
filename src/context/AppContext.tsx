@@ -5,6 +5,7 @@ import {
   Product,
   Order,
   Expense,
+  Coupon,
   Lesson,
   User,
   CartItem,
@@ -49,6 +50,8 @@ import {
   expenseToRow,
   rowToExpense,
   rowToProfile,
+  couponToRow,
+  rowToCoupon,
 } from '../lib/supabaseMappers';
 
 interface AppContextType {
@@ -74,6 +77,7 @@ interface AppContextType {
   products: Product[];
   orders: Order[];
   expenses: Expense[];
+  coupons: Coupon[];
   lessons: Lesson[];
   completedLessonIds: string[];
   cart: CartItem[];
@@ -83,6 +87,7 @@ interface AppContextType {
   sellerOrders: Order[];
   sellerProducts: Product[];
   sellerExpenses: Expense[];
+  sellerCoupons: Coupon[];
   cartCount: number;
   cartTotal: number;
 
@@ -94,6 +99,10 @@ interface AppContextType {
   updateDeliverySchedule: (orderId: string, deliveryMethod: DeliveryMethod, deliveryDate: string) => void;
   addExpense: (expense: Omit<Expense, 'id' | 'businessId'>) => void;
   deleteExpense: (expenseId: string) => void;
+  addCoupon: (coupon: Omit<Coupon, 'id' | 'businessId' | 'redemptionCount' | 'createdAt'>) => void;
+  updateCoupon: (coupon: Coupon) => void;
+  deleteCoupon: (couponId: string) => void;
+  validateCoupon: (code: string, businessId: string, subtotal: number) => { coupon: Coupon; discount: number } | { error: string };
   updateBusinessProfile: (updated: Partial<Business>) => void;
   completeLesson: (lessonId: string) => void;
   createBusiness: (newBiz: Omit<Business, 'id' | 'sellerId' | 'rating' | 'reviewCount' | 'establishedDate' | 'badges'>) => void;
@@ -113,6 +122,7 @@ interface AppContextType {
     deliveryDate?: string;
     meetupLocation: string;
     notes?: string;
+    couponCode?: string;
   }) => Order[];
 
   // AI Business Coach
@@ -255,6 +265,12 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
     const deletedBusinessIds: string[] = JSON.parse(localStorage.getItem('sproutsquad_deleted_businesses') || '[]');
     const storedExpenses: Expense[] = saved ? JSON.parse(saved) : initialExpenses;
     return storedExpenses.filter((expense) => !deletedBusinessIds.includes(expense.businessId));
+  });
+
+  const [coupons, setCoupons] = useState<Coupon[]>(() => {
+    if (isSupabaseConfigured) return [];
+    const saved = localStorage.getItem('sproutsquad_coupons');
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [lessons] = useState<Lesson[]>(initialLessons);
@@ -463,8 +479,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
       supabase.from('products').select(PRODUCT_LIGHT_COLUMNS),
       supabase.from('orders').select('*'),
       supabase.from('expenses').select('*'),
+      supabase.from('coupons').select('*'),
       supabase.from('profiles').select('*').eq('id', authUser.id).maybeSingle(),
-    ]).then(([businessesRes, productsRes, ordersRes, expensesRes, profileRes]) => {
+    ]).then(([businessesRes, productsRes, ordersRes, expensesRes, couponsRes, profileRes]) => {
       if (cancelled) return;
 
       if (businessesRes.error) console.error('Failed to load businesses', businessesRes.error);
@@ -478,6 +495,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
 
       if (expensesRes.error) console.error('Failed to load expenses', expensesRes.error);
       else setExpenses((expensesRes.data || []).map(rowToExpense));
+
+      if (couponsRes.error) console.error('Failed to load coupons', couponsRes.error);
+      else setCoupons((couponsRes.data || []).map(rowToCoupon));
 
       if (profileRes.error) console.error('Failed to load profile', profileRes.error);
       else if (profileRes.data) {
@@ -537,6 +557,11 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
   }, [expenses]);
 
   useEffect(() => {
+    if (isSupabaseConfigured) return;
+    safeSetItem('sproutsquad_coupons', JSON.stringify(coupons));
+  }, [coupons]);
+
+  useEffect(() => {
     safeSetItem('sproutsquad_completed_lessons', JSON.stringify(completedLessonIds));
   }, [completedLessonIds]);
 
@@ -553,6 +578,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
   const sellerProducts = products.filter((p) => p.businessId === activeBusiness.id);
   const sellerOrders = orders.filter((o) => o.businessId === activeBusiness.id);
   const sellerExpenses = expenses.filter((e) => e.businessId === activeBusiness.id);
+  const sellerCoupons = coupons.filter((c) => c.businessId === activeBusiness.id);
 
   const activeBusinessMetrics = calculateBusinessMetrics(
     sellerOrders,
@@ -688,6 +714,72 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
     }
   };
 
+  // Coupon Actions (Sprout+)
+  const addCoupon = (couponData: Omit<Coupon, 'id' | 'businessId' | 'redemptionCount' | 'createdAt'>) => {
+    const newCoupon: Coupon = {
+      ...couponData,
+      code: couponData.code.trim().toUpperCase(),
+      id: `cpn-${Date.now()}`,
+      businessId: activeBusiness.id,
+      redemptionCount: 0,
+      createdAt: new Date().toISOString(),
+    };
+    setCoupons((prev) => [newCoupon, ...prev]);
+    if (supabase) {
+      void supabase.from('coupons').insert(couponToRow(newCoupon)).then(({ error }) => {
+        if (error) console.error('Failed to save coupon', error);
+      });
+    }
+    triggerConfetti();
+  };
+
+  const updateCoupon = (updated: Coupon) => {
+    const normalized = { ...updated, code: updated.code.trim().toUpperCase() };
+    setCoupons((prev) => prev.map((c) => (c.id === normalized.id ? normalized : c)));
+    if (supabase) {
+      void supabase.from('coupons').update(couponToRow(normalized)).eq('id', normalized.id).then(({ error }) => {
+        if (error) console.error('Failed to update coupon', error);
+      });
+    }
+  };
+
+  const deleteCoupon = (couponId: string) => {
+    setCoupons((prev) => prev.filter((c) => c.id !== couponId));
+    if (supabase) {
+      void supabase.from('coupons').delete().eq('id', couponId).then(({ error }) => {
+        if (error) console.error('Failed to delete coupon', error);
+      });
+    }
+  };
+
+  // Looks up and validates a coupon code for a specific shop's cart subtotal.
+  // Returns the coupon plus the peso discount it produces, or a plain-English
+  // error message — never throws, so checkout UI can just branch on the shape.
+  const validateCoupon = (
+    code: string,
+    businessId: string,
+    subtotal: number
+  ): { coupon: Coupon; discount: number } | { error: string } => {
+    const normalized = code.trim().toUpperCase();
+    if (!normalized) return { error: 'Enter a coupon code.' };
+
+    const match = coupons.find((c) => c.businessId === businessId && c.code === normalized);
+    if (!match) return { error: 'That coupon code was not found for this shop.' };
+    if (!match.isActive) return { error: 'That coupon is no longer active.' };
+    if (match.expiresAt && new Date(match.expiresAt).getTime() < Date.now()) {
+      return { error: 'That coupon has expired.' };
+    }
+    if (match.maxRedemptions !== null && match.redemptionCount >= match.maxRedemptions) {
+      return { error: 'That coupon has reached its redemption limit.' };
+    }
+
+    const discount = match.discountType === 'percentage'
+      ? Math.round(subtotal * (match.discountValue / 100))
+      : Math.min(match.discountValue, subtotal);
+
+    return { coupon: match, discount };
+  };
+
   // Business Profile Actions
   const updateBusinessProfile = (updatedData: Partial<Business>) => {
     setBusinesses((prev) =>
@@ -782,6 +874,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
     deliveryDate?: string;
     meetupLocation: string;
     notes?: string;
+    couponCode?: string;
   }): Order[] => {
     if (cart.length === 0) return [];
 
@@ -807,8 +900,29 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
         unit: bi.product.unit,
       }));
 
-      const totalAmount = orderItems.reduce((s, i) => s + i.price * i.quantity, 0);
+      const subtotal = orderItems.reduce((s, i) => s + i.price * i.quantity, 0);
       const totalCost = orderItems.reduce((s, i) => s + i.costPrice * i.quantity, 0);
+
+      // A coupon only applies to the one shop it was created for — if the cart
+      // spans multiple shops, it discounts just that shop's suborder.
+      let discountAmount = 0;
+      let appliedCouponCode: string | undefined;
+      if (orderData.couponCode) {
+        const result = validateCoupon(orderData.couponCode, bId, subtotal);
+        if ('coupon' in result) {
+          discountAmount = result.discount;
+          appliedCouponCode = result.coupon.code;
+          if (supabase) {
+            void supabase.rpc('redeem_coupon', { target_coupon_id: result.coupon.id }).then(({ error }) => {
+              if (error) console.error('Failed to record coupon redemption', error);
+            });
+          }
+          setCoupons((prev) => prev.map((c) => (
+            c.id === result.coupon.id ? { ...c, redemptionCount: c.redemptionCount + 1 } : c
+          )));
+        }
+      }
+      const totalAmount = Math.max(0, subtotal - discountAmount);
 
       const newOrder: Order = {
         id: `ord-${Date.now()}-${idx}`,
@@ -822,6 +936,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
         items: orderItems,
         totalAmount,
         totalCost,
+        couponCode: appliedCouponCode,
+        discountAmount: discountAmount || undefined,
         paymentMethod: orderData.paymentMethod,
         paymentStatus:
           orderData.paymentMethod === 'Cash on Campus Meetup'
@@ -976,6 +1092,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
         products,
         orders,
         expenses,
+        coupons,
         lessons,
         completedLessonIds,
         cart,
@@ -983,6 +1100,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
         sellerOrders,
         sellerProducts,
         sellerExpenses,
+        sellerCoupons,
         cartCount,
         cartTotal,
         addProduct,
@@ -992,6 +1110,10 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
         updateDeliverySchedule,
         addExpense,
         deleteExpense,
+        addCoupon,
+        updateCoupon,
+        deleteCoupon,
+        validateCoupon,
         updateBusinessProfile,
         completeLesson,
         createBusiness,
