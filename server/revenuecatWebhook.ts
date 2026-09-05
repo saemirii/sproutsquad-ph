@@ -75,9 +75,19 @@ export async function processRevenueCatWebhookPayload(payload: unknown): Promise
   // Idempotency: if we've already recorded this event id, this is a
   // RevenueCat retry/redelivery of an event we already handled. Insert acts
   // as a claim — a unique-violation means another delivery already won.
+  //
+  // We also record the raw app_user_id/entitlement_ids RevenueCat actually
+  // sent, and (below) why an event was skipped if it was — queryable
+  // directly in Supabase so diagnosing a "why didn't this sync" question
+  // never requires server log access.
   const { error: dedupeError } = await supabaseAdmin
     .from("revenuecat_webhook_events")
-    .insert({ event_id: event.id, event_type: event.type });
+    .insert({
+      event_id: event.id,
+      event_type: event.type,
+      app_user_id: event.app_user_id,
+      entitlement_ids: event.entitlement_ids ?? null,
+    });
 
   if (dedupeError) {
     if (dedupeError.code === "23505") {
@@ -88,8 +98,12 @@ export async function processRevenueCatWebhookPayload(payload: unknown): Promise
     return { status: 500, body: { error: "Failed to process webhook" } };
   }
 
+  const recordSkipReason = (reason: string) =>
+    supabaseAdmin!.from("revenuecat_webhook_events").update({ skip_reason: reason }).eq("event_id", event.id!);
+
   // Only sync events for our Sprout+ entitlement.
   if (event.entitlement_ids && !event.entitlement_ids.includes(SPROUT_PLUS_ENTITLEMENT)) {
+    await recordSkipReason("unrelated_entitlement");
     return { status: 200, body: { received: true, processed: false, reason: "unrelated entitlement" } };
   }
 
@@ -98,6 +112,7 @@ export async function processRevenueCatWebhookPayload(payload: unknown): Promise
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(event.app_user_id);
   if (!isUuid) {
     console.error(`RevenueCat webhook: app_user_id "${event.app_user_id}" is not a SproutSquad user id — skipping DB sync.`);
+    await recordSkipReason("non_user_app_user_id");
     return { status: 200, body: { received: true, processed: false, reason: "non-user app_user_id" } };
   }
 
@@ -121,8 +136,10 @@ export async function processRevenueCatWebhookPayload(payload: unknown): Promise
 
   if (upsertError) {
     console.error("RevenueCat webhook: failed to upsert subscription record", upsertError);
+    await recordSkipReason(`upsert_failed: ${upsertError.message}`);
     return { status: 500, body: { error: "Failed to process webhook" } };
   }
 
+  await recordSkipReason(""); // cleared — fully processed, nothing to explain
   return { status: 200, body: { received: true, processed: true } };
 }
