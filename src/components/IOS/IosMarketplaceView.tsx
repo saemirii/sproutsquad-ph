@@ -240,6 +240,18 @@ export const IosMarketplaceView: React.FC<IosMarketplaceViewProps> = ({
                         {product.category.split(' ')[0]}
                       </span>
 
+                      {/* Bundle / Pre-Order Chip */}
+                      {product.bundledProductIds && product.bundledProductIds.length > 0 && (
+                        <span className="absolute top-2 right-2 px-2 py-0.5 rounded-lg text-[9px] font-black bg-[#B8E6D5] text-[#194E3B] shadow-xs">
+                          🎁 Bundle
+                        </span>
+                      )}
+                      {product.isPreOrder && (
+                        <span className="absolute top-2 right-2 px-2 py-0.5 rounded-lg text-[9px] font-black bg-[#FFD3BA] text-[#7A341A] shadow-xs">
+                          📅 Pre-Order
+                        </span>
+                      )}
+
                       {/* Stock Warning */}
                       {isLowStock && (
                         <span className="absolute bottom-2 left-2 px-1.5 py-0.5 rounded-md text-[8px] font-black bg-[#FFD3BA] text-[#7A341A]">

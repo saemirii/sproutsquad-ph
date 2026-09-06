@@ -467,7 +467,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
   // every other column first so the app can render almost immediately, then backfill
   // the images in the background without blocking or re-showing the loading screen.
   const BUSINESS_LIGHT_COLUMNS = 'id, seller_id, name, handle, tagline, description, banner, university, campus_pickup_spots, category, gcash_number, maya_number, instagram_handle, tiktok_handle, rating, review_count, established_date, badges, bes_key';
-  const PRODUCT_LIGHT_COLUMNS = 'id, business_id, business_name, university, name, description, price, cost_price, category, inventory_count, tags, is_available, unit, sku, sold_count';
+  const PRODUCT_LIGHT_COLUMNS = 'id, business_id, business_name, university, name, description, price, cost_price, category, inventory_count, tags, is_available, unit, sku, sold_count, bundled_product_ids, is_pre_order, pre_order_release_date';
 
   useEffect(() => {
     if (!supabase || !authUser) return;
@@ -898,6 +898,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
         quantity: bi.quantity,
         imageUrl: bi.product.imageUrl,
         unit: bi.product.unit,
+        isPreOrder: bi.product.isPreOrder || undefined,
       }));
 
       const subtotal = orderItems.reduce((s, i) => s + i.price * i.quantity, 0);

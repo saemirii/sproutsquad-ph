@@ -203,8 +203,13 @@ export const OrderManager: React.FC = () => {
                     <div className="space-y-1 max-h-24 overflow-y-auto">
                       {order.items.map((item, idx) => (
                         <div key={idx} className="flex justify-between items-center text-xs">
-                          <span className="truncate max-w-[150px] font-medium text-[#3B2F27]">
-                            {item.quantity}x {item.productName}
+                          <span className="min-w-0 flex items-center gap-1">
+                            <span className="truncate max-w-[150px] font-medium text-[#3B2F27]">
+                              {item.quantity}x {item.productName}
+                            </span>
+                            {item.isPreOrder && (
+                              <span className="shrink-0 text-[8px] font-black uppercase text-[#1B4E6B] bg-[#A8D8EA] rounded-full px-1 py-0.5">Pre-Order</span>
+                            )}
                           </span>
                           <span className="font-bold text-[#207559]">
                             {formatPHP(item.price * item.quantity)}

@@ -74,6 +74,11 @@ export interface Product {
   unit: string; // e.g., 'box of 4', 'piece', 'set', 'pack'
   sku?: string;
   soldCount: number;
+  /** If set, this product IS a bundle combining these other product ids (Sprout+ Bundle Builder). */
+  bundledProductIds?: string[];
+  /** Sprout+ Pre-Order System: accept orders before the product actually ships. */
+  isPreOrder?: boolean;
+  preOrderReleaseDate?: string | null; // ISO date string
 }
 
 export type OrderStatus = 'Pending' | 'Preparing' | 'Ready for Pickup' | 'Completed' | 'Cancelled';
@@ -89,6 +94,7 @@ export interface OrderItem {
   quantity: number;
   imageUrl: string;
   unit: string;
+  isPreOrder?: boolean;
 }
 
 export interface Order {

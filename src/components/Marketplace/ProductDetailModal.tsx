@@ -9,7 +9,9 @@ import {
   ShieldCheck,
   Plus,
   Minus,
-  Tag
+  Tag,
+  Boxes,
+  CalendarClock
 } from 'lucide-react';
 import { Product, Business } from '../../types';
 import { useApp } from '../../context/AppContext';
@@ -26,13 +28,16 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   onClose,
   onViewBusiness,
 }) => {
-  const { businesses, addToCart } = useApp();
+  const { businesses, products, addToCart } = useApp();
   const [quantity, setQuantity] = useState(1);
   const [isAdded, setIsAdded] = useState(false);
 
   if (!product) return null;
 
   const business = businesses.find((b) => b.id === product.businessId);
+  const bundledProducts = product.bundledProductIds
+    ? product.bundledProductIds.map((id) => products.find((p) => p.id === id)).filter((p): p is Product => Boolean(p))
+    : [];
 
   const handleAddToCart = () => {
     addToCart(product, quantity);
@@ -111,6 +116,37 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 {product.description}
               </p>
 
+              {/* Pre-Order Notice */}
+              {product.isPreOrder && (
+                <div className="flex items-center gap-2 p-3 bg-[#FFF3E8] rounded-2xl border border-[#F8BA9E] text-[#7A341A]">
+                  <CalendarClock className="w-4 h-4 shrink-0" />
+                  <p className="text-[11px] leading-4">
+                    <span className="font-bold">Pre-Order</span> — reserve yours now.
+                    {product.preOrderReleaseDate && (
+                      <> Expected around {new Date(product.preOrderReleaseDate).toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}.</>
+                    )}
+                  </p>
+                </div>
+              )}
+
+              {/* Bundle Contents */}
+              {bundledProducts.length > 0 && (
+                <div className="p-3 bg-[#EAF6F0] rounded-2xl border border-[#9FD9C3] space-y-1.5">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-[#194E3B]">
+                    <Boxes className="w-3.5 h-3.5" />
+                    <span>This bundle includes:</span>
+                  </div>
+                  <ul className="text-[11px] text-[#3B2F27] space-y-0.5">
+                    {bundledProducts.map((bp) => (
+                      <li key={bp.id} className="flex items-center gap-1.5">
+                        <span className="w-1 h-1 rounded-full bg-[#207559]" />
+                        {bp.name}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               {/* Tags */}
               <div className="flex flex-wrap gap-1.5 pt-1">
                 {product.tags.map((tag) => (
@@ -176,12 +212,14 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     : 'bg-[#B8E6D5] hover:bg-[#A3DEC9] text-[#194E3B]'
                 }`}
               >
-                <ShoppingBag className="w-4 h-4" />
+                {product.isPreOrder ? <CalendarClock className="w-4 h-4" /> : <ShoppingBag className="w-4 h-4" />}
                 <span>
                   {product.inventoryCount <= 0
                     ? 'Out of Stock'
                     : isAdded
                     ? 'Added to Bag! ✨'
+                    : product.isPreOrder
+                    ? `Pre-Order ${quantity} • ${formatPHP(product.price * quantity)}`
                     : `Add ${quantity} to Bag • ${formatPHP(product.price * quantity)}`}
                 </span>
               </button>

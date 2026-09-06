@@ -18,6 +18,7 @@ import { useApp } from '../../context/AppContext';
 import { Product, ProductCategory } from '../../types';
 import { formatPHP } from '../../utils/analytics';
 import { InfoTip } from '../InfoTip';
+import { CalendarClock, Lock } from 'lucide-react';
 
 export const ProductManager: React.FC = () => {
   const {
@@ -26,6 +27,8 @@ export const ProductManager: React.FC = () => {
     addProduct,
     updateProduct,
     deleteProduct,
+    hasSproutPlus,
+    openSubscriptionPage,
   } = useApp();
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -41,6 +44,8 @@ export const ProductManager: React.FC = () => {
   const [unit, setUnit] = useState('Box of 4');
   const [imageUrl, setImageUrl] = useState('https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=600&auto=format&fit=crop&q=80');
   const [tagsInput, setTagsInput] = useState('Bestseller, Fresh');
+  const [isPreOrder, setIsPreOrder] = useState(false);
+  const [preOrderReleaseDate, setPreOrderReleaseDate] = useState('');
 
   // Built-in Pricing & Margin Calculator State
   const [calcMaterialsCost, setCalcMaterialsCost] = useState<number>(45);
@@ -86,6 +91,8 @@ export const ProductManager: React.FC = () => {
     setUnit('Piece');
     setImageUrl('https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&auto=format&fit=crop&q=80');
     setTagsInput('StudentMade, CampusFresh');
+    setIsPreOrder(false);
+    setPreOrderReleaseDate('');
     setIsAddModalOpen(true);
   };
 
@@ -100,7 +107,17 @@ export const ProductManager: React.FC = () => {
     setUnit(p.unit);
     setImageUrl(p.imageUrl);
     setTagsInput(p.tags.join(', '));
+    setIsPreOrder(p.isPreOrder || false);
+    setPreOrderReleaseDate(p.preOrderReleaseDate || '');
     setIsAddModalOpen(true);
+  };
+
+  const handleTogglePreOrder = () => {
+    if (!hasSproutPlus) {
+      openSubscriptionPage();
+      return;
+    }
+    setIsPreOrder((prev) => !prev);
   };
 
   const handleSaveProduct = (e: React.FormEvent) => {
@@ -109,6 +126,10 @@ export const ProductManager: React.FC = () => {
       .split(',')
       .map((t) => t.trim())
       .filter(Boolean);
+
+    const preOrderFields = hasSproutPlus
+      ? { isPreOrder, preOrderReleaseDate: isPreOrder ? (preOrderReleaseDate || null) : null }
+      : { isPreOrder: false, preOrderReleaseDate: null };
 
     if (editingProduct) {
       updateProduct({
@@ -123,6 +144,7 @@ export const ProductManager: React.FC = () => {
         imageUrl,
         tags,
         university: activeBusiness.university,
+        ...preOrderFields,
       });
     } else {
       addProduct({
@@ -137,6 +159,7 @@ export const ProductManager: React.FC = () => {
         tags,
         isAvailable: true,
         university: activeBusiness.university,
+        ...preOrderFields,
       });
     }
 
@@ -219,7 +242,15 @@ export const ProductManager: React.FC = () => {
                           className="w-10 h-10 rounded-xl object-cover border border-[#E5DACD]"
                         />
                         <div className="min-w-0">
-                          <p className="font-bold text-[#3B2F27] truncate">{p.name}</p>
+                          <p className="font-bold text-[#3B2F27] truncate flex items-center gap-1.5">
+                            {p.name}
+                            {p.bundledProductIds && p.bundledProductIds.length > 0 && (
+                              <span className="text-[9px] font-black uppercase text-[#194E3B] bg-[#B8E6D5] rounded-full px-1.5 py-0.5">Bundle</span>
+                            )}
+                            {p.isPreOrder && (
+                              <span className="text-[9px] font-black uppercase text-[#1B4E6B] bg-[#A8D8EA] rounded-full px-1.5 py-0.5">Pre-Order</span>
+                            )}
+                          </p>
                           <p className="text-[10px] text-[#8C7A6D]">{p.unit}</p>
                         </div>
                       </div>
@@ -507,6 +538,44 @@ export const ProductManager: React.FC = () => {
                     className="w-full px-3 py-2 bg-[#FAF7F2] border border-[#E5DACD] rounded-xl text-sm font-bold text-[#8C3A27] focus:outline-none focus:ring-2 focus:ring-[#B8E6D5]"
                   />
                 </div>
+              </div>
+
+              {/* Pre-Order (Sprout+) */}
+              <div className="rounded-2xl border border-[#E5DACD] bg-[#FAF7F2] p-3.5 space-y-2.5">
+                <button
+                  type="button"
+                  onClick={handleTogglePreOrder}
+                  className="w-full flex items-center gap-2.5 text-left"
+                >
+                  <span className={`shrink-0 w-9 h-5 rounded-full transition-colors relative ${isPreOrder ? 'bg-[#207559]' : 'bg-[#E5DACD]'}`}>
+                    <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${isPreOrder ? 'left-[18px]' : 'left-0.5'}`} />
+                  </span>
+                  <span className="flex items-center gap-1.5 text-xs font-bold text-[#3B2F27] flex-1">
+                    <CalendarClock className="w-3.5 h-3.5 text-[#194E3B]" />
+                    Sell as Pre-Order
+                  </span>
+                  {!hasSproutPlus && (
+                    <span className="flex items-center gap-1 text-[9px] font-black uppercase text-[#7A341A] bg-[#FFD3BA] rounded-full px-2 py-0.5">
+                      <Lock className="w-2.5 h-2.5" /> Sprout+
+                    </span>
+                  )}
+                </button>
+                {isPreOrder && hasSproutPlus && (
+                  <div>
+                    <label className="block text-[10px] font-semibold text-[#6E5D52] mb-0.5">
+                      Expected availability date (optional)
+                    </label>
+                    <input
+                      type="date"
+                      value={preOrderReleaseDate}
+                      onChange={(e) => setPreOrderReleaseDate(e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-[#E0D5C5] rounded-lg text-xs text-[#3B2F27] focus:outline-none focus:ring-2 focus:ring-[#B8E6D5]"
+                    />
+                    <p className="mt-1 text-[10px] text-[#8C7A6D]">
+                      Customers can order now — this shows them when to expect it.
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Product Image & Tags */}

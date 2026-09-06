@@ -67,6 +67,9 @@ export const productToRow = (p: Product) => ({
   unit: p.unit,
   sku: p.sku,
   sold_count: p.soldCount,
+  bundled_product_ids: p.bundledProductIds,
+  is_pre_order: p.isPreOrder || false,
+  pre_order_release_date: p.preOrderReleaseDate,
 });
 
 export const rowToProduct = (row: any): Product => ({
@@ -86,6 +89,9 @@ export const rowToProduct = (row: any): Product => ({
   unit: row.unit,
   sku: row.sku || undefined,
   soldCount: row.sold_count,
+  bundledProductIds: row.bundled_product_ids || undefined,
+  isPreOrder: row.is_pre_order || false,
+  preOrderReleaseDate: row.pre_order_release_date || null,
 });
 
 export const orderToRow = (o: Order) => ({

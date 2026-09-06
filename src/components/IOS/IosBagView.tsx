@@ -444,7 +444,12 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
                   <div className="space-y-1">
                     {order.items.map((it, idx) => (
                       <div key={idx} className="flex justify-between text-xs text-[#6B5B4F]">
-                        <span>{it.quantity}x {it.productName}</span>
+                        <span className="flex items-center gap-1">
+                          {it.quantity}x {it.productName}
+                          {it.isPreOrder && (
+                            <span className="shrink-0 text-[8px] font-black uppercase text-[#1B4E6B] bg-[#A8D8EA] rounded-full px-1 py-0.5">Pre-Order</span>
+                          )}
+                        </span>
                         <span className="font-bold text-[#3B2F27]">
                           {formatPHP(it.price * it.quantity)}
                         </span>
