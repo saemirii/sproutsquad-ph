@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Check, KeyRound, LogOut, Save, Sparkles, Upload, UserRound, X } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { CampusUniversity } from '../types';
+import { EnterBesKeyModal } from './EnterBesKeyModal';
 
 interface ProfileSheetProps {
   onClose: () => void;
@@ -15,14 +16,14 @@ const campuses: CampusUniversity[] = [
 export const ProfileSheet: React.FC<ProfileSheetProps> = ({ onClose, onOpenSubscription }) => {
   const {
     currentUser, updateCurrentUser, businesses, activeBusiness,
-    setActiveBusiness, accessibleBusinessIds, unlockBusiness, signOut,
+    setActiveBusiness, accessibleBusinessIds, signOut,
   } = useApp();
   const [name, setName] = useState(currentUser.name);
   const [school, setSchool] = useState<CampusUniversity>(currentUser.university);
   const [avatar, setAvatar] = useState(currentUser.avatar);
-  const [keyByBusiness, setKeyByBusiness] = useState<Record<string, string>>({});
-  const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
+  const [isBesKeyModalOpen, setIsBesKeyModalOpen] = useState(false);
+  const myBusinesses = businesses.filter((business) => accessibleBusinessIds.includes(business.id));
 
   const saveProfile = () => {
     updateCurrentUser({ name: name.trim() || currentUser.name, university: school, avatar: avatar || currentUser.avatar });
@@ -93,21 +94,31 @@ export const ProfileSheet: React.FC<ProfileSheetProps> = ({ onClose, onOpenSubsc
 
         <div className="border-t border-[#EDE4D8] pt-4 space-y-3">
           <div><p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#207559]">Business access</p><p className="mt-1 text-[11px] leading-5 text-[#7A6B5F]">Your own shops are open automatically. Use a BES key to join another shop as a manager.</p></div>
-          <div className="space-y-2">
-            {businesses.map((business) => {
-              const hasAccess = accessibleBusinessIds.includes(business.id);
-              const isCurrent = activeBusiness.id === business.id;
-              return <div key={business.id} className={`rounded-2xl border p-3 ${isCurrent ? 'border-[#9FD9C3] bg-[#F2FBF7]' : 'border-[#EDE4D8] bg-white'}`}>
-                <div className="flex items-center gap-2"><img src={business.logo} alt={business.name} className="w-8 h-8 rounded-xl object-cover" /><div className="min-w-0 flex-1"><p className="text-xs font-black text-[#3B2F27] truncate">{business.name}</p><p className="text-[10px] text-[#7A6B5F]">{hasAccess ? 'Management access' : 'BES key required'}</p></div>{hasAccess && <Check className="w-4 h-4 text-[#207559]" />}</div>
-                {!hasAccess && <div className="mt-2 flex gap-2"><input value={keyByBusiness[business.id] || ''} onChange={(event) => setKeyByBusiness((previous) => ({ ...previous, [business.id]: event.target.value }))} placeholder="Enter BES key" className="min-w-0 flex-1 rounded-xl border border-[#E5DACD] px-2.5 py-2 text-[11px] outline-none focus:ring-2 focus:ring-[#B8E6D5]" /><button onClick={() => { const unlocked = unlockBusiness(business.id, keyByBusiness[business.id] || ''); if (unlocked) { setActiveBusiness(business); setError(''); } else setError('That BES key is not valid.'); }} className="rounded-xl bg-[#FFD3BA] px-3 py-2 text-[11px] font-black text-[#7A341A]" title="Unlock business"><KeyRound className="w-3.5 h-3.5" /></button></div>}
-                {hasAccess && <div className="mt-2 flex items-center justify-between gap-2"><button onClick={() => setActiveBusiness(business)} className="text-[11px] font-black text-[#207559]">{isCurrent ? 'Currently selected' : 'Manage this business'}</button><span className="text-[10px] font-bold text-[#8C7A6D]">Key: {business.besKey || 'Not set'}</span></div>}
-              </div>;
-            })}
-          </div>
-          {error && <p className="text-[11px] text-[#991B1B]">{error}</p>}
+
+          {myBusinesses.length > 0 && (
+            <div className="space-y-2">
+              {myBusinesses.map((business) => {
+                const isCurrent = activeBusiness.id === business.id;
+                return <div key={business.id} className={`rounded-2xl border p-3 ${isCurrent ? 'border-[#9FD9C3] bg-[#F2FBF7]' : 'border-[#EDE4D8] bg-white'}`}>
+                  <div className="flex items-center gap-2"><img src={business.logo} alt={business.name} className="w-8 h-8 rounded-xl object-cover" /><div className="min-w-0 flex-1"><p className="text-xs font-black text-[#3B2F27] truncate">{business.name}</p><p className="text-[10px] text-[#7A6B5F]">Management access</p></div><Check className="w-4 h-4 text-[#207559]" /></div>
+                  <div className="mt-2 flex items-center justify-between gap-2"><button onClick={() => setActiveBusiness(business)} className="text-[11px] font-black text-[#207559]">{isCurrent ? 'Currently selected' : 'Manage this business'}</button>{business.besKey && <span className="text-[10px] font-bold text-[#8C7A6D]">Key: {business.besKey}</span>}</div>
+                </div>;
+              })}
+            </div>
+          )}
+
+          <button
+            onClick={() => setIsBesKeyModalOpen(true)}
+            className="btn-bouncy w-full flex items-center justify-center gap-2 rounded-xl border border-[#E5DACD] bg-white py-2.5 text-xs font-black text-[#3B2F27] hover:bg-[#FAF4EA] cursor-pointer"
+          >
+            <KeyRound className="w-3.5 h-3.5" />
+            Enter BES Key
+          </button>
         </div>
 
         <div className="flex items-center gap-2 rounded-xl bg-[#FFF0E8] border border-[#F8BA9E] px-3 py-2 text-[10px] leading-4 text-[#7A341A]"><UserRound className="w-4 h-4 shrink-0" />BES access is shared by the business, so teammates can use the same key from their own accounts.</div>
+
+        {isBesKeyModalOpen && <EnterBesKeyModal onClose={() => setIsBesKeyModalOpen(false)} />}
 
         <button
           onClick={() => { onClose(); signOut(); }}

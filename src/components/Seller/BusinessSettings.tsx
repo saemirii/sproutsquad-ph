@@ -13,11 +13,11 @@ import {
 import { useApp } from '../../context/AppContext';
 import { CampusUniversity, ProductCategory } from '../../types';
 import { triggerConfetti } from '../../utils/confetti';
-import { makeDefaultShopDraft } from '../../utils/shop';
 import { SproutPlusGate } from '../SproutPlusGate';
 import { CouponManager } from './CouponManager';
 import { BundleBuilder } from './BundleBuilder';
 import { InventoryTracker } from './InventoryTracker';
+import { CreateShopButton } from '../CreateShopButton';
 import {
   RefreshCw,
   CalendarClock,
@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 
 export const BusinessSettings: React.FC = () => {
-  const { activeBusiness, businesses, currentUser, createBusiness, updateBusinessProfile } = useApp();
+  const { activeBusiness, updateBusinessProfile } = useApp();
 
   const [name, setName] = useState(activeBusiness.name);
   const [tagline, setTagline] = useState(activeBusiness.tagline);
@@ -103,15 +103,6 @@ export const BusinessSettings: React.FC = () => {
     setTimeout(() => setIsSaved(false), 2000);
   };
 
-  const handleCreateNewShop = () => {
-    const draft = makeDefaultShopDraft(
-      currentUser.id,
-      businesses.length + 1,
-      currentUser.university
-    );
-    createBusiness(draft);
-  };
-
   return (
     <div className="space-y-6 max-w-3xl">
       <div className="flex items-center justify-between gap-3">
@@ -125,14 +116,10 @@ export const BusinessSettings: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleCreateNewShop}
-            className="inline-flex items-center gap-2 rounded-xl border border-[#B8E6D5] bg-[#F2FBF7] px-3 py-1.5 text-[11px] font-extrabold text-[#194E3B] transition-colors hover:bg-[#E5F7EF]"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Add Shop</span>
-          </button>
+          <CreateShopButton className="btn-bouncy inline-flex items-center gap-2 rounded-xl bg-[#194E3B] hover:bg-[#0E2B25] px-4 py-2.5 text-xs font-black text-white shadow-md cursor-pointer">
+            <Plus className="w-4 h-4" />
+            <span>Create New Shop</span>
+          </CreateShopButton>
 
           {isSaved && (
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#B8E6D5] text-[#194E3B] text-xs font-bold animate-in fade-in">

@@ -94,7 +94,7 @@ interface AppContextType {
   activeBusiness: Business;
   setActiveBusiness: (business: Business) => void;
   accessibleBusinessIds: string[];
-  unlockBusiness: (businessId: string, besKey: string) => boolean;
+  unlockBusinessByKey: (besKey: string) => Promise<{ success: boolean; businessId?: string; businessName?: string; message?: string }>;
   selectedBusinessForDetail: Business | null;
   setSelectedBusinessForDetail: (business: Business | null) => void;
   selectedCampusFilter: CampusUniversity | 'All Campuses';
@@ -443,17 +443,31 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
     .filter((business) => business.sellerId === currentUser.id || unlockedBusinessIds.includes(business.id))
     .map((business) => business.id);
 
-  const unlockBusiness = (businessId: string, besKey: string) => {
-    const business = businesses.find((candidate) => candidate.id === businessId);
-    if (!business || !business.besKey || business.besKey !== besKey.trim()) return false;
+  // Joins a business by BES key alone — the server resolves which business
+  // the key belongs to, so the client never needs to know/display a
+  // business id (or browse a list of every business) to use it. Replaces
+  // the older businessId+key check, which also depended on business.besKey
+  // being cached client-side — no longer safe now that bes_key isn't
+  // broadly fetched (see migration_11_bes_key_privacy.sql).
+  const unlockBusinessByKey = async (besKey: string): Promise<{ success: boolean; businessId?: string; businessName?: string; message?: string }> => {
+    const trimmed = besKey.trim();
+    if (!trimmed) return { success: false, message: 'Enter a BES key.' };
+
     if (supabase) {
-      void supabase.rpc('join_business_with_bes_key', {
-        target_business_id: businessId,
-        entered_bes_key: besKey.trim(),
-      });
+      const { data, error } = await supabase.rpc('join_business_by_bes_key_only', { entered_bes_key: trimmed });
+      if (error) return { success: false, message: error.message || 'Could not unlock that shop.' };
+      const row: any = Array.isArray(data) ? data[0] : data;
+      if (!row?.business_id) return { success: false, message: 'That BES key is not valid.' };
+      setUnlockedBusinessIds((previous) => (previous.includes(row.business_id) ? previous : [...previous, row.business_id]));
+      setBusinesses((previous) => previous.map((b) => (b.id === row.business_id ? { ...b, besKey: trimmed } : b)));
+      return { success: true, businessId: row.business_id, businessName: row.business_name };
     }
-    setUnlockedBusinessIds((previous) => previous.includes(businessId) ? previous : [...previous, businessId]);
-    return true;
+
+    // Offline/local-account fallback: search local demo businesses directly.
+    const match = businesses.find((candidate) => candidate.besKey === trimmed);
+    if (!match) return { success: false, message: 'That BES key is not valid.' };
+    setUnlockedBusinessIds((previous) => (previous.includes(match.id) ? previous : [...previous, match.id]));
+    return { success: true, businessId: match.id, businessName: match.name };
   };
 
   useEffect(() => {
@@ -576,7 +590,13 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
   // run into megabytes per row, which made the initial load painfully slow. We fetch
   // every other column first so the app can render almost immediately, then backfill
   // the images in the background without blocking or re-showing the loading screen.
-  const BUSINESS_LIGHT_COLUMNS = 'id, seller_id, name, handle, tagline, description, banner, university, campus_pickup_spots, category, gcash_number, maya_number, instagram_handle, tiktok_handle, rating, review_count, established_date, badges, bes_key';
+  // bes_key is deliberately excluded here — see migration_11_bes_key_privacy.sql.
+  // SELECT on that column is revoked for client roles entirely (an owner's
+  // own key is fetched separately below via the get_my_business_bes_key RPC),
+  // since this businesses query is shared, public marketplace data (RLS
+  // allows anyone to read every row) and previously leaked every shop's
+  // "secret" key to every signed-in user.
+  const BUSINESS_LIGHT_COLUMNS = 'id, seller_id, name, handle, tagline, description, banner, university, campus_pickup_spots, category, gcash_number, maya_number, instagram_handle, tiktok_handle, rating, review_count, established_date, badges';
   const PRODUCT_LIGHT_COLUMNS = 'id, business_id, business_name, university, name, description, price, cost_price, category, inventory_count, tags, is_available, unit, sku, sold_count, bundled_product_ids, is_pre_order, pre_order_release_date, drop_date';
 
   useEffect(() => {
@@ -595,7 +615,23 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
       if (cancelled) return;
 
       if (businessesRes.error) console.error('Failed to load businesses', businessesRes.error);
-      else setBusinesses((businessesRes.data || []).map(rowToBusiness));
+      else {
+        const loadedBusinesses = (businessesRes.data || []).map(rowToBusiness);
+        setBusinesses(loadedBusinesses);
+
+        // bes_key can no longer be bulk-fetched (see BUSINESS_LIGHT_COLUMNS
+        // above) — pull it in just for shops this user owns, one RPC call
+        // each, so they can still view/share their own key.
+        const ownedBusinessIds = loadedBusinesses
+          .filter((b) => b.sellerId === authUser.id)
+          .map((b) => b.id);
+        for (const ownedId of ownedBusinessIds) {
+          void supabase.rpc('get_my_business_bes_key', { target_business_id: ownedId }).then(({ data, error }) => {
+            if (cancelled || error || !data) return;
+            setBusinesses((previous) => previous.map((b) => (b.id === ownedId ? { ...b, besKey: data as string } : b)));
+          });
+        }
+      }
 
       if (productsRes.error) console.error('Failed to load products', productsRes.error);
       else setProducts((productsRes.data || []).map(rowToProduct));
@@ -1514,7 +1550,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
         activeBusiness,
         setActiveBusiness: (b) => setActiveBusinessId(b.id),
         accessibleBusinessIds,
-        unlockBusiness,
+        unlockBusinessByKey,
         selectedBusinessForDetail,
         setSelectedBusinessForDetail,
         selectedCampusFilter,
