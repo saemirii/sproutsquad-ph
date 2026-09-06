@@ -79,6 +79,8 @@ export interface Product {
   /** Sprout+ Pre-Order System: accept orders before the product actually ships. */
   isPreOrder?: boolean;
   preOrderReleaseDate?: string | null; // ISO date string
+  /** Sprout+ Product Drop Scheduler: hidden from the marketplace until this moment, then shows automatically. */
+  dropDate?: string | null; // ISO datetime string
 }
 
 export type OrderStatus = 'Pending' | 'Preparing' | 'Ready for Pickup' | 'Completed' | 'Cancelled';

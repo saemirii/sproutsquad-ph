@@ -62,8 +62,11 @@ export const IosMarketplaceView: React.FC<IosMarketplaceViewProps> = ({
       const matchesCategory = selectedCategory === 'All' || p.category === selectedCategory;
       const matchesCampus = selectedCampusFilter === 'All Campuses' || p.university === selectedCampusFilter;
       const matchesBiz = !selectedBizFilter || p.businessId === selectedBizFilter;
+      // Product Drop Scheduler: hide anything scheduled for a future drop —
+      // it shows up automatically once that moment passes, no seller action needed.
+      const hasDropped = !p.dropDate || new Date(p.dropDate).getTime() <= Date.now();
 
-      return matchesSearch && matchesCategory && matchesCampus && matchesBiz;
+      return matchesSearch && matchesCategory && matchesCampus && matchesBiz && hasDropped;
     });
   }, [products, searchQuery, selectedCategory, selectedCampusFilter, selectedBizFilter]);
 

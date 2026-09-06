@@ -18,7 +18,7 @@ import { useApp } from '../../context/AppContext';
 import { Product, ProductCategory } from '../../types';
 import { formatPHP } from '../../utils/analytics';
 import { InfoTip } from '../InfoTip';
-import { CalendarClock, Lock } from 'lucide-react';
+import { CalendarClock, Lock, Rocket } from 'lucide-react';
 
 export const ProductManager: React.FC = () => {
   const {
@@ -46,6 +46,8 @@ export const ProductManager: React.FC = () => {
   const [tagsInput, setTagsInput] = useState('Bestseller, Fresh');
   const [isPreOrder, setIsPreOrder] = useState(false);
   const [preOrderReleaseDate, setPreOrderReleaseDate] = useState('');
+  const [isScheduled, setIsScheduled] = useState(false);
+  const [dropDate, setDropDate] = useState('');
 
   // Built-in Pricing & Margin Calculator State
   const [calcMaterialsCost, setCalcMaterialsCost] = useState<number>(45);
@@ -93,6 +95,8 @@ export const ProductManager: React.FC = () => {
     setTagsInput('StudentMade, CampusFresh');
     setIsPreOrder(false);
     setPreOrderReleaseDate('');
+    setIsScheduled(false);
+    setDropDate('');
     setIsAddModalOpen(true);
   };
 
@@ -109,6 +113,8 @@ export const ProductManager: React.FC = () => {
     setTagsInput(p.tags.join(', '));
     setIsPreOrder(p.isPreOrder || false);
     setPreOrderReleaseDate(p.preOrderReleaseDate || '');
+    setIsScheduled(Boolean(p.dropDate));
+    setDropDate(p.dropDate ? p.dropDate.slice(0, 16) : '');
     setIsAddModalOpen(true);
   };
 
@@ -118,6 +124,14 @@ export const ProductManager: React.FC = () => {
       return;
     }
     setIsPreOrder((prev) => !prev);
+  };
+
+  const handleToggleSchedule = () => {
+    if (!hasSproutPlus) {
+      openSubscriptionPage();
+      return;
+    }
+    setIsScheduled((prev) => !prev);
   };
 
   const handleSaveProduct = (e: React.FormEvent) => {
@@ -130,6 +144,9 @@ export const ProductManager: React.FC = () => {
     const preOrderFields = hasSproutPlus
       ? { isPreOrder, preOrderReleaseDate: isPreOrder ? (preOrderReleaseDate || null) : null }
       : { isPreOrder: false, preOrderReleaseDate: null };
+    const scheduleFields = hasSproutPlus
+      ? { dropDate: isScheduled && dropDate ? new Date(dropDate).toISOString() : null }
+      : { dropDate: null };
 
     if (editingProduct) {
       updateProduct({
@@ -145,6 +162,7 @@ export const ProductManager: React.FC = () => {
         tags,
         university: activeBusiness.university,
         ...preOrderFields,
+        ...scheduleFields,
       });
     } else {
       addProduct({
@@ -160,6 +178,7 @@ export const ProductManager: React.FC = () => {
         isAvailable: true,
         university: activeBusiness.university,
         ...preOrderFields,
+        ...scheduleFields,
       });
     }
 
@@ -242,16 +261,24 @@ export const ProductManager: React.FC = () => {
                           className="w-10 h-10 rounded-xl object-cover border border-[#E5DACD]"
                         />
                         <div className="min-w-0">
-                          <p className="font-bold text-[#3B2F27] truncate flex items-center gap-1.5">
-                            {p.name}
+                          <p className="min-w-0 flex items-center gap-1.5">
+                            <span className="font-bold text-[#3B2F27] truncate">{p.name}</span>
                             {p.bundledProductIds && p.bundledProductIds.length > 0 && (
-                              <span className="text-[9px] font-black uppercase text-[#194E3B] bg-[#B8E6D5] rounded-full px-1.5 py-0.5">Bundle</span>
+                              <span className="shrink-0 text-[9px] font-black uppercase text-[#194E3B] bg-[#B8E6D5] rounded-full px-1.5 py-0.5">Bundle</span>
                             )}
                             {p.isPreOrder && (
-                              <span className="text-[9px] font-black uppercase text-[#1B4E6B] bg-[#A8D8EA] rounded-full px-1.5 py-0.5">Pre-Order</span>
+                              <span className="shrink-0 text-[9px] font-black uppercase text-[#1B4E6B] bg-[#A8D8EA] rounded-full px-1.5 py-0.5">Pre-Order</span>
+                            )}
+                            {p.dropDate && new Date(p.dropDate).getTime() > Date.now() && (
+                              <span className="shrink-0 text-[9px] font-black uppercase text-[#7A341A] bg-[#FFD3BA] rounded-full px-1.5 py-0.5">Scheduled</span>
                             )}
                           </p>
-                          <p className="text-[10px] text-[#8C7A6D]">{p.unit}</p>
+                          <p className="text-[10px] text-[#8C7A6D]">
+                            {p.unit}
+                            {p.dropDate && new Date(p.dropDate).getTime() > Date.now() && (
+                              <> · Drops {new Date(p.dropDate).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</>
+                            )}
+                          </p>
                         </div>
                       </div>
                     </td>
@@ -573,6 +600,44 @@ export const ProductManager: React.FC = () => {
                     />
                     <p className="mt-1 text-[10px] text-[#8C7A6D]">
                       Customers can order now — this shows them when to expect it.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Product Drop Scheduler (Sprout+) */}
+              <div className="rounded-2xl border border-[#E5DACD] bg-[#FAF7F2] p-3.5 space-y-2.5">
+                <button
+                  type="button"
+                  onClick={handleToggleSchedule}
+                  className="w-full flex items-center gap-2.5 text-left"
+                >
+                  <span className={`shrink-0 w-9 h-5 rounded-full transition-colors relative ${isScheduled ? 'bg-[#207559]' : 'bg-[#E5DACD]'}`}>
+                    <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${isScheduled ? 'left-[18px]' : 'left-0.5'}`} />
+                  </span>
+                  <span className="flex items-center gap-1.5 text-xs font-bold text-[#3B2F27] flex-1">
+                    <Rocket className="w-3.5 h-3.5 text-[#194E3B]" />
+                    Schedule a Drop
+                  </span>
+                  {!hasSproutPlus && (
+                    <span className="flex items-center gap-1 text-[9px] font-black uppercase text-[#7A341A] bg-[#FFD3BA] rounded-full px-2 py-0.5">
+                      <Lock className="w-2.5 h-2.5" /> Sprout+
+                    </span>
+                  )}
+                </button>
+                {isScheduled && hasSproutPlus && (
+                  <div>
+                    <label className="block text-[10px] font-semibold text-[#6E5D52] mb-0.5">
+                      Goes live on
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={dropDate}
+                      onChange={(e) => setDropDate(e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-[#E0D5C5] rounded-lg text-xs text-[#3B2F27] focus:outline-none focus:ring-2 focus:ring-[#B8E6D5]"
+                    />
+                    <p className="mt-1 text-[10px] text-[#8C7A6D]">
+                      Hidden from the marketplace until this moment, then shows up automatically.
                     </p>
                   </div>
                 )}

@@ -70,6 +70,7 @@ export const productToRow = (p: Product) => ({
   bundled_product_ids: p.bundledProductIds,
   is_pre_order: p.isPreOrder || false,
   pre_order_release_date: p.preOrderReleaseDate,
+  drop_date: p.dropDate,
 });
 
 export const rowToProduct = (row: any): Product => ({
@@ -92,6 +93,7 @@ export const rowToProduct = (row: any): Product => ({
   bundledProductIds: row.bundled_product_ids || undefined,
   isPreOrder: row.is_pre_order || false,
   preOrderReleaseDate: row.pre_order_release_date || null,
+  dropDate: row.drop_date || null,
 });
 
 export const orderToRow = (o: Order) => ({
