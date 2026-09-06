@@ -17,6 +17,7 @@ import { makeDefaultShopDraft } from '../../utils/shop';
 import { SproutPlusGate } from '../SproutPlusGate';
 import { CouponManager } from './CouponManager';
 import { BundleBuilder } from './BundleBuilder';
+import { InventoryTracker } from './InventoryTracker';
 import {
   RefreshCw,
   CalendarClock,
@@ -366,22 +367,27 @@ export const BusinessSettings: React.FC = () => {
           </p>
         </div>
 
-        <div className="space-y-2.5">
-          {[
-            { icon: <RefreshCw className="w-4 h-4" />, title: 'Real-Time Inventory Tracking' },
-            { icon: <Rocket className="w-4 h-4" />, title: 'Product Drop Scheduler' },
-          ].map((tool) => (
-            <div key={tool.title} className="flex items-center gap-2.5 rounded-xl border border-[#EDE4D8] bg-[#FAF7F2] p-3">
-              <span className="shrink-0 w-8 h-8 rounded-lg bg-[#B8E6D5] text-[#194E3B] flex items-center justify-center">
-                {tool.icon}
-              </span>
-              <p className="text-xs font-bold text-[#3B2F27] flex-1">{tool.title}</p>
-              <span className="text-[10px] font-black uppercase tracking-wide text-[#8C7A6D] bg-white border border-[#E5DACD] rounded-full px-2 py-0.5">
-                Coming soon
-              </span>
-            </div>
-          ))}
+        <div className="rounded-xl border border-[#EDE4D8] bg-[#FAF7F2] p-3 flex items-center gap-2.5">
+          <span className="shrink-0 w-8 h-8 rounded-lg bg-[#B8E6D5] text-[#194E3B] flex items-center justify-center">
+            <Rocket className="w-4 h-4" />
+          </span>
+          <p className="text-[11px] text-[#6B5B4F] flex-1">
+            <span className="font-bold text-[#3B2F27]">Product Drop Scheduler</span> moved to the Products tab — look for "Schedule a Drop" when adding/editing a product.
+          </p>
         </div>
+
+        <div>
+          <div className="flex items-center gap-2 mb-2.5">
+            <span className="shrink-0 w-8 h-8 rounded-lg bg-[#B8E6D5] text-[#194E3B] flex items-center justify-center">
+              <RefreshCw className="w-4 h-4" />
+            </span>
+            <p className="text-xs font-bold text-[#3B2F27]">Real-Time Inventory Tracking</p>
+          </div>
+          <SproutPlusGate featureName="Inventory tracking">
+            <InventoryTracker />
+          </SproutPlusGate>
+        </div>
+
       </div>
     </div>
   );
