@@ -1,41 +1,38 @@
 import React, { useState } from 'react';
-import {
-  BookOpen,
-  Award,
-  CheckCircle2,
-  Clock,
-  Sparkles,
-  ArrowRight,
-  RotateCcw,
-  Zap,
-  Calculator,
-  Package,
-  Megaphone,
-  ShieldCheck,
-  ChevronRight
-} from 'lucide-react';
+import { CheckCircle2, Clock, RotateCcw } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Lesson } from '../../types';
-import { triggerConfetti } from '../../utils/confetti';
 
-export const SproutAcademy: React.FC = () => {
-  const { lessons, completedLessonIds, completeLesson } = useApp();
+interface AcademyLearnProps {
+  onOpenSimulations: () => void;
+}
+
+const getMascotIcon = (mascot: string) => {
+  switch (mascot) {
+    case 'owl': return '🦉';
+    case 'bunny': return '🐰';
+    case 'fox': return '🦊';
+    default: return '🌱';
+  }
+};
+
+export const AcademyLearn: React.FC<AcademyLearnProps> = ({ onOpenSimulations }) => {
+  const { lessons, completedLessonIds, completeLessonWithQuiz } = useApp();
   const [selectedLessonId, setSelectedLessonId] = useState<string>(lessons[0]?.id || 'lesson-1');
-  const [activeQuizQuestionIndex, setActiveQuizQuestionIndex] = useState<number>(0);
   const [selectedAnswerIndex, setSelectedAnswerIndex] = useState<number | null>(null);
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState<boolean>(false);
+  const [usedRetry, setUsedRetry] = useState<boolean>(false);
   const [showRewardBanner, setShowRewardBanner] = useState<boolean>(false);
 
   const selectedLesson = lessons.find((l) => l.id === selectedLessonId) || lessons[0];
   const isLessonCompleted = completedLessonIds.includes(selectedLesson.id);
-
-  const currentQuestion = selectedLesson?.quiz?.[activeQuizQuestionIndex] || selectedLesson?.quiz?.[0];
+  const currentQuestion = selectedLesson?.quiz?.[0];
 
   const handleSelectLesson = (lesson: Lesson) => {
     setSelectedLessonId(lesson.id);
-    setActiveQuizQuestionIndex(0);
     setSelectedAnswerIndex(null);
     setIsAnswerSubmitted(false);
+    setUsedRetry(false);
   };
 
   const handleSelectAnswer = (idx: number) => {
@@ -44,13 +41,12 @@ export const SproutAcademy: React.FC = () => {
   };
 
   const handleCheckAnswer = () => {
-    if (selectedAnswerIndex === null) return;
+    if (selectedAnswerIndex === null || !currentQuestion) return;
     setIsAnswerSubmitted(true);
 
     const isCorrect = selectedAnswerIndex === currentQuestion.correctIndex;
     if (isCorrect) {
-      completeLesson(selectedLesson.id);
-      triggerConfetti();
+      void completeLessonWithQuiz(selectedLesson.id, !usedRetry);
       setShowRewardBanner(true);
       setTimeout(() => setShowRewardBanner(false), 3500);
     }
@@ -59,19 +55,7 @@ export const SproutAcademy: React.FC = () => {
   const handleResetQuiz = () => {
     setSelectedAnswerIndex(null);
     setIsAnswerSubmitted(false);
-  };
-
-  const getMascotIcon = (mascot: string) => {
-    switch (mascot) {
-      case 'owl':
-        return '🦉';
-      case 'bunny':
-        return '🐰';
-      case 'fox':
-        return '🦊';
-      default:
-        return '🌱';
-    }
+    setUsedRetry(true);
   };
 
   return (
@@ -98,21 +82,19 @@ export const SproutAcademy: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3 bg-[#FFF9E6] px-4 py-2.5 rounded-2xl border border-[#EDE4D8] shadow-xs">
-          <Award className="w-5 h-5 text-[#7A341A]" />
+          <span className="text-lg">🏆</span>
           <div className="text-xs">
             <span className="font-extrabold text-[#3B2F27]">
               {completedLessonIds.length} of {lessons.length} Modules Completed
             </span>
-            <p className="text-[10px] text-[#194E3B] font-bold">
-              +{completedLessonIds.length * 2} pts added to Health Score
-            </p>
+            <p className="text-[10px] text-[#194E3B] font-bold">Every lesson grows your garden 🌱</p>
           </div>
         </div>
       </div>
 
       {/* Main Grid Layout: Lesson Index (4 cols) + Reader & Quiz (8 cols) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
+
         {/* Left Column: Lesson Directory */}
         <div className="lg:col-span-4 space-y-3">
           <h3 className="text-xs font-bold uppercase tracking-wider text-[#8A796D] px-1">
@@ -163,19 +145,28 @@ export const SproutAcademy: React.FC = () => {
 
                   <div className="mt-2.5 flex items-center justify-between text-[11px] text-[#7A6B5F] pt-2 border-t border-[#F5EFEB]">
                     <span className="truncate">{lesson.category}</span>
-                    <span className="font-semibold text-[#207559] text-[10px]">
-                      {lesson.badgeReward.name}
-                    </span>
+                    <span className="font-semibold text-[#207559] text-[10px]">+50 XP</span>
                   </div>
                 </div>
               );
             })}
           </div>
+
+          <button
+            onClick={onOpenSimulations}
+            className="btn-bouncy w-full flex items-center justify-between gap-2 p-4 rounded-2xl bg-[#FFD3BA]/40 border border-[#F8BA9E] cursor-pointer"
+          >
+            <div className="text-left">
+              <p className="text-xs font-black text-[#7A341A]">💼 Apply what you've learned</p>
+              <p className="text-[10px] text-[#8C5A3E]">Try a business simulation</p>
+            </div>
+            <span className="text-lg">→</span>
+          </button>
         </div>
 
         {/* Right Column: Active Lesson Content & Interactive Quiz */}
         <div className="lg:col-span-8 bg-white rounded-3xl border border-[#EDE4D8] p-6 sm:p-8 shadow-xs space-y-6">
-          
+
           {/* Header */}
           <div className="space-y-2 pb-4 border-b border-[#F0E9DF]">
             <div className="flex items-center justify-between flex-wrap gap-2">
@@ -201,16 +192,9 @@ export const SproutAcademy: React.FC = () => {
           {/* Lesson Sections */}
           <div className="space-y-4">
             {selectedLesson.sections.map((sec, sIdx) => (
-              <div
-                key={sIdx}
-                className="p-4 bg-[#FAF7F2] rounded-2xl border border-[#EDE4D8] space-y-2"
-              >
-                <h3 className="font-bold text-xs sm:text-sm text-[#3B2F27]">
-                  {sec.heading}
-                </h3>
-                <p className="text-xs sm:text-sm text-[#54453C] leading-relaxed whitespace-pre-line">
-                  {sec.body}
-                </p>
+              <div key={sIdx} className="p-4 bg-[#FAF7F2] rounded-2xl border border-[#EDE4D8] space-y-2">
+                <h3 className="font-bold text-xs sm:text-sm text-[#3B2F27]">{sec.heading}</h3>
+                <p className="text-xs sm:text-sm text-[#54453C] leading-relaxed whitespace-pre-line">{sec.body}</p>
 
                 {sec.practicalFormula && (
                   <div className="mt-3 p-3 bg-white rounded-xl border border-[#EADBCE] space-y-1">
@@ -220,9 +204,7 @@ export const SproutAcademy: React.FC = () => {
                     <p className="text-xs font-mono font-bold text-[#3B2F27] bg-[#FAF7F2] p-1.5 rounded-lg border border-[#E5DACD]">
                       {sec.practicalFormula.formula}
                     </p>
-                    <p className="text-[11px] text-[#6E5D52] italic">
-                      Example: {sec.practicalFormula.example}
-                    </p>
+                    <p className="text-[11px] text-[#6E5D52] italic">Example: {sec.practicalFormula.example}</p>
                   </div>
                 )}
 
@@ -243,13 +225,10 @@ export const SproutAcademy: React.FC = () => {
                 <div className="absolute inset-0 bg-[#B8E6D5]/95 backdrop-blur-xs rounded-3xl flex flex-col items-center justify-center p-6 text-center z-10 animate-in zoom-in-95 duration-200">
                   <span className="text-4xl animate-bounce">🎉</span>
                   <h3 className="font-black text-lg text-[#194E3B] font-['Nunito',sans-serif] mt-2">
-                    Correct! Badge Unlocked!
+                    Correct!
                   </h3>
-                  <p className="text-xs text-[#194E3B] font-bold mt-1">
-                    You earned: "{selectedLesson.badgeReward.name}"
-                  </p>
                   <p className="text-[11px] text-[#2C6B56] mt-2">
-                    Your Business Health Score was boosted!
+                    Nice work — your garden just grew a little.
                   </p>
                 </div>
               )}
@@ -262,15 +241,12 @@ export const SproutAcademy: React.FC = () => {
                   </h3>
                 </div>
                 <span className="text-[10px] font-bold text-[#8C3A27] bg-[#FFD3BA]/50 px-2 py-0.5 rounded-md">
-                  Reward: {selectedLesson.badgeReward.name}
+                  +30 XP • +20 🌰
                 </span>
               </div>
 
-              <p className="text-xs sm:text-sm font-bold text-[#3B2F27]">
-                {currentQuestion.question}
-              </p>
+              <p className="text-xs sm:text-sm font-bold text-[#3B2F27]">{currentQuestion.question}</p>
 
-              {/* Options */}
               <div className="space-y-2">
                 {currentQuestion.options.map((option, idx) => {
                   const isSelected = selectedAnswerIndex === idx;
@@ -303,7 +279,6 @@ export const SproutAcademy: React.FC = () => {
                 })}
               </div>
 
-              {/* Explanation on submit */}
               {(isAnswerSubmitted || isLessonCompleted) && (
                 <div className="p-3.5 bg-[#FAF7F2] rounded-2xl border border-[#EDE4D8] text-xs text-[#54453C] space-y-1">
                   <span className="font-bold text-[#207559]">Peanut's Explanation:</span>
@@ -311,7 +286,6 @@ export const SproutAcademy: React.FC = () => {
                 </div>
               )}
 
-              {/* Action Buttons */}
               <div className="pt-2 flex items-center justify-between">
                 {isAnswerSubmitted && !isLessonCompleted && (
                   <button
@@ -335,7 +309,7 @@ export const SproutAcademy: React.FC = () => {
                 {isLessonCompleted && (
                   <div className="flex items-center gap-1.5 text-xs font-bold text-[#207559]">
                     <CheckCircle2 className="w-4 h-4" />
-                    <span>Module Completed & Badge Earned!</span>
+                    <span>Module Completed!</span>
                   </div>
                 )}
               </div>

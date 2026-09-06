@@ -21,7 +21,7 @@ import { ProductManager } from './ProductManager';
 import { OrderManager } from './OrderManager';
 import { ExpenseTracker } from './ExpenseTracker';
 import { DeliveryManager } from './DeliveryManager';
-import { SproutAcademy } from './SproutAcademy';
+import { AcademyRoot } from '../Academy/AcademyRoot';
 import { BusinessSettings } from './BusinessSettings';
 import { AiCoachModal } from './AiCoachModal';
 
@@ -137,7 +137,7 @@ export const SellerDashboard: React.FC = () => {
         {sellerTab === 'orders' && <OrderManager />}
         {sellerTab === 'delivery' && <DeliveryManager />}
         {sellerTab === 'expenses' && <ExpenseTracker />}
-        {sellerTab === 'academy' && <SproutAcademy />}
+        {sellerTab === 'academy' && <AcademyRoot />}
         {sellerTab === 'settings' && <BusinessSettings />}
       </div>
 

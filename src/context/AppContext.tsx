@@ -13,7 +13,17 @@ import {
   OrderStatus,
   Role,
   CampusUniversity,
-  DeliveryMethod
+  DeliveryMethod,
+  AcademyProfile,
+  Achievement,
+  GardenItem,
+  UserGardenItem,
+  Quest,
+  QuestProgress,
+  SquadChallenge,
+  SquadChallengeProgress,
+  RewardResult,
+  LearningActivityType,
 } from '../types';
 import {
   initialBusinesses,
@@ -26,6 +36,24 @@ import {
 import { calculateBusinessMetrics } from '../utils/analytics';
 import { safeSetItem } from '../utils/safeStorage';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { ACADEMY_LEVELS } from '../data/academyLevels';
+import { initialAchievements } from '../data/academyAchievements';
+import { initialGardenItems } from '../data/gardenItems';
+import { initialQuests } from '../data/academyQuests';
+import {
+  rowToAcademyProfile,
+  rowToUserGardenItem,
+  rowToQuestProgress,
+  rowToSquadChallenge,
+} from '../lib/academyMappers';
+import {
+  OfflineAcademyState,
+  createEmptyOfflineAcademyState,
+  awardLearningActivityOffline,
+  purchaseGardenItemOffline,
+  equipGardenItemOffline,
+  claimQuestRewardOffline,
+} from '../lib/offlineAcademyEngine';
 import type { Offerings, Package } from '@revenuecat/purchases-js';
 import {
   identifyRevenueCatUser,
@@ -82,6 +110,23 @@ interface AppContextType {
   completedLessonIds: string[];
   cart: CartItem[];
 
+  // Sprout Academy Gamification
+  academyProfile: AcademyProfile;
+  achievements: Achievement[];
+  unlockedAchievementIds: string[];
+  /** Counts of learning_activities by activity_type, for locked-achievement progress display. */
+  activityCounts: Record<string, number>;
+  gardenCatalog: GardenItem[];
+  ownedGardenItems: UserGardenItem[];
+  quests: Quest[];
+  questProgress: Record<string, QuestProgress>;
+  activeSquadChallenge: SquadChallenge | null;
+  squadChallengeProgress: SquadChallengeProgress | null;
+  lastReward: RewardResult | null;
+  clearLastReward: () => void;
+  pendingLevelUp: { level: number; title: string; icon: string; seedBonus: number } | null;
+  clearPendingLevelUp: () => void;
+
   // Computed
   activeBusinessMetrics: BusinessMetrics;
   sellerOrders: Order[];
@@ -104,8 +149,18 @@ interface AppContextType {
   deleteCoupon: (couponId: string) => void;
   validateCoupon: (code: string, businessId: string, subtotal: number) => { coupon: Coupon; discount: number } | { error: string };
   updateBusinessProfile: (updated: Partial<Business>) => void;
-  completeLesson: (lessonId: string) => void;
   createBusiness: (newBiz: Omit<Business, 'id' | 'sellerId' | 'rating' | 'reviewCount' | 'establishedDate' | 'badges'>) => void;
+
+  // Sprout Academy Gamification Actions
+  awardLearningActivity: (activityType: LearningActivityType, refId: string, xp: number, seeds: number) => Promise<RewardResult>;
+  completeLessonWithQuiz: (lessonId: string, isFirstAttempt: boolean) => Promise<RewardResult>;
+  completeSimulation: (scenarioId: string, xp: number, seeds: number) => Promise<RewardResult>;
+  purchaseGardenItem: (itemId: string) => Promise<{ success: boolean; message?: string }>;
+  equipGardenItem: (itemId: string, equip: boolean) => Promise<void>;
+  claimQuest: (questId: string, periodKey: string) => Promise<RewardResult>;
+  refreshSquadChallenge: () => Promise<void>;
+  claimSquadChallengeReward: () => Promise<RewardResult>;
+  setLeaderboardOptIn: (optIn: boolean) => Promise<void>;
 
   // Cart & Checkout Actions
   addToCart: (product: Product, quantity?: number) => void;
@@ -275,10 +330,65 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
 
   const [lessons] = useState<Lesson[]>(initialLessons);
 
-  const [completedLessonIds, setCompletedLessonIds] = useState<string[]>(() => {
-    const saved = localStorage.getItem('sproutsquad_completed_lessons');
-    return saved ? JSON.parse(saved) : ['lesson-1'];
+  // Sprout Academy Gamification state. Catalogs (achievements/garden items/
+  // quests) are static content mirrored from the DB seed data — same
+  // pattern as `lessons` above, which has never round-tripped through
+  // Supabase either. Only per-user progress (profile, unlocks, ownership,
+  // quest progress, completed lesson ids) is actually fetched/persisted.
+  const [achievements] = useState<Achievement[]>(initialAchievements);
+  const [gardenCatalog] = useState<GardenItem[]>(initialGardenItems);
+  const [quests] = useState<Quest[]>(initialQuests);
+
+  const [offlineAcademy, setOfflineAcademy] = useState<OfflineAcademyState>(() => {
+    if (isSupabaseConfigured) return createEmptyOfflineAcademyState();
+    const saved = localStorage.getItem('sproutsquad_academy_offline');
+    return saved ? JSON.parse(saved) : createEmptyOfflineAcademyState();
   });
+  // completeLessonWithQuiz/completeSimulation fire several sequential
+  // awardLearningActivity calls before React re-renders — each would
+  // otherwise read the same stale `offlineAcademy` closure and clobber the
+  // previous call's update when it sets state. This ref is updated
+  // synchronously alongside every setOfflineAcademy call so each subsequent
+  // call in the same sequence reads the latest value instead.
+  const offlineAcademyRef = useRef(offlineAcademy);
+  const updateOfflineAcademy = (next: OfflineAcademyState) => {
+    offlineAcademyRef.current = next;
+    setOfflineAcademy(next);
+  };
+
+  // Online-mode copies (populated by the fetch effect / RPC calls below).
+  // Ignored entirely in offline mode — `offlineAcademy` is the source of
+  // truth there instead. Exposed to the rest of the app via the derived
+  // consts further down (academyProfile, unlockedAchievementIds, etc.).
+  const [onlineAcademyProfile, setOnlineAcademyProfile] = useState<AcademyProfile>({
+    xp: 0, seeds: 0, streakCount: 0, longestStreak: 0, lastActivityDate: null, leaderboardOptIn: true,
+  });
+  const [onlineUnlockedAchievementIds, setOnlineUnlockedAchievementIds] = useState<string[]>([]);
+  const [onlineOwnedGardenItems, setOnlineOwnedGardenItems] = useState<UserGardenItem[]>([]);
+  const [onlineQuestProgressMap, setOnlineQuestProgressMap] = useState<Record<string, QuestProgress>>({});
+  const [onlineCompletedLessonIds, setOnlineCompletedLessonIds] = useState<string[]>([]);
+  const [onlineActivityCounts, setOnlineActivityCounts] = useState<Record<string, number>>({});
+  const [activeSquadChallenge, setActiveSquadChallenge] = useState<SquadChallenge | null>(null);
+  const [squadChallengeProgress, setSquadChallengeProgress] = useState<SquadChallengeProgress | null>(null);
+  const [lastReward, setLastReward] = useState<RewardResult | null>(null);
+  const [pendingLevelUp, setPendingLevelUp] = useState<{ level: number; title: string; icon: string; seedBonus: number } | null>(null);
+
+  const academyProfile = isSupabaseConfigured ? onlineAcademyProfile : offlineAcademy.profile;
+  const unlockedAchievementIds = isSupabaseConfigured ? onlineUnlockedAchievementIds : offlineAcademy.unlockedAchievementIds;
+  const ownedGardenItems = isSupabaseConfigured ? onlineOwnedGardenItems : offlineAcademy.ownedGardenItems;
+  const questProgress = isSupabaseConfigured ? onlineQuestProgressMap : offlineAcademy.questProgress;
+  const completedLessonIds = isSupabaseConfigured
+    ? onlineCompletedLessonIds
+    : Object.keys(offlineAcademy.claimedActivities)
+        .filter((key) => key.startsWith('lesson_complete:'))
+        .map((key) => key.slice('lesson_complete:'.length));
+  const activityCounts = isSupabaseConfigured
+    ? onlineActivityCounts
+    : Object.keys(offlineAcademy.claimedActivities).reduce<Record<string, number>>((acc, key) => {
+        const type = key.split(':')[0];
+        acc[type] = (acc[type] || 0) + 1;
+        return acc;
+      }, {});
 
   const [currentUser, setCurrentUser] = useState<User>(() => ({
     ...initialUsers[0],
@@ -532,6 +642,76 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
     return () => { cancelled = true; };
   }, [authUser?.id]);
 
+  // Load per-user Sprout Academy gamification progress. Catalogs
+  // (achievements/garden items/quests) are static (see above) — only
+  // progress specific to this student is fetched here.
+  const syncAcademyProgress = useCallback(async () => {
+    if (!supabase || !authUser) return;
+    const [achRes, questRes] = await Promise.all([
+      supabase.from('user_achievements').select('achievement_id').eq('user_id', authUser.id),
+      supabase.from('user_quest_progress').select('*').eq('user_id', authUser.id),
+    ]);
+    if (!achRes.error && achRes.data) {
+      setOnlineUnlockedAchievementIds(achRes.data.map((row: any) => row.achievement_id));
+    }
+    if (!questRes.error && questRes.data) {
+      const map: Record<string, QuestProgress> = {};
+      for (const row of questRes.data) {
+        const qp = rowToQuestProgress(row);
+        map[`${qp.questId}:${qp.periodKey}`] = qp;
+      }
+      setOnlineQuestProgressMap(map);
+    }
+  }, [authUser?.id]);
+
+  useEffect(() => {
+    if (!supabase || !authUser) return;
+    let cancelled = false;
+
+    Promise.all([
+      supabase.from('academy_profiles').select('*').eq('user_id', authUser.id).maybeSingle(),
+      supabase.from('user_achievements').select('achievement_id').eq('user_id', authUser.id),
+      supabase.from('user_garden_items').select('*').eq('user_id', authUser.id),
+      supabase.from('user_quest_progress').select('*').eq('user_id', authUser.id),
+      supabase.from('learning_activities').select('activity_type, ref_id').eq('user_id', authUser.id),
+    ]).then(([profileRes, achRes, gardenRes, questRes, activityRes]) => {
+      if (cancelled) return;
+
+      if (profileRes.error) console.error('Failed to load academy profile', profileRes.error);
+      else if (profileRes.data) setOnlineAcademyProfile(rowToAcademyProfile(profileRes.data));
+
+      if (achRes.error) console.error('Failed to load achievements', achRes.error);
+      else if (achRes.data) setOnlineUnlockedAchievementIds(achRes.data.map((row: any) => row.achievement_id));
+
+      if (gardenRes.error) console.error('Failed to load garden items', gardenRes.error);
+      else if (gardenRes.data) setOnlineOwnedGardenItems(gardenRes.data.map(rowToUserGardenItem));
+
+      if (questRes.error) console.error('Failed to load quest progress', questRes.error);
+      else if (questRes.data) {
+        const map: Record<string, QuestProgress> = {};
+        for (const row of questRes.data) {
+          const qp = rowToQuestProgress(row);
+          map[`${qp.questId}:${qp.periodKey}`] = qp;
+        }
+        setOnlineQuestProgressMap(map);
+      }
+
+      if (activityRes.error) console.error('Failed to load learning activities', activityRes.error);
+      else if (activityRes.data) {
+        setOnlineCompletedLessonIds(
+          activityRes.data.filter((row: any) => row.activity_type === 'lesson_complete').map((row: any) => row.ref_id)
+        );
+        const counts: Record<string, number> = {};
+        for (const row of activityRes.data) {
+          counts[row.activity_type] = (counts[row.activity_type] || 0) + 1;
+        }
+        setOnlineActivityCounts(counts);
+      }
+    });
+
+    return () => { cancelled = true; };
+  }, [authUser?.id]);
+
   // Sync to localStorage — only in offline/local-account mode. When Supabase is
   // configured, these arrays (which can carry large base64 image data URLs) are
   // already durably stored server-side, and mirroring them locally is both
@@ -562,8 +742,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
   }, [coupons]);
 
   useEffect(() => {
-    safeSetItem('sproutsquad_completed_lessons', JSON.stringify(completedLessonIds));
-  }, [completedLessonIds]);
+    if (isSupabaseConfigured) return;
+    safeSetItem('sproutsquad_academy_offline', JSON.stringify(offlineAcademy));
+  }, [offlineAcademy]);
 
   useEffect(() => {
     safeSetItem('sproutsquad_cart', JSON.stringify(cart));
@@ -817,13 +998,262 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
     triggerConfetti();
   };
 
-  // Lesson actions
-  const completeLesson = (lessonId: string) => {
-    if (!completedLessonIds.includes(lessonId)) {
-      setCompletedLessonIds((prev) => [...prev, lessonId]);
-      triggerConfetti();
+  // ===================================================================
+  // Sprout Academy Gamification Actions
+  // ===================================================================
+
+  const applyLevelUpIfAny = (result: RewardResult) => {
+    if (result.leveledUp && result.newLevel) {
+      const levelInfo = ACADEMY_LEVELS.find((l) => l.level === result.newLevel);
+      if (levelInfo) {
+        setPendingLevelUp({ level: levelInfo.level, title: levelInfo.title, icon: levelInfo.icon, seedBonus: result.levelSeedBonus || 0 });
+      }
     }
   };
+
+  // The single core reward primitive — every other gamification action is
+  // built on top of this. Online, it calls the award_learning_activity RPC
+  // (security definer, anti-double-claim via a unique ledger constraint);
+  // offline, the equivalent logic runs locally (see offlineAcademyEngine.ts).
+  // Deliberately does NOT set lastReward/pendingLevelUp itself — callers that
+  // may fire several of these for one user action (see completeLessonWithQuiz)
+  // combine the results into a single toast/celebration.
+  const awardLearningActivity = async (
+    activityType: LearningActivityType,
+    refId: string,
+    xp: number,
+    seeds: number
+  ): Promise<RewardResult> => {
+    if (supabase && authUser) {
+      const { data, error } = await supabase.rpc('award_learning_activity', {
+        p_activity_type: activityType,
+        p_ref_id: refId,
+        p_xp: xp,
+        p_seeds: seeds,
+      });
+      if (error) {
+        console.error('Failed to award learning activity', error);
+        return { xpAwarded: 0, seedsAwarded: 0 };
+      }
+      const row: any = Array.isArray(data) ? data[0] : data;
+      const result: RewardResult = {
+        xpAwarded: Number(row?.xp_awarded) || 0,
+        seedsAwarded: Number(row?.seeds_awarded) || 0,
+        newStreak: Number(row?.new_streak) || 0,
+        leveledUp: Boolean(row?.leveled_up),
+        newLevel: Number(row?.new_level) || undefined,
+        levelSeedBonus: Number(row?.level_seed_bonus) || 0,
+      };
+
+      if (result.xpAwarded > 0 || result.seedsAwarded > 0) {
+        setOnlineAcademyProfile((prev) => ({
+          ...prev,
+          xp: prev.xp + result.xpAwarded,
+          seeds: prev.seeds + result.seedsAwarded,
+          streakCount: result.newStreak ?? prev.streakCount,
+          longestStreak: Math.max(prev.longestStreak, result.newStreak ?? prev.longestStreak),
+          lastActivityDate: new Date().toISOString().slice(0, 10),
+        }));
+        if (activityType === 'lesson_complete') {
+          setOnlineCompletedLessonIds((prev) => (prev.includes(refId) ? prev : [...prev, refId]));
+        }
+        setOnlineActivityCounts((prev) => ({ ...prev, [activityType]: (prev[activityType] || 0) + 1 }));
+        void syncAcademyProgress();
+      }
+      return result;
+    }
+
+    const { state: nextState, result } = awardLearningActivityOffline(offlineAcademyRef.current, activityType, refId, xp, seeds, quests, achievements);
+    updateOfflineAcademy(nextState);
+    return result;
+  };
+
+  const LESSON_XP = 50, LESSON_SEEDS = 25;
+  const QUIZ_PASS_XP = 30, QUIZ_PASS_SEEDS = 20;
+  const QUIZ_PERFECT_XP = 20, QUIZ_PERFECT_SEEDS = 15;
+  const PATH_COMPLETE_XP = 100, PATH_COMPLETE_SEEDS = 50;
+
+  // One lesson quiz answer, correctly submitted, is simultaneously "complete
+  // the lesson", "pass the quiz", and (if first try) "perfect quiz score" —
+  // each tagged as its own ledger entry so it counts toward the right
+  // quests/achievements/leaderboards, then rolled up into one combined
+  // reward toast. If it was the last lesson in its category, also awards
+  // "complete a learning path".
+  const completeLessonWithQuiz = async (lessonId: string, isFirstAttempt: boolean): Promise<RewardResult> => {
+    const r1 = await awardLearningActivity('lesson_complete', lessonId, LESSON_XP, LESSON_SEEDS);
+    const r2 = await awardLearningActivity('quiz_pass', lessonId, QUIZ_PASS_XP, QUIZ_PASS_SEEDS);
+    const r3 = isFirstAttempt ? await awardLearningActivity('quiz_perfect', lessonId, QUIZ_PERFECT_XP, QUIZ_PERFECT_SEEDS) : null;
+
+    let pathResult: RewardResult | null = null;
+    const lesson = lessons.find((l) => l.id === lessonId);
+    if (lesson && r1.xpAwarded > 0) {
+      const categoryLessonIds = lessons.filter((l) => l.category === lesson.category).map((l) => l.id);
+      const nowCompleted = new Set([...completedLessonIds, lessonId]);
+      if (categoryLessonIds.every((id) => nowCompleted.has(id))) {
+        pathResult = await awardLearningActivity('path_complete', lesson.category, PATH_COMPLETE_XP, PATH_COMPLETE_SEEDS);
+      }
+    }
+
+    [r1, r2, r3, pathResult].forEach((r) => { if (r) applyLevelUpIfAny(r); });
+
+    const combined: RewardResult = {
+      xpAwarded: r1.xpAwarded + r2.xpAwarded + (r3?.xpAwarded || 0) + (pathResult?.xpAwarded || 0),
+      seedsAwarded: r1.seedsAwarded + r2.seedsAwarded + (r3?.seedsAwarded || 0) + (pathResult?.seedsAwarded || 0),
+    };
+    if (combined.xpAwarded > 0 || combined.seedsAwarded > 0) {
+      setLastReward(combined);
+      triggerConfetti();
+    }
+    return combined;
+  };
+
+  // "Business challenge" and "business simulation" are the same student
+  // action here — completing a BusinessSimulation scenario — tagged with
+  // two ledger entries so it satisfies both the simulation-focused and
+  // challenge-focused quests/achievements/leaderboards without paying out
+  // twice (the challenge_complete tag always carries zero reward).
+  const completeSimulation = async (scenarioId: string, xp: number, seeds: number): Promise<RewardResult> => {
+    const r1 = await awardLearningActivity('simulation_complete', scenarioId, xp, seeds);
+    const r2 = await awardLearningActivity('challenge_complete', scenarioId, 0, 0);
+    applyLevelUpIfAny(r1);
+    applyLevelUpIfAny(r2);
+    const combined: RewardResult = { xpAwarded: r1.xpAwarded + r2.xpAwarded, seedsAwarded: r1.seedsAwarded + r2.seedsAwarded };
+    if (combined.xpAwarded > 0 || combined.seedsAwarded > 0) {
+      setLastReward(combined);
+      triggerConfetti();
+    }
+    return combined;
+  };
+
+  const purchaseGardenItem = async (itemId: string): Promise<{ success: boolean; message?: string }> => {
+    const item = gardenCatalog.find((i) => i.id === itemId);
+    if (!item) return { success: false, message: 'Unknown item' };
+
+    if (supabase && authUser) {
+      const { error } = await supabase.rpc('purchase_garden_item', { p_item_id: itemId });
+      if (error) return { success: false, message: error.message || 'Purchase failed' };
+      setOnlineAcademyProfile((prev) => ({ ...prev, seeds: prev.seeds - item.priceSeeds }));
+      setOnlineOwnedGardenItems((prev) => [...prev, { itemId, equipped: false, purchasedAt: new Date().toISOString() }]);
+      return { success: true };
+    }
+
+    const { state: nextState, error } = purchaseGardenItemOffline(offlineAcademyRef.current, itemId, gardenCatalog);
+    if (error) return { success: false, message: error };
+    updateOfflineAcademy(nextState);
+    return { success: true };
+  };
+
+  const equipGardenItem = async (itemId: string, equip: boolean): Promise<void> => {
+    if (supabase && authUser) {
+      const { error } = await supabase.rpc('equip_garden_item', { p_item_id: itemId, p_equip: equip });
+      if (error) { console.error('Failed to equip garden item', error); return; }
+      setOnlineOwnedGardenItems((prev) => prev.map((o) => (o.itemId === itemId ? { ...o, equipped: equip } : o)));
+      return;
+    }
+    updateOfflineAcademy(equipGardenItemOffline(offlineAcademyRef.current, itemId, equip));
+  };
+
+  const claimQuest = async (questId: string, periodKey: string): Promise<RewardResult> => {
+    if (supabase && authUser) {
+      const { data, error } = await supabase.rpc('claim_quest_reward', { p_quest_id: questId, p_period_key: periodKey });
+      if (error) { console.error('Failed to claim quest', error); return { xpAwarded: 0, seedsAwarded: 0 }; }
+      const row: any = Array.isArray(data) ? data[0] : data;
+      const result: RewardResult = { xpAwarded: Number(row?.xp_awarded) || 0, seedsAwarded: Number(row?.seeds_awarded) || 0 };
+      if (result.xpAwarded > 0 || result.seedsAwarded > 0) {
+        setOnlineAcademyProfile((prev) => ({ ...prev, xp: prev.xp + result.xpAwarded, seeds: prev.seeds + result.seedsAwarded }));
+        setOnlineQuestProgressMap((prev) => {
+          const key = `${questId}:${periodKey}`;
+          const existing = prev[key];
+          return existing ? { ...prev, [key]: { ...existing, claimed: true } } : prev;
+        });
+        setLastReward(result);
+        triggerConfetti();
+      }
+      return result;
+    }
+
+    const { state: nextState, result } = claimQuestRewardOffline(offlineAcademyRef.current, questId, periodKey, quests);
+    updateOfflineAcademy(nextState);
+    if (result.xpAwarded > 0 || result.seedsAwarded > 0) {
+      setLastReward(result);
+      triggerConfetti();
+    }
+    return result;
+  };
+
+  const refreshSquadChallenge = async (): Promise<void> => {
+    if (!supabase || !authUser || !activeBusiness.id) {
+      setActiveSquadChallenge(null);
+      setSquadChallengeProgress(null);
+      return;
+    }
+    const { data: challengeData, error: challengeError } = await supabase.rpc('get_or_create_active_squad_challenge', {
+      p_business_id: activeBusiness.id,
+    });
+    if (challengeError || !challengeData) {
+      console.error('Failed to load squad challenge', challengeError);
+      return;
+    }
+    const challenge = rowToSquadChallenge(Array.isArray(challengeData) ? challengeData[0] : challengeData);
+    setActiveSquadChallenge(challenge);
+
+    const { data: progressData, error: progressError } = await supabase.rpc('get_squad_challenge_progress', {
+      p_challenge_id: challenge.id,
+    });
+    if (progressError) {
+      console.error('Failed to load squad challenge progress', progressError);
+      return;
+    }
+    const p: any = Array.isArray(progressData) ? progressData[0] : progressData;
+    const lessonsCount = Number(p?.lessons) || 0;
+    const quizzesCount = Number(p?.quizzes) || 0;
+    const challengesCount = Number(p?.challenges) || 0;
+    setSquadChallengeProgress({
+      lessons: lessonsCount,
+      quizzes: quizzesCount,
+      challenges: challengesCount,
+      myContribution: Number(p?.my_contribution) || 0,
+      completed: lessonsCount >= challenge.goalLessons && quizzesCount >= challenge.goalQuizzes && challengesCount >= challenge.goalChallenges,
+      claimedByMe: Boolean(p?.claimed_by_me),
+    });
+  };
+
+  const claimSquadChallengeReward = async (): Promise<RewardResult> => {
+    if (!supabase || !activeSquadChallenge) return { xpAwarded: 0, seedsAwarded: 0 };
+    const { data, error } = await supabase.rpc('claim_squad_challenge_reward', { p_challenge_id: activeSquadChallenge.id });
+    if (error) {
+      console.error('Failed to claim squad challenge reward', error);
+      return { xpAwarded: 0, seedsAwarded: 0 };
+    }
+    const row: any = Array.isArray(data) ? data[0] : data;
+    const result: RewardResult = { xpAwarded: Number(row?.xp_awarded) || 0, seedsAwarded: Number(row?.seeds_awarded) || 0 };
+    if (result.xpAwarded > 0 || result.seedsAwarded > 0) {
+      setOnlineAcademyProfile((prev) => ({ ...prev, xp: prev.xp + result.xpAwarded, seeds: prev.seeds + result.seedsAwarded }));
+      setSquadChallengeProgress((prev) => (prev ? { ...prev, claimedByMe: true } : prev));
+      setLastReward(result);
+      triggerConfetti();
+    }
+    return result;
+  };
+
+  const setLeaderboardOptIn = async (optIn: boolean): Promise<void> => {
+    if (supabase && authUser) {
+      const { error } = await supabase.rpc('set_leaderboard_opt_in', { p_opt_in: optIn });
+      if (error) { console.error('Failed to update leaderboard opt-in', error); return; }
+      setOnlineAcademyProfile((prev) => ({ ...prev, leaderboardOptIn: optIn }));
+      return;
+    }
+    updateOfflineAcademy({ ...offlineAcademyRef.current, profile: { ...offlineAcademyRef.current.profile, leaderboardOptIn: optIn } });
+  };
+
+  useEffect(() => {
+    if (!supabase || !authUser || !activeBusiness.id) {
+      setActiveSquadChallenge(null);
+      setSquadChallengeProgress(null);
+      return;
+    }
+    void refreshSquadChallenge();
+  }, [authUser?.id, activeBusiness.id]);
 
   // Cart actions
   const addToCart = (product: Product, quantity = 1) => {
@@ -1050,9 +1480,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
   };
 
   const resetToDefaultData = () => {
-    localStorage.removeItem('sproutsquad_completed_lessons');
     localStorage.removeItem('sproutsquad_cart');
-    setCompletedLessonIds(['lesson-1']);
     setCart([]);
 
     // Real Supabase-backed business/product/order/expense data belongs to real
@@ -1063,11 +1491,13 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
       localStorage.removeItem('sproutsquad_products');
       localStorage.removeItem('sproutsquad_orders');
       localStorage.removeItem('sproutsquad_expenses');
+      localStorage.removeItem('sproutsquad_academy_offline');
       setBusinesses(initialBusinesses.map((business) => ({ ...business, university: defaultSchool })));
       setProducts(initialProducts.map((product) => ({ ...product, university: defaultSchool })));
       setOrders(initialOrders.map((order) => ({ ...order, customerUniversity: defaultSchool })));
       setExpenses(initialExpenses);
       setActiveBusinessId('biz-1');
+      updateOfflineAcademy(createEmptyOfflineAcademyState());
     }
   };
 
@@ -1097,6 +1527,20 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
         lessons,
         completedLessonIds,
         cart,
+        academyProfile,
+        achievements,
+        unlockedAchievementIds,
+        activityCounts,
+        gardenCatalog,
+        ownedGardenItems,
+        quests,
+        questProgress,
+        activeSquadChallenge,
+        squadChallengeProgress,
+        lastReward,
+        clearLastReward: () => setLastReward(null),
+        pendingLevelUp,
+        clearPendingLevelUp: () => setPendingLevelUp(null),
         activeBusinessMetrics,
         sellerOrders,
         sellerProducts,
@@ -1116,8 +1560,16 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
         deleteCoupon,
         validateCoupon,
         updateBusinessProfile,
-        completeLesson,
         createBusiness,
+        awardLearningActivity,
+        completeLessonWithQuiz,
+        completeSimulation,
+        purchaseGardenItem,
+        equipGardenItem,
+        claimQuest,
+        refreshSquadChallenge,
+        claimSquadChallengeReward,
+        setLeaderboardOptIn,
         addToCart,
         updateCartQuantity,
         removeFromCart,

@@ -234,6 +234,171 @@ export interface Lesson {
 
 export type SellerTab = 'overview' | 'products' | 'orders' | 'delivery' | 'expenses' | 'academy' | 'settings';
 
+// ===================================================================
+// Sprout Academy Gamification
+// ===================================================================
+
+export type LearningActivityType =
+  | 'lesson_complete'
+  | 'quiz_pass'
+  | 'quiz_perfect'
+  | 'simulation_complete'
+  | 'challenge_complete'
+  | 'path_complete';
+
+export interface AcademyProfile {
+  xp: number;
+  seeds: number;
+  streakCount: number;
+  longestStreak: number;
+  lastActivityDate: string | null;
+  leaderboardOptIn: boolean;
+}
+
+export interface AcademyLevel {
+  level: number;
+  title: string;
+  icon: string;
+  xpRequired: number;
+  seedReward: number;
+}
+
+export type AchievementRequirementType =
+  | 'lessons_completed'
+  | 'streak_days'
+  | 'quizzes_passed'
+  | 'perfect_quizzes'
+  | 'challenges_completed'
+  | 'simulations_completed'
+  | 'path_completed';
+
+export interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  category: string;
+  requirementType: AchievementRequirementType;
+  requirementValue: number;
+  rewardXp: number;
+  rewardSeeds: number;
+  sortOrder: number;
+}
+
+export type GardenItemCategory = 'plants' | 'decorations' | 'structures' | 'profile' | 'seasonal';
+export type GardenItemRarity = 'common' | 'rare' | 'epic';
+
+export interface GardenItem {
+  id: string;
+  name: string;
+  category: GardenItemCategory;
+  emoji: string;
+  priceSeeds: number;
+  rarity: GardenItemRarity;
+  seasonalTag?: string;
+  sortOrder: number;
+}
+
+export interface UserGardenItem {
+  itemId: string;
+  equipped: boolean;
+  purchasedAt: string;
+}
+
+export type QuestType = 'daily' | 'weekly';
+
+export interface Quest {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  questType: QuestType;
+  activityType: LearningActivityType | 'streak_maintain';
+  requirementValue: number;
+  rewardXp: number;
+  rewardSeeds: number;
+  active: boolean;
+  sortOrder: number;
+}
+
+export interface QuestProgress {
+  questId: string;
+  periodKey: string;
+  progress: number;
+  completed: boolean;
+  claimed: boolean;
+}
+
+export interface SquadChallenge {
+  id: string;
+  businessId: string;
+  name: string;
+  description: string;
+  icon: string;
+  goalLessons: number;
+  goalQuizzes: number;
+  goalChallenges: number;
+  rewardXp: number;
+  rewardSeeds: number;
+  startsAt: string;
+  endsAt: string;
+}
+
+export interface SquadChallengeProgress {
+  lessons: number;
+  quizzes: number;
+  challenges: number;
+  myContribution: number;
+  completed: boolean;
+  claimedByMe: boolean;
+}
+
+/** Reward feedback returned from any award-granting action, for toast/level-up UI. */
+export interface RewardResult {
+  xpAwarded: number;
+  seedsAwarded: number;
+  newStreak?: number;
+  leveledUp?: boolean;
+  newLevel?: number;
+  levelSeedBonus?: number;
+}
+
+export interface SimulationDecisionField {
+  key: string;
+  label: string;
+  type: 'number' | 'toggle';
+  min?: number;
+  max?: number;
+  step?: number;
+  default: number | boolean;
+  unit?: string;
+  helpText?: string;
+}
+
+export interface SimulationResult {
+  revenue: number;
+  expenses: number;
+  profit: number;
+  profitMargin: number;
+  remainingCash: number;
+  businessHealth: 'Thriving' | 'Stable' | 'Struggling' | 'At Risk';
+  healthScore: number; // 0-100
+  xpAwarded: number;
+  seedsAwarded: number;
+  feedback: string[];
+}
+
+export interface SimulationScenario {
+  id: string;
+  title: string;
+  icon: string;
+  tagline: string;
+  category: string;
+  startingCapital: number;
+  decisions: SimulationDecisionField[];
+  compute: (decisions: Record<string, number | boolean>, startingCapital: number) => SimulationResult;
+}
+
 export interface AiCoachMessage {
   id: string;
   sender: 'ai' | 'user';

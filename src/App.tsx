@@ -11,7 +11,7 @@ import { IosMarketplaceView } from './components/IOS/IosMarketplaceView';
 import { IosAiCoachTab } from './components/IOS/IosAiCoachTab';
 import { IosSellerView } from './components/IOS/IosSellerView';
 import { IosBagView } from './components/IOS/IosBagView';
-import { SproutAcademy } from './components/Seller/SproutAcademy';
+import { AcademyRoot } from './components/Academy/AcademyRoot';
 import { BusinessDetailView } from './components/Marketplace/BusinessDetailView';
 import { ProductDetailModal } from './components/Marketplace/ProductDetailModal';
 import { OrderSuccessModal } from './components/Marketplace/OrderSuccessModal';
@@ -104,7 +104,7 @@ const MainAppContent: React.FC = () => {
       {/* 🌱 Tab 3: Sprout Academy (Pip the Sprout) */}
       {activeTab === 'academy' && (
         <div className="p-4 space-y-4">
-          <SproutAcademy />
+          <AcademyRoot />
         </div>
       )}
 
