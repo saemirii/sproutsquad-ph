@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { AiCoachMessage } from '../../types';
+import { MarkdownText } from '../MarkdownText';
 
 interface AiCoachModalProps {
   isOpen: boolean;
@@ -25,7 +26,7 @@ export const AiCoachModal: React.FC<AiCoachModalProps> = ({
   onClose,
   initialPrompt,
 }) => {
-  const { activeBusiness, activeBusinessMetrics, sellerProducts, sellerExpenses } = useApp();
+  const { activeBusiness, activeBusinessMetrics, askAiCoach, isAiCoachLoading } = useApp();
 
   const [messages, setMessages] = useState<AiCoachMessage[]>([
     {
@@ -37,7 +38,6 @@ export const AiCoachModal: React.FC<AiCoachModalProps> = ({
   ]);
 
   const [inputPrompt, setInputPrompt] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const chatBottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -48,7 +48,7 @@ export const AiCoachModal: React.FC<AiCoachModalProps> = ({
 
   useEffect(() => {
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isLoading]);
+  }, [messages, isAiCoachLoading]);
 
   if (!isOpen) return null;
 
@@ -61,7 +61,7 @@ export const AiCoachModal: React.FC<AiCoachModalProps> = ({
 
   const handleSendMessage = async (promptToSend?: string) => {
     const text = promptToSend || inputPrompt;
-    if (!text.trim() || isLoading) return;
+    if (!text.trim() || isAiCoachLoading) return;
 
     const userMsg: AiCoachMessage = {
       id: `user-${Date.now()}`,
@@ -72,56 +72,24 @@ export const AiCoachModal: React.FC<AiCoachModalProps> = ({
 
     setMessages((prev) => [...prev, userMsg]);
     setInputPrompt('');
-    setIsLoading(true);
 
-    try {
-      const response = await fetch('/api/ai-coach', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: text,
-          businessData: {
-            name: activeBusiness.name,
-            university: activeBusiness.university,
-            category: activeBusiness.category,
-            revenue: activeBusinessMetrics.revenue,
-            expenses: activeBusinessMetrics.expenses,
-            profit: activeBusinessMetrics.profit,
-            profitMargin: activeBusinessMetrics.profitMargin,
-            healthScore: activeBusinessMetrics.healthScore,
-            healthStatus: activeBusinessMetrics.healthStatus,
-            productCount: sellerProducts.length,
-            topProducts: sellerProducts.map((p) => ({
-              name: p.name,
-              price: p.price,
-              costPrice: p.costPrice,
-              margin: p.price > 0 ? Math.round(((p.price - p.costPrice) / p.price) * 100) : 0,
-            })),
-          },
-        }),
-      });
+    // Reuses the same askAiCoach action IosAiCoachTab uses (which manages
+    // its own isAiCoachLoading flag), rather than a separate fetch call —
+    // this modal used to POST a differently-shaped body
+    // ({ prompt, businessData }) than the server expects and read a `reply`
+    // field the server never returns, so it always silently fell through to
+    // its own generic hardcoded line regardless of the question or the
+    // business's actual data.
+    const { advice } = await askAiCoach(text);
 
-      const data = await response.json();
+    const aiReply: AiCoachMessage = {
+      id: `ai-${Date.now()}`,
+      sender: 'ai',
+      text: advice,
+      timestamp: new Date().toISOString(),
+    };
 
-      const aiReply: AiCoachMessage = {
-        id: `ai-${Date.now()}`,
-        sender: 'ai',
-        text: data.reply || "Keep building! Feel free to ask another question about your pricing or strategy.",
-        timestamp: new Date().toISOString(),
-      };
-
-      setMessages((prev) => [...prev, aiReply]);
-    } catch (err) {
-      const errorReply: AiCoachMessage = {
-        id: `ai-err-${Date.now()}`,
-        sender: 'ai',
-        text: `Here is advice tailored for ${activeBusiness.name}: Keep direct unit margins above 40%. For packaging, consider using generic unbranded kraft boxes stamped with a custom rubber seal—this typically slashes unboxing unit costs from ₱25 down to under ₱8 while retaining aesthetic charm!`,
-        timestamp: new Date().toISOString(),
-      };
-      setMessages((prev) => [...prev, errorReply]);
-    } finally {
-      setIsLoading(false);
-    }
+    setMessages((prev) => [...prev, aiReply]);
   };
 
   return (
@@ -179,7 +147,7 @@ export const AiCoachModal: React.FC<AiCoachModalProps> = ({
                       : 'bg-[#FAF7F2] text-[#3B2F27] border border-[#EDE4D8] rounded-tl-none whitespace-pre-line'
                   }`}
                 >
-                  {msg.text}
+                  {isUser ? msg.text : <MarkdownText text={msg.text} />}
                 </div>
 
                 {isUser && (
@@ -191,7 +159,7 @@ export const AiCoachModal: React.FC<AiCoachModalProps> = ({
             );
           })}
 
-          {isLoading && (
+          {isAiCoachLoading && (
             <div className="flex gap-3 justify-start items-center">
               <div className="w-8 h-8 rounded-xl bg-[#FFD3BA] text-[#7A2E1E] flex items-center justify-center text-sm">
                 🦉
@@ -241,7 +209,7 @@ export const AiCoachModal: React.FC<AiCoachModalProps> = ({
 
             <button
               type="submit"
-              disabled={!inputPrompt.trim() || isLoading}
+              disabled={!inputPrompt.trim() || isAiCoachLoading}
               className="p-3 bg-[#B8E6D5] hover:bg-[#A3DEC9] text-[#194E3B] font-bold rounded-2xl transition-colors disabled:opacity-40 cursor-pointer shadow-xs"
             >
               <Send className="w-4 h-4" />

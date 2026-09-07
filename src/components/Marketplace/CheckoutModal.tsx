@@ -42,6 +42,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [meetupLocation, setMeetupLocation] = useState('Gonzaga Hall Cafeteria Booth #2');
   const [notes, setNotes] = useState('Will pickup during 11:30 AM class break! Thanks!');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [orderError, setOrderError] = useState('');
 
   if (!isOpen || cart.length === 0) return null;
 
@@ -52,7 +53,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const availablePickupSpots = cartBusinesses.flatMap((b) => b.campusPickupSpots || []);
   const uniqueSpots = Array.from(new Set(availablePickupSpots));
 
-  const handleSubmitOrder = (e: React.FormEvent) => {
+  const handleSubmitOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!customerName || !customerContact) {
       alert('Please fill out your name and contact number.');
@@ -60,24 +61,30 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
 
     setIsSubmitting(true);
-    setTimeout(() => {
-      const createdOrders = placeOrder({
-        customerName,
-        customerContact,
-        customerUniversity,
-        paymentMethod,
-        fulfillmentType: deliveryMethod === 'Cash on Delivery' ? 'Dorm Delivery' : fulfillmentType,
-        deliveryMethod,
-        deliveryDate,
-        meetupLocation: meetupLocation || 'Campus Student Center',
-        notes,
-      });
+    setOrderError('');
 
-      triggerConfetti();
-      setIsSubmitting(false);
-      onClose();
-      onOrderPlacedSuccess(createdOrders);
-    }, 600);
+    const result = await placeOrder({
+      customerName,
+      customerContact,
+      customerUniversity,
+      paymentMethod,
+      fulfillmentType: deliveryMethod === 'Cash on Delivery' ? 'Dorm Delivery' : fulfillmentType,
+      deliveryMethod,
+      deliveryDate,
+      meetupLocation: meetupLocation || 'Campus Student Center',
+      notes,
+    });
+
+    setIsSubmitting(false);
+
+    if (!result.success) {
+      setOrderError(`Sorry — ${result.failureReason}. Please update your cart and try again.`);
+      return;
+    }
+
+    triggerConfetti();
+    onClose();
+    onOrderPlacedSuccess(result.orders);
   };
 
   return (
@@ -343,6 +350,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
           {/* Place Order Button */}
           <div className="pt-3 border-t border-[#F0E9DF]">
+            {orderError && (
+              <p className="text-[11px] font-bold text-[#991B1B] bg-[#FEE2E2] border border-[#EF4444]/30 rounded-xl px-3 py-2.5 mb-3">
+                {orderError}
+              </p>
+            )}
             <button
               id="confirm-place-order-btn"
               type="submit"

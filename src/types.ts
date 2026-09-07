@@ -83,7 +83,7 @@ export interface Product {
   dropDate?: string | null; // ISO datetime string
 }
 
-export type OrderStatus = 'Pending' | 'Preparing' | 'Ready for Pickup' | 'Completed' | 'Cancelled';
+export type OrderStatus = 'Pending' | 'Preparing' | 'Ready for Pickup' | 'Out for Delivery' | 'Completed' | 'Cancelled';
 export type PaymentMethod = 'GCash' | 'Maya' | 'Cash on Campus Meetup';
 export type DeliveryMethod = 'Lalamove' | 'J&T Express' | 'Cash on Delivery';
 export type FulfillmentType = 'Campus Meetup' | 'Locker/Dept Pickup' | 'Dorm Delivery';
@@ -386,6 +386,57 @@ export interface SimulationResult {
   xpAwarded: number;
   seedsAwarded: number;
   feedback: string[];
+}
+
+// ===================================================================
+// Notifications
+// ===================================================================
+
+export type NotificationType =
+  | 'order_placed' | 'new_order' | 'order_accepted' | 'order_ready' | 'order_out_for_delivery' | 'order_completed' | 'order_cancelled' | 'order_received'
+  | 'low_stock' | 'out_of_stock'
+  | 'shop_new_product' | 'shop_restock' | 'shop_promotion'
+  | 'welcome' | 'subscription_update' | 'announcement'
+  // Reserved for future Sprout Academy events — not yet wired to real triggers.
+  | 'academy_lesson_available' | 'academy_lesson_completed' | 'academy_xp_earned'
+  | 'academy_achievement_unlocked' | 'academy_streak_maintained';
+
+/** A small structured deep-link descriptor — this app has no router, so a
+ * notification's action is resolved client-side into existing view/tab
+ * setters (see resolveNotificationAction in AppContext.tsx). */
+export type NotificationAction =
+  | { view: 'marketplace' }
+  | { view: 'customer_order'; orderId: string }
+  | { view: 'seller_order'; businessId: string; orderId: string }
+  | { view: 'seller_products'; businessId: string }
+  | { view: 'product'; businessId: string; productId: string }
+  | { view: 'business'; businessId: string }
+  | { view: 'announcement'; announcementId: string }
+  | { view: 'subscription' }
+  | Record<string, unknown>;
+
+/** Named AppNotification (not Notification) to avoid colliding with the
+ * browser's built-in Notification API type. */
+export interface AppNotification {
+  id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  isRead: boolean;
+  relatedId?: string;
+  relatedType?: string;
+  action?: NotificationAction;
+  createdAt: string;
+}
+
+export type NotificationPreferenceCategory = 'orders' | 'newProducts' | 'restocks' | 'promotions' | 'announcements';
+
+export interface NotificationPreferences {
+  orders: boolean;
+  newProducts: boolean;
+  restocks: boolean;
+  promotions: boolean;
+  announcements: boolean;
 }
 
 export interface SimulationScenario {

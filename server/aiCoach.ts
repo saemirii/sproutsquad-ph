@@ -1,7 +1,27 @@
 import { GoogleGenAI } from "@google/genai";
+import { getSupabaseAdmin } from "./supabaseAdmin";
 
 // Shared AI Coach logic, used by both the local Express server (server.ts)
 // and the Netlify Function (netlify/functions/ai-coach.mts).
+
+// This endpoint had no auth check at all — anyone who found the URL could
+// call it unlimited times, signed in or not, running up the Gemini bill on
+// this project's own dime. Callers must now send the caller's real Supabase
+// session token (Authorization: Bearer <access_token>) and it's verified
+// server-side. If this deployment has no Supabase configured at all (a
+// fully local, no-backend dev sandbox), there's nothing to verify against
+// and no real API cost distinguishing "a real user" from anyone else, so
+// the check is skipped in that one case only.
+export async function isAuthorizedAiCoachRequest(authHeader: string | null | undefined): Promise<boolean> {
+  const supabaseAdmin = getSupabaseAdmin();
+  if (!supabaseAdmin) return true;
+
+  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice("Bearer ".length) : null;
+  if (!token) return false;
+
+  const { data, error } = await supabaseAdmin.auth.getUser(token);
+  return !error && !!data.user;
+}
 
 interface AiCoachRequestBody {
   businessName?: string;
@@ -48,12 +68,13 @@ export async function getAiCoachAdvice(payload: AiCoachRequestBody): Promise<AiC
       },
     });
 
-    const systemPrompt = `You are "Oliver the Sprout Owl" (and Frankie the Business Fox), the friendly, encouraging, and astute business coach for student-led small businesses in the Philippines on SproutSquad.
+    const systemPrompt = `You are "Peanut the Sprout Owl" 🦉, the friendly, encouraging, and astute business coach for student-led small businesses in the Philippines on SproutSquad. You are the ONLY advisor — never mention, introduce, or speak as any other character or co-host.
 Your role:
 - Speak in an approachable, warm, encouraging tone with occasional relatable Philippine student business context (e.g., campus pickups, GCash/Maya, balancing exams/acads with inventory, sourcing from Divisoria/Taytay/Shopee, packaging costs, stall fees).
-- Provide practical, data-driven, step-by-step advice tailored directly to their numbers (Revenue, Expenses, Profit Margin, Stock, Health Score).
-- Keep responses concise, scannable, and actionable with bullet points and clear takeaways.
-- Always include 1 immediate actionable next step they can do in under 15 minutes.`;
+- Give practical, data-driven advice tailored directly to their numbers (Revenue, Expenses, Profit Margin, Stock, Health Score).
+- Be CONCISE. Default to 3-5 short sentences or a few brief bullet points — under ~100 words. Only go longer if the student explicitly asks for a deep dive or a full step-by-step plan.
+- Format with light Markdown: **bold** for key numbers/terms, short "- " bullet lists when helpful. Do not use headings (#) or long multi-section breakdowns — this is a chat, not a report.
+- When relevant, end with one concrete next step, not a checklist.`;
 
     const prompt = `Student Business Overview:
 - Name: ${businessName || "Student Business"}

@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
-import { ShoppingBag, Trash2, Plus, Minus, MapPin, CheckCircle2, ArrowRight, Clock, Store, Tag, X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { ShoppingBag, Trash2, Plus, Minus, MapPin, CheckCircle2, ArrowRight, Clock, Store, Tag, X, Instagram, PackageCheck } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { formatPHP } from '../../utils/analytics';
+import { formatRelativeTime } from '../../utils/formatRelativeTime';
 import { CampusUniversity, PaymentMethod, FulfillmentType, Order } from '../../types';
 import { playIosTap, playIosSuccess } from '../../utils/haptics';
+import { OrderStatusStepper } from '../Marketplace/OrderStatusStepper';
 
 interface IosBagViewProps {
   onOpenCheckoutModal?: () => void;
@@ -25,8 +27,12 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
     clearCart,
     placeOrder,
     orders,
+    businesses,
     currentUser,
     validateCoupon,
+    confirmOrderReceived,
+    pendingNavigation,
+    setPendingNavigation,
   } = useApp();
 
   const [activeSegment, setActiveSegment] = useState<'bag' | 'orders'>('bag');
@@ -79,15 +85,66 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
 
   const currentSpots = campusPickupSpots[customerUniversity] || campusPickupSpots['All Campuses'];
 
-  const handlePlaceOrder = (e: React.FormEvent) => {
+  const [orderError, setOrderError] = useState('');
+  const [highlightedOrderId, setHighlightedOrderId] = useState<string | null>(null);
+  const [confirmingOrderId, setConfirmingOrderId] = useState<string | null>(null);
+  const [confirmError, setConfirmError] = useState<{ orderId: string; message: string } | null>(null);
+
+  // A notification's deep link ("your order is ready") should land right on
+  // that order, not just "somewhere in My Bag" — this jumps to Orders
+  // History, scrolls the specific order into view, and briefly highlights
+  // it, then clears the one-shot navigation request.
+  useEffect(() => {
+    if (pendingNavigation?.tab !== 'bag') return;
+    setActiveSegment('orders');
+    if (pendingNavigation.orderId) {
+      const targetId = pendingNavigation.orderId;
+      setHighlightedOrderId(targetId);
+      setTimeout(() => {
+        document.getElementById(`order-${targetId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 150);
+      setTimeout(() => setHighlightedOrderId((current) => (current === targetId ? null : current)), 3500);
+    }
+    setPendingNavigation(null);
+  }, [pendingNavigation]);
+
+  const handleConfirmReceived = async (orderId: string) => {
+    setConfirmingOrderId(orderId);
+    setConfirmError(null);
+    playIosSuccess();
+    const result = await confirmOrderReceived(orderId);
+    setConfirmingOrderId(null);
+    if (!result.success) setConfirmError({ orderId, message: result.message || 'Could not confirm this order right now.' });
+  };
+
+  // RLS on `orders` lets a user read both orders they placed as a customer
+  // AND every order on a business they own as a seller (so Shop OS's own
+  // order manager works) — without this filter, a seller who's also placed
+  // test orders as a buyer would see their own customers' orders mixed into
+  // this personal "My Bag" screen, and tapping "I Received My Order" on one
+  // would fail server-side since it genuinely isn't their order.
+  const myOrders = orders.filter((order) => order.customerId === currentUser.id);
+
+  // Active orders (still moving) surface above old completed/cancelled ones,
+  // so a customer with order history doesn't have to hunt for the one that
+  // actually needs their attention. Each group stays newest-first.
+  const sortedOrders = [...myOrders].sort((a, b) => {
+    const isDoneA = a.orderStatus === 'Completed' || a.orderStatus === 'Cancelled';
+    const isDoneB = b.orderStatus === 'Completed' || b.orderStatus === 'Cancelled';
+    if (isDoneA !== isDoneB) return isDoneA ? 1 : -1;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+
+  const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (cart.length === 0 || isSubmitting) return;
 
     setIsSubmitting(true);
+    setOrderError('');
     playIosSuccess();
 
     try {
-      const createdOrders = placeOrder({
+      const result = await placeOrder({
         customerName: customerName || 'Student Shopper',
         customerContact: customerContact || '0917-000-0000',
         customerUniversity,
@@ -99,14 +156,21 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
       });
 
       setIsSubmitting(false);
+
+      if (!result.success) {
+        setOrderError(`Sorry — ${result.failureReason}. Please update your bag and try again.`);
+        return;
+      }
+
       setActiveSegment('orders');
       setAppliedCoupon(null);
       setCouponInput('');
       if (onOrderCompleted) {
-        onOrderCompleted(createdOrders);
+        onOrderCompleted(result.orders);
       }
     } catch {
       setIsSubmitting(false);
+      setOrderError('Something went wrong placing your order. Please try again.');
     }
   };
 
@@ -148,7 +212,7 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
                 : 'text-[#6B5B4F] hover:text-[#3B2F27]'
             }`}
           >
-            📋 Orders History ({orders.length})
+            📋 Orders History ({myOrders.length})
           </button>
         </div>
       </div>
@@ -394,13 +458,19 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
                   </div>
                 </div>
 
+                {orderError && (
+                  <p className="text-[11px] font-bold text-[#991B1B] bg-[#FEE2E2] border border-[#EF4444]/30 rounded-xl px-3 py-2.5">
+                    {orderError}
+                  </p>
+                )}
+
                 <button
                   onClick={handlePlaceOrder}
                   disabled={isSubmitting}
-                  className="w-full py-3.5 bg-[#B8E6D5] hover:bg-[#A3DEC9] text-[#194E3B] font-black text-xs rounded-2xl shadow-xs active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full py-3.5 bg-[#B8E6D5] hover:bg-[#A3DEC9] disabled:opacity-60 text-[#194E3B] font-black text-xs rounded-2xl shadow-xs active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>Confirm Campus Order ({formatPHP(finalTotal)}) ✨</span>
+                  <span>{isSubmitting ? 'Placing order...' : `Confirm Campus Order (${formatPHP(finalTotal)}) ✨`}</span>
                 </button>
               </div>
             </div>
@@ -408,66 +478,92 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
         ) : (
           /* Orders History List */
           <div className="space-y-3">
-            {orders.length === 0 ? (
+            {sortedOrders.length === 0 ? (
               <div className="bg-white rounded-3xl border border-[#EDE4D8] p-8 text-center space-y-2">
                 <p className="text-xs text-[#6B5B4F]">No recorded campus orders yet.</p>
               </div>
             ) : (
-              orders.map((order) => (
-                <div
-                  key={order.id}
-                  className="bg-white rounded-2xl border border-[#EDE4D8] p-3.5 space-y-2.5 shadow-xs"
-                >
-                  <div className="flex items-center justify-between border-b border-[#EDE4D8] pb-2">
-                    <div>
-                      <span className="text-[10px] font-bold text-[#8C7A6D]">
-                        {order.orderNumber}
+              sortedOrders.map((order) => {
+                const canConfirmReceived = order.orderStatus === 'Ready for Pickup' || order.orderStatus === 'Out for Delivery';
+                const business = businesses.find((b) => b.id === order.businessId);
+                const isHighlighted = order.id === highlightedOrderId;
+
+                return (
+                  <div
+                    key={order.id}
+                    id={`order-${order.id}`}
+                    className={`bg-white rounded-2xl border p-3.5 space-y-3 shadow-xs transition-all duration-500 ${
+                      isHighlighted ? 'border-[#207559] ring-2 ring-[#B8E6D5]' : 'border-[#EDE4D8]'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between border-b border-[#EDE4D8] pb-2">
+                      <div>
+                        <span className="text-[10px] font-bold text-[#8C7A6D]">
+                          {order.orderNumber} • {formatRelativeTime(order.createdAt)}
+                        </span>
+                        <p className="font-extrabold text-xs text-[#3B2F27] truncate">
+                          {order.businessName}
+                        </p>
+                      </div>
+                      <span className="font-black text-xs text-[#194E3B] shrink-0">
+                        {formatPHP(order.totalAmount)}
                       </span>
-                      <p className="font-extrabold text-xs text-[#3B2F27] truncate">
-                        {order.businessName}
-                      </p>
                     </div>
 
-                    <span
-                      className={`px-2.5 py-1 rounded-full text-[10px] font-black ${
-                        order.orderStatus === 'Completed'
-                          ? 'bg-[#B8E6D5] text-[#194E3B]'
-                          : order.orderStatus === 'Preparing'
-                          ? 'bg-[#FFD3BA] text-[#7A341A]'
-                          : 'bg-[#A8D8EA] text-[#1B4E6B]'
-                      }`}
-                    >
-                      {order.orderStatus}
-                    </span>
-                  </div>
+                    <OrderStatusStepper status={order.orderStatus} fulfillmentType={order.fulfillmentType} />
 
-                  <div className="space-y-1">
-                    {order.items.map((it, idx) => (
-                      <div key={idx} className="flex justify-between text-xs text-[#6B5B4F]">
-                        <span className="flex items-center gap-1">
-                          {it.quantity}x {it.productName}
-                          {it.isPreOrder && (
-                            <span className="shrink-0 text-[8px] font-black uppercase text-[#1B4E6B] bg-[#A8D8EA] rounded-full px-1 py-0.5">Pre-Order</span>
-                          )}
-                        </span>
-                        <span className="font-bold text-[#3B2F27]">
-                          {formatPHP(it.price * it.quantity)}
-                        </span>
+                    <div className="space-y-1">
+                      {order.items.map((it, idx) => (
+                        <div key={idx} className="flex justify-between text-xs text-[#6B5B4F]">
+                          <span className="flex items-center gap-1">
+                            {it.quantity}x {it.productName}
+                            {it.isPreOrder && (
+                              <span className="shrink-0 text-[8px] font-black uppercase text-[#1B4E6B] bg-[#A8D8EA] rounded-full px-1 py-0.5">Pre-Order</span>
+                            )}
+                          </span>
+                          <span className="font-bold text-[#3B2F27]">
+                            {formatPHP(it.price * it.quantity)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="pt-2 border-t border-[#EDE4D8] flex items-center justify-between text-[11px] text-[#6B5B4F]">
+                      <span className="flex items-center gap-1 text-[10px]">
+                        <MapPin className="w-3 h-3 text-[#194E3B]" />
+                        {order.meetupLocation}
+                      </span>
+                      {business?.instagramHandle && (
+                        <a
+                          href={`https://instagram.com/${business.instagramHandle.replace(/^@/, '')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-[10px] font-bold text-[#C13584] hover:underline"
+                        >
+                          <Instagram className="w-3 h-3" />
+                          Message the shop
+                        </a>
+                      )}
+                    </div>
+
+                    {canConfirmReceived && (
+                      <div className="pt-1 space-y-1.5">
+                        <button
+                          onClick={() => void handleConfirmReceived(order.id)}
+                          disabled={confirmingOrderId === order.id}
+                          className="btn-bouncy w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-[#B8E6D5] hover:bg-[#A3DEC9] disabled:opacity-60 text-[#194E3B] font-black text-xs cursor-pointer"
+                        >
+                          <PackageCheck className="w-3.5 h-3.5" />
+                          {confirmingOrderId === order.id ? 'Confirming...' : 'I Received My Order ✓'}
+                        </button>
+                        {confirmError?.orderId === order.id && (
+                          <p className="text-[10px] font-bold text-[#991B1B] text-center">{confirmError.message}</p>
+                        )}
                       </div>
-                    ))}
+                    )}
                   </div>
-
-                  <div className="pt-2 border-t border-[#EDE4D8] flex items-center justify-between text-[11px] text-[#6B5B4F]">
-                    <span className="flex items-center gap-1 text-[10px]">
-                      <MapPin className="w-3 h-3 text-[#194E3B]" />
-                      {order.meetupLocation}
-                    </span>
-                    <span className="font-black text-xs text-[#194E3B]">
-                      {formatPHP(order.totalAmount)}
-                    </span>
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         )}

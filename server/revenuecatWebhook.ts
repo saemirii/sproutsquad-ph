@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { supabaseAdmin } from "./supabaseAdmin";
+import { getSupabaseAdmin } from "./supabaseAdmin";
 
 // Shared RevenueCat webhook processing logic, used by both the local Express
 // server (server.ts) and the Netlify Function (netlify/functions/revenuecat-webhook.mts)
@@ -61,6 +61,30 @@ export interface WebhookResult {
   body: Record<string, unknown>;
 }
 
+// Friendly copy for the account notification created alongside the
+// subscription sync below — null means "don't bother notifying" (e.g. a
+// PRODUCT_CHANGE swap between two active tiers isn't worth surfacing).
+function notificationCopyForEvent(type: string | undefined): { title: string; message: string } | null {
+  switch (type) {
+    case "INITIAL_PURCHASE":
+      return { title: "✨ Welcome to Sprout+!", message: "Your subscription is active — enjoy coupons, bundles, scheduling, and more." };
+    case "RENEWAL":
+      return { title: "✨ Sprout+ renewed", message: "Your subscription has renewed." };
+    case "UNCANCELLATION":
+      return { title: "✨ Subscription reactivated", message: "Your Sprout+ subscription is active again." };
+    case "CANCELLATION":
+      return { title: "Subscription set to cancel", message: "Your Sprout+ subscription won't renew after the current period ends." };
+    case "EXPIRATION":
+      return { title: "Subscription ended", message: "Your Sprout+ subscription is no longer active." };
+    case "REFUND":
+      return { title: "Subscription refunded", message: "Your Sprout+ purchase was refunded and access has been removed." };
+    case "BILLING_ISSUE":
+      return { title: "⚠️ Billing issue", message: "We couldn't process your Sprout+ payment — please update your billing details to avoid losing access." };
+    default:
+      return null;
+  }
+}
+
 export async function processRevenueCatWebhookPayload(payload: unknown): Promise<WebhookResult> {
   const event: RevenueCatWebhookEvent | undefined = (payload as { event?: RevenueCatWebhookEvent })?.event;
   if (!event?.id || !event.type || !event.app_user_id) {
@@ -70,6 +94,7 @@ export async function processRevenueCatWebhookPayload(payload: unknown): Promise
     return { status: 200, body: { received: true, processed: false } };
   }
 
+  const supabaseAdmin = getSupabaseAdmin();
   if (!supabaseAdmin) {
     console.error("RevenueCat webhook received but SUPABASE_SERVICE_ROLE_KEY is not configured — cannot sync.");
     return { status: 200, body: { received: true, processed: false } };
@@ -102,7 +127,7 @@ export async function processRevenueCatWebhookPayload(payload: unknown): Promise
   }
 
   const recordSkipReason = (reason: string) =>
-    supabaseAdmin!.from("revenuecat_webhook_events").update({ skip_reason: reason }).eq("event_id", event.id!);
+    supabaseAdmin.from("revenuecat_webhook_events").update({ skip_reason: reason }).eq("event_id", event.id!);
 
   // Only sync events for our Sprout+ entitlement.
   if (event.entitlement_ids && !event.entitlement_ids.includes(SPROUT_PLUS_ENTITLEMENT)) {
@@ -141,6 +166,23 @@ export async function processRevenueCatWebhookPayload(payload: unknown): Promise
     console.error("RevenueCat webhook: failed to upsert subscription record", upsertError);
     await recordSkipReason(`upsert_failed: ${upsertError.message}`);
     return { status: 500, body: { error: "Failed to process webhook" } };
+  }
+
+  // Account notification — not gated by any notification_preferences category
+  // (subscription changes are the kind of thing a user shouldn't be able to
+  // silently miss). Best-effort: a failure here shouldn't fail the whole
+  // webhook, since the subscription sync above already succeeded.
+  const copy = notificationCopyForEvent(event.type);
+  if (copy) {
+    const { error: notifyError } = await supabaseAdmin.from("notifications").insert({
+      user_id: event.app_user_id,
+      type: "subscription_update",
+      title: copy.title,
+      message: copy.message,
+      related_type: "subscription",
+      action: { view: "subscription" },
+    });
+    if (notifyError) console.error("RevenueCat webhook: failed to create subscription notification", notifyError);
   }
 
   await recordSkipReason(""); // cleared — fully processed, nothing to explain

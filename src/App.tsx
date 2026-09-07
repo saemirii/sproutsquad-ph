@@ -19,7 +19,7 @@ import { SproutBloomLoader } from './components/SproutBloomLoader';
 import { Product, Business, Order } from './types';
 
 const MainAppContent: React.FC = () => {
-  const { currentView, setCurrentView, isRemoteDataLoading } = useApp();
+  const { currentView, setCurrentView, isRemoteDataLoading, businesses, pendingNavigation, setPendingNavigation } = useApp();
 
   // Active iOS Tab State
   const [activeTab, setActiveTab] = useState<IosActiveTab>('market');
@@ -54,6 +54,25 @@ const MainAppContent: React.FC = () => {
       setCurrentView('academy');
     }
   };
+
+  // Deep-link bridge: a notification's action can request switching the
+  // active iOS tab (and optionally focusing a business or order), which
+  // lives here rather than in AppContext — applied once, then cleared.
+  // The 'bag' + orderId case is deliberately NOT cleared here — IosBagView
+  // itself reads pendingNavigation to highlight/scroll to that order, and
+  // clears it once it has (clearing it here first would race it out from
+  // under that component before it ever mounts/reads it).
+  useEffect(() => {
+    if (!pendingNavigation) return;
+    setActiveTab(pendingNavigation.tab);
+    if (pendingNavigation.tab === 'market') {
+      const biz = pendingNavigation.businessId ? businesses.find((b) => b.id === pendingNavigation.businessId) : null;
+      setSelectedBusiness(biz || null);
+      setPendingNavigation(null);
+    } else if (pendingNavigation.tab !== 'bag' || !pendingNavigation.orderId) {
+      setPendingNavigation(null);
+    }
+  }, [pendingNavigation]);
 
   const handleOrderSuccess = (createdOrders: Order[]) => {
     setSuccessfulOrders(createdOrders);

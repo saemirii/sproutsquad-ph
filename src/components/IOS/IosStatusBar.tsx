@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Wifi } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { DynamicIsland, DynamicIslandAlert } from './DynamicIsland';
+import { NotificationBell } from '../Notifications/NotificationBell';
 
 interface IosStatusBarProps {
   activeAlert?: DynamicIslandAlert | null;
@@ -54,15 +55,9 @@ export const IosStatusBar: React.FC<IosStatusBarProps> = ({
         />
       </div>
 
-      {/* Connectivity & Battery on the Right */}
-      <div className="w-16 flex items-center justify-end gap-1.5 text-[#3B2F27]">
-        {/* Cellular bars */}
-        <div className="flex items-end gap-[1.5px] h-2.5">
-          <div className="w-[2.5px] h-1 bg-[#3B2F27] rounded-[0.5px]" />
-          <div className="w-[2.5px] h-1.5 bg-[#3B2F27] rounded-[0.5px]" />
-          <div className="w-[2.5px] h-2 bg-[#3B2F27] rounded-[0.5px]" />
-          <div className="w-[2.5px] h-2.5 bg-[#3B2F27] rounded-[0.5px]" />
-        </div>
+      {/* Notifications, Connectivity & Battery on the Right */}
+      <div className="w-20 flex items-center justify-end gap-1.5 text-[#3B2F27]">
+        <NotificationBell />
 
         {/* 5G / Wifi icon */}
         <Wifi className="w-3.5 h-3.5 stroke-[2.5]" />

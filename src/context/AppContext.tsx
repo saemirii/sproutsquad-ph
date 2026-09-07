@@ -24,6 +24,10 @@ import {
   SquadChallengeProgress,
   RewardResult,
   LearningActivityType,
+  AppNotification,
+  NotificationAction,
+  NotificationPreferences,
+  NotificationPreferenceCategory,
 } from '../types';
 import {
   initialBusinesses,
@@ -54,6 +58,12 @@ import {
   equipGardenItemOffline,
   claimQuestRewardOffline,
 } from '../lib/offlineAcademyEngine';
+import {
+  rowToNotification,
+  rowToNotificationPreferences,
+  DEFAULT_NOTIFICATION_PREFERENCES,
+} from '../lib/notificationMappers';
+import type { IosActiveTab } from '../components/IOS/IosTabBar';
 import type { Offerings, Package } from '@revenuecat/purchases-js';
 import {
   identifyRevenueCatUser,
@@ -73,7 +83,6 @@ import {
   rowToBusiness,
   productToRow,
   rowToProduct,
-  orderToRow,
   rowToOrder,
   expenseToRow,
   rowToExpense,
@@ -99,6 +108,13 @@ interface AppContextType {
   setSelectedBusinessForDetail: (business: Business | null) => void;
   selectedCampusFilter: CampusUniversity | 'All Campuses';
   setSelectedCampusFilter: (campus: CampusUniversity | 'All Campuses') => void;
+  /** A one-shot request to switch the iOS tab bar's active tab (and optionally a business
+   * or order to focus) — set by resolveNotificationAction() since the active iOS tab lives
+   * outside this context, in App.tsx's local state. App.tsx applies the tab switch (and
+   * clears it, for the business case); for the order case, IosBagView itself consumes
+   * orderId (to highlight/scroll to that order) and clears it once it has. */
+  pendingNavigation: { tab: IosActiveTab; businessId?: string; orderId?: string } | null;
+  setPendingNavigation: (nav: { tab: IosActiveTab; businessId?: string; orderId?: string } | null) => void;
 
   // Data Collections
   businesses: Business[];
@@ -142,6 +158,7 @@ interface AppContextType {
   deleteProduct: (productId: string) => void;
   updateOrderStatus: (orderId: string, status: OrderStatus) => void;
   updateDeliverySchedule: (orderId: string, deliveryMethod: DeliveryMethod, deliveryDate: string) => void;
+  confirmOrderReceived: (orderId: string) => Promise<{ success: boolean; message?: string }>;
   addExpense: (expense: Omit<Expense, 'id' | 'businessId'>) => void;
   deleteExpense: (expenseId: string) => void;
   addCoupon: (coupon: Omit<Coupon, 'id' | 'businessId' | 'redemptionCount' | 'createdAt'>) => void;
@@ -162,6 +179,19 @@ interface AppContextType {
   claimSquadChallengeReward: () => Promise<RewardResult>;
   setLeaderboardOptIn: (optIn: boolean) => Promise<void>;
 
+  // Notifications
+  notifications: AppNotification[];
+  unreadNotificationCount: number;
+  notificationPreferences: NotificationPreferences;
+  favoritedBusinessIds: string[];
+  markNotificationRead: (id: string) => Promise<void>;
+  markAllNotificationsRead: () => Promise<void>;
+  updateNotificationPreference: (category: NotificationPreferenceCategory, enabled: boolean) => Promise<void>;
+  toggleFavoriteBusiness: (businessId: string) => Promise<void>;
+  resolveNotificationAction: (action?: NotificationAction) => void;
+  /** Fetches an older page of notifications past what's currently loaded (online only — offline mode's small local list is always loaded in full). Returns the rows fetched, empty when there's nothing older. */
+  loadMoreNotifications: () => Promise<AppNotification[]>;
+
   // Cart & Checkout Actions
   addToCart: (product: Product, quantity?: number) => void;
   updateCartQuantity: (productId: string, quantity: number) => void;
@@ -178,7 +208,7 @@ interface AppContextType {
     meetupLocation: string;
     notes?: string;
     couponCode?: string;
-  }) => Order[];
+  }) => Promise<{ success: boolean; orders: Order[]; failureReason?: string }>;
 
   // AI Business Coach
   askAiCoach: (userQuestion?: string) => Promise<{ advice: string; fallback: boolean }>;
@@ -390,6 +420,36 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
         return acc;
       }, {});
 
+  // Notifications state. Online rows come from Supabase (fetched + kept live
+  // via Realtime below); offline/local-demo mode synthesizes equivalent
+  // notifications inline at the relevant action (placeOrder, updateOrderStatus,
+  // etc. — see synthesizeOfflineNotification) since there are no real
+  // triggers to hook into there.
+  const [onlineNotifications, setOnlineNotifications] = useState<AppNotification[]>([]);
+  const [onlineNotificationPreferences, setOnlineNotificationPreferences] = useState<NotificationPreferences>(DEFAULT_NOTIFICATION_PREFERENCES);
+  const [onlineFavoritedBusinessIds, setOnlineFavoritedBusinessIds] = useState<string[]>([]);
+
+  const [offlineNotifications, setOfflineNotifications] = useState<AppNotification[]>(() => {
+    if (isSupabaseConfigured) return [];
+    const saved = localStorage.getItem(`sproutsquad_notifications_${authUser?.id || 'guest'}`);
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [offlineNotificationPreferences, setOfflineNotificationPreferences] = useState<NotificationPreferences>(() => {
+    if (isSupabaseConfigured) return DEFAULT_NOTIFICATION_PREFERENCES;
+    const saved = localStorage.getItem(`sproutsquad_notification_prefs_${authUser?.id || 'guest'}`);
+    return saved ? JSON.parse(saved) : DEFAULT_NOTIFICATION_PREFERENCES;
+  });
+  const [offlineFavoritedBusinessIds, setOfflineFavoritedBusinessIds] = useState<string[]>(() => {
+    if (isSupabaseConfigured) return [];
+    const saved = localStorage.getItem(`sproutsquad_favorites_${authUser?.id || 'guest'}`);
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const notifications = isSupabaseConfigured ? onlineNotifications : offlineNotifications;
+  const notificationPreferences = isSupabaseConfigured ? onlineNotificationPreferences : offlineNotificationPreferences;
+  const favoritedBusinessIds = isSupabaseConfigured ? onlineFavoritedBusinessIds : offlineFavoritedBusinessIds;
+  const unreadNotificationCount = notifications.filter((n) => !n.isRead).length;
+
   const [currentUser, setCurrentUser] = useState<User>(() => ({
     ...initialUsers[0],
     university: defaultSchool,
@@ -408,6 +468,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
   const [currentView, setCurrentView] = useState<'marketplace' | 'seller' | 'academy' | 'business-detail'>('marketplace');
   const [sellerTab, setSellerTab] = useState<'overview' | 'products' | 'orders' | 'delivery' | 'expenses' | 'academy' | 'settings'>('overview');
   const [selectedCampusFilter, setSelectedCampusFilter] = useState<CampusUniversity | 'All Campuses'>('All Campuses');
+  const [pendingNavigation, setPendingNavigation] = useState<{ tab: IosActiveTab; businessId?: string; orderId?: string } | null>(null);
 
   const [cart, setCart] = useState<CartItem[]>(() => {
     const saved = localStorage.getItem('sproutsquad_cart');
@@ -748,6 +809,85 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
     return () => { cancelled = true; };
   }, [authUser?.id]);
 
+  // Load this user's notifications, preferences, and favorited shops.
+  useEffect(() => {
+    if (!supabase || !authUser) return;
+    let cancelled = false;
+
+    Promise.all([
+      supabase.from('notifications').select('*').eq('user_id', authUser.id).order('created_at', { ascending: false }).limit(50),
+      supabase.from('notification_preferences').select('*').eq('user_id', authUser.id).maybeSingle(),
+      supabase.from('business_favorites').select('business_id').eq('user_id', authUser.id),
+    ]).then(([notifRes, prefRes, favRes]) => {
+      if (cancelled) return;
+
+      if (notifRes.error) console.error('Failed to load notifications', notifRes.error);
+      else setOnlineNotifications((notifRes.data || []).map(rowToNotification));
+
+      if (prefRes.error) console.error('Failed to load notification preferences', prefRes.error);
+      else if (prefRes.data) setOnlineNotificationPreferences(rowToNotificationPreferences(prefRes.data));
+
+      if (favRes.error) console.error('Failed to load favorited shops', favRes.error);
+      else setOnlineFavoritedBusinessIds((favRes.data || []).map((row: any) => row.business_id));
+    });
+
+    return () => { cancelled = true; };
+  }, [authUser?.id]);
+
+  // Realtime: new notifications (an order status change, a new order, a
+  // restock, etc.) arrive live without any polling or manual refresh.
+  useEffect(() => {
+    if (!supabase || !authUser) return;
+
+    const channel = supabase
+      .channel(`notifications:${authUser.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${authUser.id}` },
+        (payload) => {
+          setOnlineNotifications((previous) => [rowToNotification(payload.new), ...previous]);
+        }
+      )
+      .subscribe();
+
+    return () => { void supabase.removeChannel(channel); };
+  }, [authUser?.id]);
+
+  // Realtime: order status changes. updateOrderStatus / confirm_order_received
+  // only ever updated the *acting* client's own optimistic state plus the DB
+  // row — with no subscription here, any other open session looking at the
+  // same order (the customer's own "My Bag" tab, a teammate's Shop OS tab,
+  // another device) stayed frozen on the old status until a manual reload.
+  // No `filter` is needed: Postgres Changes is RLS-scoped, so each client
+  // only ever receives rows the same "Customers and shop owners can view
+  // orders" policy already lets them select — identical visibility to the
+  // initial fetch above.
+  useEffect(() => {
+    if (!supabase || !authUser) return;
+
+    const channel = supabase
+      .channel(`orders:${authUser.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'orders' },
+        (payload) => {
+          setOrders((previous) =>
+            previous.some((o) => o.id === (payload.new as any).id) ? previous : [rowToOrder(payload.new), ...previous]
+          );
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'orders' },
+        (payload) => {
+          setOrders((previous) => previous.map((o) => (o.id === (payload.new as any).id ? rowToOrder(payload.new) : o)));
+        }
+      )
+      .subscribe();
+
+    return () => { void supabase.removeChannel(channel); };
+  }, [authUser?.id]);
+
   // Sync to localStorage — only in offline/local-account mode. When Supabase is
   // configured, these arrays (which can carry large base64 image data URLs) are
   // already durably stored server-side, and mirroring them locally is both
@@ -781,6 +921,21 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
     if (isSupabaseConfigured) return;
     safeSetItem('sproutsquad_academy_offline', JSON.stringify(offlineAcademy));
   }, [offlineAcademy]);
+
+  useEffect(() => {
+    if (isSupabaseConfigured) return;
+    safeSetItem(`sproutsquad_notifications_${currentUser.id}`, JSON.stringify(offlineNotifications));
+  }, [offlineNotifications, currentUser.id]);
+
+  useEffect(() => {
+    if (isSupabaseConfigured) return;
+    safeSetItem(`sproutsquad_notification_prefs_${currentUser.id}`, JSON.stringify(offlineNotificationPreferences));
+  }, [offlineNotificationPreferences, currentUser.id]);
+
+  useEffect(() => {
+    if (isSupabaseConfigured) return;
+    safeSetItem(`sproutsquad_favorites_${currentUser.id}`, JSON.stringify(offlineFavoritedBusinessIds));
+  }, [offlineFavoritedBusinessIds, currentUser.id]);
 
   useEffect(() => {
     safeSetItem('sproutsquad_cart', JSON.stringify(cart));
@@ -857,8 +1012,17 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
   };
 
   // Order Actions
+  const ORDER_STATUS_NOTIFICATION: Partial<Record<OrderStatus, { type: AppNotification['type']; title: string; message: string }>> = {
+    Preparing: { type: 'order_accepted', title: '🌿 Order accepted!', message: 'has been accepted and is being prepared.' },
+    'Ready for Pickup': { type: 'order_ready', title: '🌸 Ready for pickup!', message: 'is ready for pickup.' },
+    'Out for Delivery': { type: 'order_out_for_delivery', title: '🚚 Out for delivery!', message: 'is on its way.' },
+    Completed: { type: 'order_completed', title: 'Order completed', message: 'is complete. Thanks for supporting a student shop!' },
+    Cancelled: { type: 'order_cancelled', title: 'Order cancelled', message: 'was cancelled.' },
+  };
+
   const updateOrderStatus = (orderId: string, status: OrderStatus) => {
     let nextPaymentStatus: Order['paymentStatus'] | undefined;
+    const orderRef = orders.find((o) => o.id === orderId);
     setOrders((prev) =>
       prev.map((o) => {
         if (o.id === orderId) {
@@ -878,6 +1042,19 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
       void supabase.from('orders').update(patch).eq('id', orderId).then(({ error }) => {
         if (error) console.error('Failed to update order status', error);
       });
+      // Online, a database trigger (notify_order_status_changed, see
+      // migration_12) creates the customer's notification automatically —
+      // no client call needed.
+    } else if (orderRef) {
+      // Offline/local-demo mode has no trigger, so synthesize the equivalent.
+      const notice = ORDER_STATUS_NOTIFICATION[status];
+      if (notice) {
+        synthesizeOfflineNotification(
+          notice.type, notice.title,
+          `Your order from ${orderRef.businessName} ${notice.message}`,
+          orderId, 'order', { view: 'customer_order', orderId }
+        );
+      }
     }
     if (status === 'Completed') {
       triggerConfetti();
@@ -905,6 +1082,37 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
         if (error) console.error('Failed to update delivery schedule', error);
       });
     }
+  };
+
+  // Lets the customer themselves close out an order (once it's Ready for
+  // Pickup / Out for Delivery) instead of only ever waiting on the seller
+  // to remember to mark it complete. Online, this goes through
+  // confirm_order_received (migration_14) — a security-definer RPC rather
+  // than a broadened RLS policy, so a customer can only ever move their
+  // own order through this one validated transition, never edit price or
+  // status fields directly.
+  const confirmOrderReceived = async (orderId: string): Promise<{ success: boolean; message?: string }> => {
+    const orderRef = orders.find((o) => o.id === orderId);
+    if (!orderRef) return { success: false, message: 'Order not found' };
+
+    if (supabase) {
+      const { error } = await supabase.rpc('confirm_order_received', { p_order_id: orderId });
+      if (error) {
+        console.error('Failed to confirm order received', error);
+        return { success: false, message: error.message || 'Could not confirm this order right now' };
+      }
+      setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, orderStatus: 'Completed', paymentStatus: 'Paid' } : o)));
+      // The RPC's own trigger notifies the customer; it also directly
+      // notifies the seller's team that the customer confirmed receipt.
+    } else {
+      setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, orderStatus: 'Completed', paymentStatus: 'Paid' } : o)));
+      synthesizeOfflineNotification(
+        'order_completed', 'Order completed', `Your order from ${orderRef.businessName} is complete. Thanks for supporting a student shop!`,
+        orderId, 'order', { view: 'customer_order', orderId }
+      );
+    }
+    triggerConfetti();
+    return { success: true };
   };
 
   // Expense Actions
@@ -1282,6 +1490,137 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
     updateOfflineAcademy({ ...offlineAcademyRef.current, profile: { ...offlineAcademyRef.current.profile, leaderboardOptIn: optIn } });
   };
 
+  // ===================================================================
+  // Notifications
+  // ===================================================================
+
+  // Offline/local-demo mode has no triggers to hook into, so equivalent
+  // notifications are synthesized inline at the relevant action (placeOrder,
+  // updateOrderStatus, and product-stock changes below) — mirrors the
+  // offlineAcademyEngine.ts precedent of keeping the demo experience
+  // functionally equivalent, not silently degraded.
+  const synthesizeOfflineNotification = (
+    type: AppNotification['type'],
+    title: string,
+    message: string,
+    relatedId?: string,
+    relatedType?: string,
+    action?: NotificationAction
+  ) => {
+    const notif: AppNotification = {
+      id: `notif-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      type,
+      title,
+      message,
+      isRead: false,
+      relatedId,
+      relatedType,
+      action,
+      createdAt: new Date().toISOString(),
+    };
+    setOfflineNotifications((prev) => [notif, ...prev]);
+  };
+
+  const markNotificationRead = async (id: string): Promise<void> => {
+    setOnlineNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
+    setOfflineNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
+    if (supabase && authUser) {
+      const { error } = await supabase.from('notifications').update({ is_read: true }).eq('id', id);
+      if (error) console.error('Failed to mark notification read', error);
+    }
+  };
+
+  const markAllNotificationsRead = async (): Promise<void> => {
+    setOnlineNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    setOfflineNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    if (supabase && authUser) {
+      const { error } = await supabase.from('notifications').update({ is_read: true }).eq('user_id', authUser.id).eq('is_read', false);
+      if (error) console.error('Failed to mark all notifications read', error);
+    }
+  };
+
+  const NOTIFICATION_PREFERENCE_COLUMNS: Record<NotificationPreferenceCategory, string> = {
+    orders: 'orders',
+    newProducts: 'new_products',
+    restocks: 'restocks',
+    promotions: 'promotions',
+    announcements: 'announcements',
+  };
+
+  const updateNotificationPreference = async (category: NotificationPreferenceCategory, enabled: boolean): Promise<void> => {
+    setOnlineNotificationPreferences((prev) => ({ ...prev, [category]: enabled }));
+    setOfflineNotificationPreferences((prev) => ({ ...prev, [category]: enabled }));
+    if (supabase && authUser) {
+      const column = NOTIFICATION_PREFERENCE_COLUMNS[category];
+      const { error } = await supabase
+        .from('notification_preferences')
+        .upsert({ user_id: authUser.id, [column]: enabled, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+      if (error) console.error('Failed to update notification preference', error);
+    }
+  };
+
+  const toggleFavoriteBusiness = async (businessId: string): Promise<void> => {
+    const isFavorited = favoritedBusinessIds.includes(businessId);
+    setOnlineFavoritedBusinessIds((prev) => (isFavorited ? prev.filter((id) => id !== businessId) : prev.includes(businessId) ? prev : [...prev, businessId]));
+    setOfflineFavoritedBusinessIds((prev) => (isFavorited ? prev.filter((id) => id !== businessId) : prev.includes(businessId) ? prev : [...prev, businessId]));
+
+    if (supabase && authUser) {
+      if (isFavorited) {
+        const { error } = await supabase.from('business_favorites').delete().eq('user_id', authUser.id).eq('business_id', businessId);
+        if (error) console.error('Failed to unfavorite shop', error);
+      } else {
+        const { error } = await supabase.from('business_favorites').insert({ user_id: authUser.id, business_id: businessId });
+        if (error) console.error('Failed to favorite shop', error);
+      }
+    }
+  };
+
+  // Resolves a notification's deep-link `action` into this app's existing
+  // navigation state. The active iOS tab lives outside this context (in
+  // App.tsx's local state), so switching it goes through pendingNavigation —
+  // App.tsx applies it in an effect, then clears it back to null.
+  const resolveNotificationAction = (action?: NotificationAction): void => {
+    if (!action || typeof action !== 'object' || !('view' in action)) return;
+    const view = (action as { view: string }).view;
+
+    if (view === 'seller_order' || view === 'seller_products') {
+      const businessId = (action as { businessId?: string }).businessId;
+      const biz = businesses.find((b) => b.id === businessId);
+      if (biz) setActiveBusinessId(biz.id);
+      setCurrentView('seller');
+      setSellerTab(view === 'seller_order' ? 'orders' : 'products');
+      setPendingNavigation({ tab: 'seller' });
+    } else if (view === 'business' || view === 'product') {
+      setPendingNavigation({ tab: 'market', businessId: (action as { businessId?: string }).businessId });
+    } else if (view === 'customer_order') {
+      setPendingNavigation({ tab: 'bag', orderId: (action as { orderId?: string }).orderId });
+    } else if (view === 'subscription') {
+      setIsSubscriptionPageOpen(true);
+    } else if (view === 'marketplace') {
+      setPendingNavigation({ tab: 'market' });
+    }
+    // 'announcement' has no dedicated screen yet — reading it is the whole action.
+  };
+
+  const loadMoreNotifications = async (): Promise<AppNotification[]> => {
+    if (!supabase || !authUser || onlineNotifications.length === 0) return [];
+    const oldest = onlineNotifications[onlineNotifications.length - 1];
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', authUser.id)
+      .lt('created_at', oldest.createdAt)
+      .order('created_at', { ascending: false })
+      .limit(50);
+    if (error) {
+      console.error('Failed to load more notifications', error);
+      return [];
+    }
+    const rows = (data || []).map(rowToNotification);
+    setOnlineNotifications((prev) => [...prev, ...rows]);
+    return rows;
+  };
+
   useEffect(() => {
     if (!supabase || !authUser || !activeBusiness.id) {
       setActiveSquadChallenge(null);
@@ -1330,7 +1669,17 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
   };
 
   // Checkout & Place Order
-  const placeOrder = (orderData: {
+  // Online, each business's suborder is placed via the place_order RPC
+  // (migration_12), which atomically checks AND decrements stock server-side
+  // before inserting the order — if any item doesn't have enough stock left,
+  // the whole call rolls back (nothing decremented, no order row inserted)
+  // instead of the old behavior of computing the next inventory count from
+  // this tab's possibly-stale cached `products` state and inserting
+  // unconditionally, which let two customers both "successfully" buy the
+  // last unit of something. A business whose suborder fails keeps its items
+  // in the cart (so the customer can adjust); businesses that already
+  // succeeded are removed as usual.
+  const placeOrder = async (orderData: {
     customerName: string;
     customerContact: string;
     customerUniversity: CampusUniversity;
@@ -1341,8 +1690,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
     meetupLocation: string;
     notes?: string;
     couponCode?: string;
-  }): Order[] => {
-    if (cart.length === 0) return [];
+  }): Promise<{ success: boolean; orders: Order[]; failureReason?: string }> => {
+    if (cart.length === 0) return { success: false, orders: [] };
 
     // Group items by business so multi-store orders produce separate orders per seller
     const itemsByBiz: Record<string, CartItem[]> = {};
@@ -1353,8 +1702,12 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
     });
 
     const newCreatedOrders: Order[] = [];
+    const succeededBusinessIds: string[] = [];
+    let failureReason: string | undefined;
 
-    Object.entries(itemsByBiz).forEach(([bId, bizItems], idx) => {
+    const entries = Object.entries(itemsByBiz);
+    for (let idx = 0; idx < entries.length; idx++) {
+      const [bId, bizItems] = entries[idx];
       const businessObj = businesses.find((b) => b.id === bId) || activeBusiness;
       const orderItems = bizItems.map((bi) => ({
         productId: bi.product.id,
@@ -1379,14 +1732,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
         if ('coupon' in result) {
           discountAmount = result.discount;
           appliedCouponCode = result.coupon.code;
-          if (supabase) {
-            void supabase.rpc('redeem_coupon', { target_coupon_id: result.coupon.id }).then(({ error }) => {
-              if (error) console.error('Failed to record coupon redemption', error);
-            });
-          }
-          setCoupons((prev) => prev.map((c) => (
-            c.id === result.coupon.id ? { ...c, redemptionCount: c.redemptionCount + 1 } : c
-          )));
         }
       }
       const totalAmount = Math.max(0, subtotal - discountAmount);
@@ -1421,55 +1766,129 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
         notes: orderData.notes,
       };
 
-      newCreatedOrders.push(newOrder);
-
       if (supabase) {
-        void supabase.from('orders').insert(orderToRow(newOrder)).then(({ error }) => {
-          if (error) console.error('Failed to save order', error);
+        // place_order (migration_13) is fully server-authoritative on
+        // pricing and the coupon discount — it only trusts this client for
+        // productId + quantity per item. It raises on any failure (sold
+        // out, invalid/expired/exhausted coupon, etc.), which surfaces
+        // here as `error`, rather than returning a `success` flag — that
+        // also makes it atomic: a raised exception rolls back everything
+        // the function already did in this call, so a failure partway
+        // through never leaves a partial stock decrement behind.
+        const { data, error } = await supabase.rpc('place_order', { p_order: newOrder });
+        if (error) {
+          console.error('Failed to place order', error);
+          failureReason = error.message || 'a technical issue — please try again';
+          break;
+        }
+        const row: any = Array.isArray(data) ? data[0] : data;
+
+        // Reconcile with the server's authoritative totals — never trust
+        // this tab's own pre-submission guess for what was actually charged.
+        newOrder.totalAmount = Number(row?.final_total_amount) || 0;
+        newOrder.discountAmount = row?.final_discount_amount ? Number(row.final_discount_amount) : undefined;
+        newOrder.items = (row?.final_items as typeof orderItems) || orderItems;
+
+        setCoupons((prev) => prev.map((c) => (c.code === appliedCouponCode && c.businessId === bId ? { ...c, redemptionCount: c.redemptionCount + 1 } : c)));
+
+        // Stock was already validated + decremented server-side inside
+        // place_order — this just reflects that in the locally cached
+        // products list so the UI updates instantly instead of waiting on
+        // a refetch.
+        setProducts((prevProducts) =>
+          prevProducts.map((p) => {
+            const bought = newOrder.items.find((oi) => oi.productId === p.id);
+            if (!bought) return p;
+            return { ...p, inventoryCount: Math.max(0, p.inventoryCount - bought.quantity), soldCount: p.soldCount + bought.quantity };
+          })
+        );
+
+        // A database trigger (notify_order_created, see migration_12)
+        // notifies the merchant + customer automatically — no client call needed.
+      } else {
+        // Offline/local-demo mode: validate stock client-side (no real
+        // concurrency risk with a single local account) and synthesize the
+        // notifications a trigger would otherwise create.
+        const insufficient = orderItems.find((oi) => {
+          const product = products.find((p) => p.id === oi.productId);
+          return !product || product.inventoryCount < oi.quantity;
         });
+        if (insufficient) {
+          failureReason = `${insufficient.productName} just sold out`;
+          break;
+        }
+
+        if (appliedCouponCode) {
+          setCoupons((prev) => prev.map((c) => (c.code === appliedCouponCode && c.businessId === bId ? { ...c, redemptionCount: c.redemptionCount + 1 } : c)));
+        }
+
+        setProducts((prevProducts) =>
+          prevProducts.map((p) => {
+            const bought = orderItems.find((oi) => oi.productId === p.id);
+            if (!bought) return p;
+            return { ...p, inventoryCount: Math.max(0, p.inventoryCount - bought.quantity), soldCount: p.soldCount + bought.quantity };
+          })
+        );
+
+        synthesizeOfflineNotification(
+          'new_order', '🌱 New order!', `You have a new order from ${orderData.customerName}.`,
+          newOrder.id, 'order', { view: 'seller_order', businessId: bId, orderId: newOrder.id }
+        );
+        synthesizeOfflineNotification(
+          'order_placed', '🌱 Order placed!', `Your order from ${businessObj.name} has been placed.`,
+          newOrder.id, 'order', { view: 'customer_order', orderId: newOrder.id }
+        );
       }
 
-      // Decrement inventory count for each purchased product
-      setProducts((prevProducts) =>
-        prevProducts.map((p) => {
-          const bought = orderItems.find((oi) => oi.productId === p.id);
-          if (bought) {
-            const nextInventory = Math.max(0, p.inventoryCount - bought.quantity);
-            const nextSoldCount = p.soldCount + bought.quantity;
-            if (supabase) {
-              void supabase.rpc('decrement_product_stock', {
-                target_product_id: p.id,
-                qty: bought.quantity,
-              }).then(({ error }) => {
-                if (error) console.error('Failed to update product inventory', error);
-              });
-            }
-            return { ...p, inventoryCount: nextInventory, soldCount: nextSoldCount };
-          }
-          return p;
-        })
-      );
-    });
+      newCreatedOrders.push(newOrder);
+      succeededBusinessIds.push(bId);
+    }
 
-    setOrders((prev) => [...newCreatedOrders, ...prev]);
-    clearCart();
-    triggerConfetti();
-    return newCreatedOrders;
+    if (newCreatedOrders.length > 0) {
+      setOrders((prev) => [...newCreatedOrders, ...prev]);
+      setCart((prev) => prev.filter((item) => !succeededBusinessIds.includes(item.product.businessId)));
+      triggerConfetti();
+    }
+
+    return { success: !failureReason, orders: newCreatedOrders, failureReason };
   };
 
   // AI Business Coach
   const askAiCoach = async (userQuestion?: string): Promise<{ advice: string; fallback: boolean }> => {
     setIsAiCoachLoading(true);
     try {
+      // The endpoint requires a valid session token from any deployment
+      // with Supabase configured (see isAuthorizedAiCoachRequest in
+      // server/aiCoach.ts) — otherwise it's unauthenticated and anyone who
+      // finds the URL can run up the Gemini bill.
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (supabase) {
+        const { data } = await supabase.auth.getSession();
+        if (data.session?.access_token) headers.Authorization = `Bearer ${data.session.access_token}`;
+      }
+
       const response = await fetch('/api/ai-coach', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           businessName: activeBusiness.name,
           category: activeBusiness.category,
           university: activeBusiness.university,
           metrics: activeBusinessMetrics,
-          recentOrders: sellerOrders.slice(0, 5),
+          // Deliberately a lean summary, not the raw Order objects — each
+          // order's line items carry imageUrl (this app stores product
+          // images as base64 data URLs, which can run into megabytes),
+          // and the AI coach only ever uses recentOrders for its count
+          // anyway (see server/aiCoach.ts). Sending full orders here used
+          // to blow past Express's default 100kb JSON body limit, so the
+          // request was silently rejected and the UI fell back to the
+          // same canned rule-based tip regardless of what was asked.
+          recentOrders: sellerOrders.slice(0, 5).map((o) => ({
+            orderNumber: o.orderNumber,
+            totalAmount: o.totalAmount,
+            orderStatus: o.orderStatus,
+            itemCount: o.items.length,
+          })),
           recentExpenses: sellerExpenses.slice(0, 5),
           userQuestion: userQuestion || 'What are the top 3 high-impact steps I should take this week?',
         }),
@@ -1555,6 +1974,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
         setSelectedBusinessForDetail,
         selectedCampusFilter,
         setSelectedCampusFilter,
+        pendingNavigation,
+        setPendingNavigation,
         businesses,
         products,
         orders,
@@ -1589,6 +2010,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
         deleteProduct,
         updateOrderStatus,
         updateDeliverySchedule,
+        confirmOrderReceived,
         addExpense,
         deleteExpense,
         addCoupon,
@@ -1606,6 +2028,16 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
         refreshSquadChallenge,
         claimSquadChallengeReward,
         setLeaderboardOptIn,
+        notifications,
+        unreadNotificationCount,
+        notificationPreferences,
+        favoritedBusinessIds,
+        markNotificationRead,
+        markAllNotificationsRead,
+        updateNotificationPreference,
+        toggleFavoriteBusiness,
+        resolveNotificationAction,
+        loadMoreNotifications,
         addToCart,
         updateCartQuantity,
         removeFromCart,

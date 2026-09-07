@@ -10,7 +10,8 @@ import {
   Calendar,
   Instagram,
   QrCode,
-  Tag
+  Tag,
+  Heart
 } from 'lucide-react';
 import { Business, Product } from '../../types';
 import { useApp } from '../../context/AppContext';
@@ -27,7 +28,8 @@ export const BusinessDetailView: React.FC<BusinessDetailViewProps> = ({
   onBack,
   onSelectProduct,
 }) => {
-  const { products, addToCart, setCurrentView, setSellerTab, setActiveBusiness } = useApp();
+  const { products, addToCart, setCurrentView, setSellerTab, setActiveBusiness, favoritedBusinessIds, toggleFavoriteBusiness } = useApp();
+  const isFavorited = favoritedBusinessIds.includes(business.id);
 
   const bizProducts = products.filter((p) => p.businessId === business.id);
 
@@ -90,18 +92,31 @@ export const BusinessDetailView: React.FC<BusinessDetailViewProps> = ({
               </div>
             </div>
 
-            {/* Quick Switch to Manage Business (For Demo ease!) */}
-            <button
-              onClick={() => {
-                setActiveBusiness(business);
-                setCurrentView('seller');
-                setSellerTab('overview');
-              }}
-              className="px-4 py-2 bg-[#B8E6D5] hover:bg-[#A3DEC9] text-[#194E3B] font-extrabold text-xs rounded-2xl border border-[#9FD9C3] shadow-xs transition-colors flex items-center gap-1.5 self-start sm:self-auto cursor-pointer btn-bouncy"
-            >
-              <Store className="w-4 h-4" />
-              <span>Manage this Shop in Seller OS</span>
-            </button>
+            <div className="flex items-center gap-2 self-start sm:self-auto">
+              <button
+                onClick={() => void toggleFavoriteBusiness(business.id)}
+                title={isFavorited ? 'Unfollow this shop' : 'Follow this shop for new-product & restock alerts'}
+                className={`px-3 py-2 font-extrabold text-xs rounded-2xl border shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer btn-bouncy ${
+                  isFavorited ? 'bg-[#FFD3BA] border-[#F8BA9E] text-[#7A341A]' : 'bg-white border-[#EDE4D8] text-[#6B5B4F] hover:border-[#F8BA9E]'
+                }`}
+              >
+                <Heart className={`w-4 h-4 ${isFavorited ? 'fill-[#7A341A]' : ''}`} />
+                <span>{isFavorited ? 'Following' : 'Follow'}</span>
+              </button>
+
+              {/* Quick Switch to Manage Business (For Demo ease!) */}
+              <button
+                onClick={() => {
+                  setActiveBusiness(business);
+                  setCurrentView('seller');
+                  setSellerTab('overview');
+                }}
+                className="px-4 py-2 bg-[#B8E6D5] hover:bg-[#A3DEC9] text-[#194E3B] font-extrabold text-xs rounded-2xl border border-[#9FD9C3] shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer btn-bouncy"
+              >
+                <Store className="w-4 h-4" />
+                <span>Manage this Shop in Seller OS</span>
+              </button>
+            </div>
           </div>
 
           <p className="mt-4 text-xs sm:text-sm text-[#6E5D52] max-w-3xl leading-relaxed">

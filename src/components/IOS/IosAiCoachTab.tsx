@@ -3,6 +3,7 @@ import { Send, Sparkles, RefreshCw, Bot, ArrowUpRight, CheckCircle2, AlertCircle
 import { useApp } from '../../context/AppContext';
 import { formatPHP } from '../../utils/analytics';
 import { playIosTap, playIosSuccess } from '../../utils/haptics';
+import { MarkdownText } from '../MarkdownText';
 
 interface Message {
   id: string;
@@ -137,7 +138,7 @@ export const IosAiCoachTab: React.FC = () => {
                   : 'bg-white text-[#3B2F27] border border-[#EDE4D8] rounded-bl-xs'
               }`}
             >
-              <div className="whitespace-pre-wrap">{msg.text}</div>
+              {msg.sender === 'ai' ? <MarkdownText text={msg.text} /> : <div className="whitespace-pre-wrap">{msg.text}</div>}
             </div>
             <span className="text-[9px] text-[#A39284] mt-1 px-1">
               {msg.timestamp}

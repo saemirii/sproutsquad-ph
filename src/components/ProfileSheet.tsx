@@ -1,8 +1,16 @@
 import React, { useState } from 'react';
-import { Check, KeyRound, LogOut, Save, Sparkles, Upload, UserRound, X } from 'lucide-react';
+import { Bell, Check, KeyRound, LogOut, Save, Sparkles, Upload, UserRound, X } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { CampusUniversity } from '../types';
+import { CampusUniversity, NotificationPreferenceCategory } from '../types';
 import { EnterBesKeyModal } from './EnterBesKeyModal';
+
+const NOTIFICATION_CATEGORIES: { key: NotificationPreferenceCategory; label: string }[] = [
+  { key: 'orders', label: 'Order updates' },
+  { key: 'newProducts', label: 'New products from shops you follow' },
+  { key: 'restocks', label: 'Restocks' },
+  { key: 'promotions', label: 'Promotions' },
+  { key: 'announcements', label: 'SproutSquad announcements' },
+];
 
 interface ProfileSheetProps {
   onClose: () => void;
@@ -17,6 +25,7 @@ export const ProfileSheet: React.FC<ProfileSheetProps> = ({ onClose, onOpenSubsc
   const {
     currentUser, updateCurrentUser, businesses, activeBusiness,
     setActiveBusiness, accessibleBusinessIds, signOut,
+    notificationPreferences, updateNotificationPreference,
   } = useApp();
   const [name, setName] = useState(currentUser.name);
   const [school, setSchool] = useState<CampusUniversity>(currentUser.university);
@@ -119,6 +128,29 @@ export const ProfileSheet: React.FC<ProfileSheetProps> = ({ onClose, onOpenSubsc
         <div className="flex items-center gap-2 rounded-xl bg-[#FFF0E8] border border-[#F8BA9E] px-3 py-2 text-[10px] leading-4 text-[#7A341A]"><UserRound className="w-4 h-4 shrink-0" />BES access is shared by the business, so teammates can use the same key from their own accounts.</div>
 
         {isBesKeyModalOpen && <EnterBesKeyModal onClose={() => setIsBesKeyModalOpen(false)} />}
+
+        <div className="border-t border-[#EDE4D8] pt-4 space-y-3">
+          <div className="flex items-center gap-1.5">
+            <Bell className="w-3.5 h-3.5 text-[#207559]" />
+            <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#207559]">Notifications</p>
+          </div>
+          <div className="space-y-2">
+            {NOTIFICATION_CATEGORIES.map((category) => (
+              <div key={category.key} className="flex items-center justify-between gap-3 rounded-2xl border border-[#EDE4D8] bg-white px-3.5 py-2.5">
+                <span className="text-xs font-bold text-[#3B2F27]">{category.label}</span>
+                <button
+                  onClick={() => void updateNotificationPreference(category.key, !notificationPreferences[category.key])}
+                  className={`btn-bouncy shrink-0 px-3 py-1.5 rounded-xl text-[10px] font-black cursor-pointer ${
+                    notificationPreferences[category.key] ? 'bg-[#B8E6D5] text-[#194E3B]' : 'bg-[#FAF7F2] border border-[#E5DACD] text-[#8C7A6D]'
+                  }`}
+                >
+                  {notificationPreferences[category.key] ? 'On' : 'Off'}
+                </button>
+              </div>
+            ))}
+          </div>
+          <p className="text-[10px] text-[#8C7A6D] leading-4">Account notices and, if you run a shop, new-order/inventory alerts always stay on — they're not affected by these toggles.</p>
+        </div>
 
         <button
           onClick={() => { onClose(); signOut(); }}

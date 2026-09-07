@@ -2,7 +2,7 @@ import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
-import { getAiCoachAdvice } from "./server/aiCoach";
+import { getAiCoachAdvice, isAuthorizedAiCoachRequest } from "./server/aiCoach";
 import { isAuthorizedWebhookRequest, processRevenueCatWebhookPayload } from "./server/revenuecatWebhook";
 
 // This project's convention (matching Vite's own env loading) is `.env.local`
@@ -20,7 +20,12 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  app.use(express.json());
+  // Default express.json() body limit is 100kb — too small once a request
+  // carries anything derived from this app's data (product/business images
+  // are stored as base64 data URLs and can run into megabytes). Raised as a
+  // defense-in-depth safety net; callers should still avoid sending raw
+  // image data to routes that don't need it (see AppContext.tsx's askAiCoach).
+  app.use(express.json({ limit: '5mb' }));
 
   // RevenueCat webhook — keeps a lightweight, queryable mirror of Sprout+
   // subscription status in Supabase. Never processes secrets client-side;
@@ -35,6 +40,9 @@ async function startServer() {
 
   // Optional Gemini AI Business Coach for Student Entrepreneurs
   app.post("/api/ai-coach", async (req, res) => {
+    if (!(await isAuthorizedAiCoachRequest(req.header("Authorization")))) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
     const result = await getAiCoachAdvice(req.body);
     return res.status(result.status).json(result.body);
   });

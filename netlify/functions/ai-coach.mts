@@ -1,9 +1,13 @@
 import type { Config } from "@netlify/functions";
-import { getAiCoachAdvice } from "../../server/aiCoach";
+import { getAiCoachAdvice, isAuthorizedAiCoachRequest } from "../../server/aiCoach";
 
 export default async (req: Request) => {
   if (req.method !== "POST") {
     return Response.json({ error: "Method not allowed" }, { status: 405 });
+  }
+
+  if (!(await isAuthorizedAiCoachRequest(req.headers.get("Authorization")))) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   let payload: unknown;

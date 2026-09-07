@@ -44,6 +44,8 @@ export const OrderManager: React.FC = () => {
         return 'bg-[#A8D8EA] text-[#1B4E6B] border-[#8EC7DC]';
       case 'Ready for Pickup':
         return 'bg-[#FFD3BA] text-[#7A341A] border-[#F8BA9E]';
+      case 'Out for Delivery':
+        return 'bg-[#E9D5FF] text-[#6B21A8] border-[#D8B4FE]';
       case 'Completed':
         return 'bg-[#B8E6D5] text-[#194E3B] border-[#9FD9C3]';
       case 'Cancelled':
@@ -73,7 +75,7 @@ export const OrderManager: React.FC = () => {
 
         {/* Filter Pills */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-          {(['All', 'Pending', 'Preparing', 'Ready for Pickup', 'Completed'] as const).map((st) => (
+          {(['All', 'Pending', 'Preparing', 'Ready for Pickup', 'Out for Delivery', 'Completed'] as const).map((st) => (
             <button
               key={st}
               onClick={() => setSelectedStatusFilter(st)}
@@ -247,15 +249,24 @@ export const OrderManager: React.FC = () => {
                     )}
 
                     {(order.orderStatus === 'Pending' || order.orderStatus === 'Preparing') && (
-                      <button
-                        onClick={() => updateOrderStatus(order.id, 'Ready for Pickup')}
-                        className="px-3 py-1.5 bg-[#F3E8FF] hover:bg-[#E9D5FF] text-[#6B21A8] font-bold text-xs rounded-xl transition-colors cursor-pointer"
-                      >
-                        Mark Ready for Meetup 📍
-                      </button>
+                      order.fulfillmentType === 'Dorm Delivery' ? (
+                        <button
+                          onClick={() => updateOrderStatus(order.id, 'Out for Delivery')}
+                          className="px-3 py-1.5 bg-[#F3E8FF] hover:bg-[#E9D5FF] text-[#6B21A8] font-bold text-xs rounded-xl transition-colors cursor-pointer"
+                        >
+                          Mark Out for Delivery 🚚
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => updateOrderStatus(order.id, 'Ready for Pickup')}
+                          className="px-3 py-1.5 bg-[#F3E8FF] hover:bg-[#E9D5FF] text-[#6B21A8] font-bold text-xs rounded-xl transition-colors cursor-pointer"
+                        >
+                          Mark Ready for Meetup 📍
+                        </button>
+                      )
                     )}
 
-                    {order.orderStatus === 'Ready for Pickup' && (
+                    {(order.orderStatus === 'Ready for Pickup' || order.orderStatus === 'Out for Delivery') && (
                       <button
                         onClick={() => handleCompleteOrder(order.id)}
                         className="px-4 py-2 bg-[#B8E6D5] hover:bg-[#A3DEC9] text-[#194E3B] font-black text-xs rounded-2xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5 btn-bouncy"
