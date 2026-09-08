@@ -17,6 +17,7 @@ import { ProductDetailModal } from './components/Marketplace/ProductDetailModal'
 import { OrderSuccessModal } from './components/Marketplace/OrderSuccessModal';
 import { SproutBloomLoader } from './components/SproutBloomLoader';
 import { Product, Business, Order } from './types';
+import { isNativeApp } from './utils/platform';
 
 const MainAppContent: React.FC = () => {
   const { currentView, setCurrentView, isRemoteDataLoading, businesses, pendingNavigation, setPendingNavigation } = useApp();
@@ -166,6 +167,17 @@ export default function App() {
     return saved ? JSON.parse(saved) : null;
   });
   const [isLoading, setIsLoading] = useState(true);
+
+  // One-time native status bar setup — the app's own UI reserves
+  // safe-area-inset-top space (see IosStatusBar.tsx) rather than drawing a
+  // fake status bar there, so the real one just needs its text style set to
+  // match this app's light background.
+  useEffect(() => {
+    if (!isNativeApp) return;
+    void import('@capacitor/status-bar').then(({ StatusBar, Style }) => {
+      void StatusBar.setStyle({ style: Style.Light });
+    });
+  }, []);
 
   useEffect(() => {
     if (!supabase) {

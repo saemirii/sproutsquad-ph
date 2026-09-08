@@ -7,6 +7,7 @@ import { isSoundEnabled, setSoundEnabled, playIosTap } from '../../utils/haptics
 import { ProfileSheet } from '../ProfileSheet';
 import { SubscriptionPage } from '../SubscriptionPage';
 import { useApp } from '../../context/AppContext';
+import { isNativeApp } from '../../utils/platform';
 
 interface IPhoneFrameProps {
   children: React.ReactNode;
@@ -27,7 +28,10 @@ export const IPhoneFrame: React.FC<IPhoneFrameProps> = ({
   onClearAlert,
   onOpenBag,
 }) => {
-  const [isFramed, setIsFramed] = useState(true);
+  // A native build never gets the fake device bezel/chassis, at any device
+  // width — it's a real app, not a browser-window simulation of one. Web
+  // keeps its desktop-preview "framed" default.
+  const [isFramed, setIsFramed] = useState(!isNativeApp);
   const [finish, setFinish] = useState<DeviceFinish>('gold');
   const [soundOn, setSoundOn] = useState(isSoundEnabled());
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -72,59 +76,64 @@ export const IPhoneFrame: React.FC<IPhoneFrameProps> = ({
   return (
     <div className="min-h-screen bg-[#F5EFE6] text-[#6B5B4F] flex flex-col items-center justify-start p-0 sm:py-6 selection:bg-[#B8E6D5] selection:text-[#194E3B]">
       
-      {/* Top Floating iOS Simulator Controls (Visible on Tablet / Desktop) */}
-      <div className="hidden sm:flex items-center justify-between gap-4 w-full max-w-lg mb-3 px-4 py-2 bg-white/80 backdrop-blur-md rounded-2xl border border-[#EDE4D8] shadow-xs text-xs">
-        <div className="flex items-center gap-2">
-          <span className="text-base">🌱</span>
-          <span className="font-extrabold text-[#3B2F27] font-['Nunito',sans-serif]">
-            SproutSquad iOS
-          </span>
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-[#B8E6D5] text-[#194E3B]">
-            iPhone 16 Pro
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {/* Finish Switcher */}
-          <div className="flex items-center gap-1 bg-[#FAF3DE] p-1 rounded-xl border border-[#EDE4D8]">
-            {(['gold', 'mint', 'pink', 'black'] as DeviceFinish[]).map((f) => (
-              <button
-                key={f}
-                title={finishStyles[f].label}
-                onClick={() => {
-                  playIosTap();
-                  setFinish(f);
-                }}
-                className={`w-4 h-4 rounded-full transition-transform ${
-                  finish === f ? 'scale-125 ring-2 ring-[#194E3B]' : 'hover:scale-110'
-                }`}
-                style={{ backgroundColor: finishStyles[f].accent }}
-              />
-            ))}
+      {/* Top Floating iOS Simulator Controls (Visible on Tablet / Desktop) —
+          a desktop-preview convenience for the web build only. Native gets
+          no equivalent at any device width (an iPad-width native app would
+          otherwise still hit this same `sm:` breakpoint and show it). */}
+      {!isNativeApp && (
+        <div className="hidden sm:flex items-center justify-between gap-4 w-full max-w-lg mb-3 px-4 py-2 bg-white/80 backdrop-blur-md rounded-2xl border border-[#EDE4D8] shadow-xs text-xs">
+          <div className="flex items-center gap-2">
+            <span className="text-base">🌱</span>
+            <span className="font-extrabold text-[#3B2F27] font-['Nunito',sans-serif]">
+              SproutSquad iOS
+            </span>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-[#B8E6D5] text-[#194E3B]">
+              iPhone 16 Pro
+            </span>
           </div>
 
-          {/* Audio Tap Toggle */}
-          <button
-            onClick={toggleSound}
-            title={soundOn ? 'Mute Haptic Sound' : 'Enable Haptic Sound'}
-            className="p-1.5 rounded-xl text-[#6B5B4F] hover:bg-[#FAF3DE] transition-colors"
-          >
-            {soundOn ? <Volume2 className="w-3.5 h-3.5 text-[#194E3B]" /> : <VolumeX className="w-3.5 h-3.5 text-[#A39284]" />}
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Finish Switcher */}
+            <div className="flex items-center gap-1 bg-[#FAF3DE] p-1 rounded-xl border border-[#EDE4D8]">
+              {(['gold', 'mint', 'pink', 'black'] as DeviceFinish[]).map((f) => (
+                <button
+                  key={f}
+                  title={finishStyles[f].label}
+                  onClick={() => {
+                    playIosTap();
+                    setFinish(f);
+                  }}
+                  className={`w-4 h-4 rounded-full transition-transform ${
+                    finish === f ? 'scale-125 ring-2 ring-[#194E3B]' : 'hover:scale-110'
+                  }`}
+                  style={{ backgroundColor: finishStyles[f].accent }}
+                />
+              ))}
+            </div>
 
-          {/* Toggle Device Frame vs Full Screen */}
-          <button
-            onClick={() => {
-              playIosTap();
-              setIsFramed(!isFramed);
-            }}
-            className="flex items-center gap-1 px-2 py-1 rounded-xl bg-[#FAF3DE] hover:bg-[#EDE4D8] text-[10px] font-bold text-[#3B2F27] transition-colors"
-          >
-            {isFramed ? <Maximize2 className="w-3 h-3" /> : <Minimize2 className="w-3 h-3" />}
-            <span>{isFramed ? 'Full Screen' : 'Frame View'}</span>
-          </button>
+            {/* Audio Tap Toggle */}
+            <button
+              onClick={toggleSound}
+              title={soundOn ? 'Mute Haptic Sound' : 'Enable Haptic Sound'}
+              className="p-1.5 rounded-xl text-[#6B5B4F] hover:bg-[#FAF3DE] transition-colors"
+            >
+              {soundOn ? <Volume2 className="w-3.5 h-3.5 text-[#194E3B]" /> : <VolumeX className="w-3.5 h-3.5 text-[#A39284]" />}
+            </button>
+
+            {/* Toggle Device Frame vs Full Screen */}
+            <button
+              onClick={() => {
+                playIosTap();
+                setIsFramed(!isFramed);
+              }}
+              className="flex items-center gap-1 px-2 py-1 rounded-xl bg-[#FAF3DE] hover:bg-[#EDE4D8] text-[10px] font-bold text-[#3B2F27] transition-colors"
+            >
+              {isFramed ? <Maximize2 className="w-3 h-3" /> : <Minimize2 className="w-3 h-3" />}
+              <span>{isFramed ? 'Full Screen' : 'Frame View'}</span>
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Main App Canvas / iPhone 16 Pro Mockup */}
       <div
@@ -176,10 +185,12 @@ export const IPhoneFrame: React.FC<IPhoneFrameProps> = ({
         </div>
       </div>
 
-      {/* Bottom context notice */}
-      <p className="hidden sm:block text-[11px] text-[#8C7A6D] mt-3 text-center">
-        💡 SproutSquad iOS runs natively on mobile Safari & Chrome with offline support & campus notifications.
-      </p>
+      {/* Bottom context notice — web only; would be a misleading claim inside the actual native app. */}
+      {!isNativeApp && (
+        <p className="hidden sm:block text-[11px] text-[#8C7A6D] mt-3 text-center">
+          💡 SproutSquad iOS runs natively on mobile Safari & Chrome with offline support & campus notifications.
+        </p>
+      )}
     </div>
   );
 };

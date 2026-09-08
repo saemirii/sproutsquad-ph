@@ -28,8 +28,9 @@ export const BusinessDetailView: React.FC<BusinessDetailViewProps> = ({
   onBack,
   onSelectProduct,
 }) => {
-  const { products, addToCart, setCurrentView, setSellerTab, setActiveBusiness, favoritedBusinessIds, toggleFavoriteBusiness } = useApp();
+  const { products, addToCart, setCurrentView, setSellerTab, setActiveBusiness, favoritedBusinessIds, toggleFavoriteBusiness, currentUser } = useApp();
   const isFavorited = favoritedBusinessIds.includes(business.id);
+  const isOwnBusiness = business.sellerId === currentUser.id;
 
   const bizProducts = products.filter((p) => p.businessId === business.id);
 
@@ -104,18 +105,24 @@ export const BusinessDetailView: React.FC<BusinessDetailViewProps> = ({
                 <span>{isFavorited ? 'Following' : 'Follow'}</span>
               </button>
 
-              {/* Quick Switch to Manage Business (For Demo ease!) */}
-              <button
-                onClick={() => {
-                  setActiveBusiness(business);
-                  setCurrentView('seller');
-                  setSellerTab('overview');
-                }}
-                className="px-4 py-2 bg-[#B8E6D5] hover:bg-[#A3DEC9] text-[#194E3B] font-extrabold text-xs rounded-2xl border border-[#9FD9C3] shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer btn-bouncy"
-              >
-                <Store className="w-4 h-4" />
-                <span>Manage this Shop in Seller OS</span>
-              </button>
+              {/* Only the shop's own owner can jump into Seller OS from here —
+                  this used to show on every shop's public page and silently
+                  pointed Shop OS at whatever business a buyer last viewed,
+                  making revenue/orders there read 0 (it was filtering by the
+                  wrong business, not losing any data). */}
+              {isOwnBusiness && (
+                <button
+                  onClick={() => {
+                    setActiveBusiness(business);
+                    setCurrentView('seller');
+                    setSellerTab('overview');
+                  }}
+                  className="px-4 py-2 bg-[#B8E6D5] hover:bg-[#A3DEC9] text-[#194E3B] font-extrabold text-xs rounded-2xl border border-[#9FD9C3] shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer btn-bouncy"
+                >
+                  <Store className="w-4 h-4" />
+                  <span>Manage this Shop in Seller OS</span>
+                </button>
+              )}
             </div>
           </div>
 

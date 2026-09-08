@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import type { Package } from '@revenuecat/purchases-js';
 import {
   X,
   Sparkles,
@@ -29,7 +28,9 @@ import {
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { triggerConfetti } from '../utils/confetti';
-import { isRevenueCatConfigured, SPROUT_PLUS_PRODUCTS } from '../lib/revenuecat';
+import { isRevenueCatConfigured, SPROUT_PLUS_PRODUCTS, getPackagePriceString, type Package } from '../lib/revenuecat';
+import { openNativeSubscriptionManagement } from '../lib/platformLinks';
+import { isNativeApp } from '../utils/platform';
 
 interface SubscriptionPageProps {
   onClose: () => void;
@@ -210,7 +211,17 @@ export const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ onClose }) =
             )}
 
             <div className="flex gap-2">
-              {subscription.managementURL && (
+              {isNativeApp ? (
+                // Apple's own subscriptions screen isn't a per-user URL like
+                // RevenueCat's web billing portal — it's a fixed system link.
+                <button
+                  onClick={() => void openNativeSubscriptionManagement()}
+                  className="btn-bouncy flex-1 rounded-xl bg-[#207559] hover:bg-[#194E3B] text-white text-xs font-black py-2.5 flex items-center justify-center gap-1.5"
+                >
+                  Manage subscription
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </button>
+              ) : subscription.managementURL && (
                 <a
                   href={subscription.managementURL}
                   target="_blank"
@@ -312,7 +323,7 @@ export const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ onClose }) =
                 <h2 className="text-lg font-black text-[#194E3B] font-['Nunito',sans-serif]">🌱 Sprout+</h2>
               </div>
               <div className="text-right">
-                <p className="text-xl font-black text-[#194E3B]">{monthlyPkg.webBillingProduct.price.formattedPrice}</p>
+                <p className="text-xl font-black text-[#194E3B]">{getPackagePriceString(monthlyPkg)}</p>
                 <p className="text-[10px] font-bold text-[#207559]">per month</p>
               </div>
             </div>
@@ -363,7 +374,7 @@ export const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ onClose }) =
                 <h2 className="text-lg font-black text-[#3B2F27] font-['Nunito',sans-serif]">🌿 Bloom+</h2>
               </div>
               <div className="text-right">
-                <p className="text-xl font-black text-[#3B2F27]">{yearlyPkg.webBillingProduct.price.formattedPrice}</p>
+                <p className="text-xl font-black text-[#3B2F27]">{getPackagePriceString(yearlyPkg)}</p>
                 <p className="text-[10px] font-bold text-[#B4501C]">per year</p>
               </div>
             </div>
@@ -413,9 +424,20 @@ export const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ onClose }) =
           </button>
         )}
 
-        <p className="text-center text-[10px] text-[#8C7A6D] leading-4">
-          Cancel anytime · Secure checkout powered by RevenueCat · Prices in your local currency
-        </p>
+        {isNativeApp ? (
+          // Apple Guideline 3.1.2 subscription disclosure: title, length,
+          // price, and auto-renewal terms for a custom paywall UI. TODO:
+          // add functional Privacy Policy / Terms of Use links here once
+          // those pages exist (see Phase 5 of the App Store readiness plan)
+          // — required before this can actually ship to App Review.
+          <p className="text-center text-[10px] text-[#8C7A6D] leading-4">
+            Sprout+ (monthly) and Bloom+ (yearly) auto-renew until cancelled. Manage or cancel anytime in Settings &gt; [Your Name] &gt; Subscriptions. Payment is charged to your Apple ID account at confirmation of purchase.
+          </p>
+        ) : (
+          <p className="text-center text-[10px] text-[#8C7A6D] leading-4">
+            Cancel anytime · Secure checkout powered by RevenueCat · Prices in your local currency
+          </p>
+        )}
       </div>
     </div>
   );

@@ -1,80 +1,47 @@
-import {
-  Purchases,
-  PurchasesError,
-  ErrorCode,
-  type CustomerInfo,
-  type Offerings,
-  type Package,
-  type PurchaseResult,
-} from '@revenuecat/purchases-js';
+import { Capacitor } from '@capacitor/core';
+import type { CustomerInfo as WebCustomerInfo, Offerings as WebOfferings, Package as WebPackage } from '@revenuecat/purchases-js';
+import type { CustomerInfo as NativeCustomerInfo, PurchasesOfferings as NativeOfferings, PurchasesPackage as NativePackage } from '@revenuecat/purchases-capacitor';
 
-// Single abstraction point for the RevenueCat Web SDK. Nothing outside this
-// file should import from '@revenuecat/purchases-js' directly (except for
-// types), so the SDK can be swapped/upgraded without touching UI code.
+// Single abstraction point for RevenueCat, on either platform. Nothing
+// outside this file should import from '@revenuecat/purchases-js' or
+// '@revenuecat/purchases-capacitor' directly (except for types), so either
+// SDK can be swapped/upgraded without touching UI code.
+//
+// This is a thin runtime dispatcher, not the implementation — the actual
+// logic lives in revenuecat.web.ts (Web Billing, used by the existing
+// Netlify deployment) and revenuecat.native.ts (native StoreKit via
+// RevenueCat's Capacitor SDK, used by the iOS app). Both are only ever
+// loaded via dynamic import() based on Capacitor.isNativePlatform(), so
+// whichever SDK isn't relevant to the current platform never ends up in
+// that platform's loaded bundle (Vite code-splits each into its own chunk).
+export * from './revenuecatConstants';
 
-const REVENUECAT_PUBLIC_KEY = import.meta.env.VITE_REVENUECAT_PUBLIC_KEY as string | undefined;
+// Both real Offerings/Package/CustomerInfo shapes are structurally
+// compatible for every field this app actually reads (confirmed directly
+// against both SDKs' own type declarations) — a plain union lets consumers
+// stay platform-agnostic without needing a bespoke shared interface.
+export type Offerings = WebOfferings | NativeOfferings;
+export type Package = WebPackage | NativePackage;
+export type CustomerInfo = WebCustomerInfo | NativeCustomerInfo;
 
-export const isRevenueCatConfigured = Boolean(REVENUECAT_PUBLIC_KEY);
+const REVENUECAT_WEB_PUBLIC_KEY = import.meta.env.VITE_REVENUECAT_PUBLIC_KEY as string | undefined;
+const REVENUECAT_IOS_PUBLIC_KEY = import.meta.env.VITE_REVENUECAT_IOS_PUBLIC_KEY as string | undefined;
 
-// Both sprout_plus_monthly and sprout_plus_yearly grant this single entitlement.
-// Feature access must always be checked against the entitlement, never the product id.
-// NOTE: this must exactly match the entitlement identifier configured in the
-// RevenueCat dashboard (Project > Entitlements) — a mismatch here means every
-// purchase event gets silently skipped as "unrelated entitlement" even though
-// a real purchase succeeded. Confirmed live against the dashboard's actual
-// configured name.
-export const SPROUT_PLUS_ENTITLEMENT = 'sproutsquad_membership';
+// Doesn't need the dynamically-imported module — just needs to know which
+// key applies to this platform, so UI can render a "not configured" state
+// synchronously, before the platform module has necessarily loaded.
+export const isRevenueCatConfigured = Boolean(
+  Capacitor.isNativePlatform() ? REVENUECAT_IOS_PUBLIC_KEY : REVENUECAT_WEB_PUBLIC_KEY
+);
 
-export const SPROUT_PLUS_PRODUCTS = {
-  monthly: 'sprout_plus_monthly',
-  yearly: 'sprout_plus_yearly',
-} as const;
+type RevenueCatModule = typeof import('./revenuecat.web') | typeof import('./revenuecat.native');
 
-export interface SproutPlusStatus {
-  hasSproutPlus: boolean;
-  productIdentifier: string | null;
-  /** 'active' = paid and renewing. 'cancelling' = paid access still active, but won't renew. 'inactive' = no access. */
-  status: 'active' | 'cancelling' | 'inactive';
-  purchaseDate: Date | null;
-  expirationDate: Date | null;
-  willRenew: boolean;
-  managementURL: string | null;
-  isSandbox: boolean;
-}
-
-export const DEFAULT_SUBSCRIPTION_STATUS: SproutPlusStatus = {
-  hasSproutPlus: false,
-  productIdentifier: null,
-  status: 'inactive',
-  purchaseDate: null,
-  expirationDate: null,
-  willRenew: false,
-  managementURL: null,
-  isSandbox: false,
-};
-
-export function buildSubscriptionStatus(customerInfo: CustomerInfo | null): SproutPlusStatus {
-  if (!customerInfo) return DEFAULT_SUBSCRIPTION_STATUS;
-
-  const entitlement = customerInfo.entitlements.active[SPROUT_PLUS_ENTITLEMENT];
-  if (!entitlement) return { ...DEFAULT_SUBSCRIPTION_STATUS, managementURL: customerInfo.managementURL };
-
-  return {
-    hasSproutPlus: entitlement.isActive,
-    productIdentifier: entitlement.productIdentifier,
-    status: !entitlement.isActive ? 'inactive' : entitlement.willRenew ? 'active' : 'cancelling',
-    purchaseDate: entitlement.latestPurchaseDate,
-    expirationDate: entitlement.expirationDate,
-    willRenew: entitlement.willRenew,
-    managementURL: customerInfo.managementURL,
-    isSandbox: entitlement.isSandbox,
-  };
-}
-
-function getConfiguredInstance(): Purchases | null {
-  if (!isRevenueCatConfigured) return null;
-  if (!Purchases.isConfigured()) return null;
-  return Purchases.getSharedInstance();
+let modulePromise: Promise<RevenueCatModule> | null = null;
+function loadModule(): Promise<RevenueCatModule> {
+  if (!modulePromise) {
+    modulePromise = Capacitor.isNativePlatform() ? import('./revenuecat.native') : import('./revenuecat.web');
+  }
+  return modulePromise;
 }
 
 /**
@@ -84,72 +51,72 @@ function getConfiguredInstance(): Purchases | null {
  * changes.
  */
 export async function identifyRevenueCatUser(appUserId: string): Promise<CustomerInfo | null> {
-  if (!isRevenueCatConfigured) return null;
-
-  if (!Purchases.isConfigured()) {
-    const purchases = Purchases.configure({ apiKey: REVENUECAT_PUBLIC_KEY as string, appUserId });
-    return purchases.getCustomerInfo();
-  }
-
-  const purchases = Purchases.getSharedInstance();
-  if (purchases.getAppUserId() === appUserId) {
-    return purchases.getCustomerInfo();
-  }
-  return purchases.changeUser(appUserId);
+  const mod = await loadModule();
+  return mod.identifyRevenueCatUser(appUserId) as Promise<CustomerInfo | null>;
 }
 
 /**
  * Resets RevenueCat back to a fresh anonymous identity on sign-out, so the
- * next person to use this browser/tab never inherits the previous user's
- * entitlements.
+ * next person to use this browser/tab/device never inherits the previous
+ * user's entitlements.
  */
 export async function resetRevenueCatUser(): Promise<void> {
-  const purchases = getConfiguredInstance();
-  if (!purchases) return;
-  if (purchases.isAnonymous()) return;
-  await purchases.changeUser(Purchases.generateRevenueCatAnonymousAppUserId());
+  const mod = await loadModule();
+  return mod.resetRevenueCatUser();
 }
 
 export async function fetchSproutPlusOfferings(): Promise<Offerings> {
-  const purchases = getConfiguredInstance();
-  if (!purchases) throw new Error('RevenueCat is not configured. Set VITE_REVENUECAT_PUBLIC_KEY.');
-  return purchases.getOfferings();
+  const mod = await loadModule();
+  return mod.fetchSproutPlusOfferings() as Promise<Offerings>;
 }
 
-export async function purchaseSproutPlus(pkg: Package): Promise<PurchaseResult> {
-  const purchases = getConfiguredInstance();
-  if (!purchases) throw new Error('RevenueCat is not configured. Set VITE_REVENUECAT_PUBLIC_KEY.');
-  return purchases.purchase({ rcPackage: pkg });
+export async function purchaseSproutPlus(pkg: Package): Promise<{ customerInfo: CustomerInfo }> {
+  const mod = await loadModule();
+  return mod.purchaseSproutPlus(pkg as never) as Promise<{ customerInfo: CustomerInfo }>;
 }
 
 export async function fetchCustomerInfo(): Promise<CustomerInfo | null> {
-  const purchases = getConfiguredInstance();
-  if (!purchases) return null;
-  return purchases.getCustomerInfo();
+  const mod = await loadModule();
+  return mod.fetchCustomerInfo() as Promise<CustomerInfo | null>;
+}
+
+// Doesn't need the platform module at all — the two SDKs' Package shapes
+// differ by field name only (webBillingProduct.price.formattedPrice vs.
+// product.priceString), distinguishable by a plain runtime shape check, so
+// this stays synchronous for use directly inside JSX render.
+export function getPackagePriceString(pkg: Package): string {
+  if ('webBillingProduct' in pkg) return pkg.webBillingProduct.price.formattedPrice;
+  return pkg.product.priceString;
+}
+
+export async function restoreSproutPlusPurchases(): Promise<{
+  success: boolean;
+  message?: string;
+  status?: import('./revenuecatConstants').SproutPlusStatus;
+}> {
+  const mod = await loadModule();
+  return mod.restoreSproutPlusPurchases();
+}
+
+/**
+ * Subscribes to entitlement-change pushes (native) / focus-triggered
+ * refreshes (web). Returns an unsubscribe function — call it on cleanup.
+ */
+export async function addCustomerInfoUpdateListener(
+  callback: (status: import('./revenuecatConstants').SproutPlusStatus) => void
+): Promise<() => void> {
+  const mod = await loadModule();
+  return mod.addCustomerInfoUpdateListener(callback);
 }
 
 /** True if `error` represents the user closing/cancelling the checkout, as opposed to a real failure. */
-export function isUserCancelledError(error: unknown): boolean {
-  return error instanceof PurchasesError && error.errorCode === ErrorCode.UserCancelledError;
+export async function isUserCancelledError(error: unknown): Promise<boolean> {
+  const mod = await loadModule();
+  return mod.isUserCancelledError(error);
 }
 
 /** A short, user-safe message for a purchase/offerings failure. Never echoes raw SDK/network internals. */
-export function describePurchasesError(error: unknown): string {
-  if (error instanceof PurchasesError) {
-    switch (error.errorCode) {
-      case ErrorCode.NetworkError:
-        return 'Network issue — please check your connection and try again.';
-      case ErrorCode.ProductAlreadyPurchasedError:
-        return 'You already have an active Sprout+ subscription.';
-      case ErrorCode.PaymentPendingError:
-        return 'Your payment is still processing. This can take a moment to confirm.';
-      case ErrorCode.StoreProblemError:
-      case ErrorCode.UnknownBackendError:
-      case ErrorCode.UnexpectedBackendResponseError:
-        return 'Sprout+ checkout is temporarily unavailable. Please try again shortly.';
-      default:
-        return 'Something went wrong with your purchase. Please try again.';
-    }
-  }
-  return 'Something went wrong. Please try again.';
+export async function describePurchasesError(error: unknown): Promise<string> {
+  const mod = await loadModule();
+  return mod.describePurchasesError(error);
 }

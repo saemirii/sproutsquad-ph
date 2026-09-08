@@ -64,19 +64,21 @@ import {
   DEFAULT_NOTIFICATION_PREFERENCES,
 } from '../lib/notificationMappers';
 import type { IosActiveTab } from '../components/IOS/IosTabBar';
-import type { Offerings, Package } from '@revenuecat/purchases-js';
 import {
   identifyRevenueCatUser,
   resetRevenueCatUser,
   fetchSproutPlusOfferings,
   purchaseSproutPlus,
-  fetchCustomerInfo,
+  restoreSproutPlusPurchases as restoreSproutPlusPurchasesImpl,
+  addCustomerInfoUpdateListener,
   buildSubscriptionStatus,
   isUserCancelledError,
   describePurchasesError,
   isRevenueCatConfigured,
   DEFAULT_SUBSCRIPTION_STATUS,
   type SproutPlusStatus,
+  type Offerings,
+  type Package,
 } from '../lib/revenuecat';
 import {
   businessToRow,
@@ -568,19 +570,22 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
     return () => { cancelled = true; };
   }, [authUser?.id]);
 
-  // Best-effort refresh of subscription status: the Web SDK has no push
-  // listener for entitlement changes, so re-check whenever the tab regains
-  // focus (e.g. user just finished managing billing in another tab).
+  // Keeps subscription status current after the initial identify. On native,
+  // this is a real push listener (fires on renewals, resolved billing issues,
+  // restores, etc.); on web (no push listener available) it's the same
+  // focus-triggered refresh as before, just relocated behind this platform
+  // dispatch so this effect doesn't need to know which one it's getting.
   useEffect(() => {
-    if (!authUser?.id || !isRevenueCatConfigured) return;
-    const handleFocus = () => {
-      fetchCustomerInfo()
-        .then((customerInfo) => setSubscription(buildSubscriptionStatus(customerInfo)))
-        .catch((error) => console.error('Failed to refresh RevenueCat customer info', error));
-    };
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, [authUser?.id]);
+    if (!authUser?.id || !isRevenueCatConfigured || !isRevenueCatReady) return;
+    let cancelled = false;
+    let unsubscribe: (() => void) | undefined;
+    addCustomerInfoUpdateListener((status) => {
+      if (!cancelled) setSubscription(status);
+    })
+      .then((unsub) => { if (!cancelled) unsubscribe = unsub; else unsub(); })
+      .catch((error) => console.error('Failed to subscribe to RevenueCat customer info updates', error));
+    return () => { cancelled = true; unsubscribe?.(); };
+  }, [authUser?.id, isRevenueCatReady]);
 
   const loadSproutPlusOfferings = useCallback(async () => {
     // Not a failure to retry — there's simply no RevenueCat key configured.
@@ -598,7 +603,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
       setOfferings(result);
     } catch (error) {
       console.error('Failed to load Sprout+ offerings', error);
-      setOfferingsError(describePurchasesError(error));
+      setOfferingsError(await describePurchasesError(error));
     } finally {
       setIsOfferingsLoading(false);
     }
@@ -616,11 +621,11 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
       setSubscription(buildSubscriptionStatus(result.customerInfo));
       return { success: true };
     } catch (error) {
-      if (isUserCancelledError(error)) {
+      if (await isUserCancelledError(error)) {
         return { success: false, cancelled: true };
       }
       console.error('Sprout+ purchase failed', error);
-      return { success: false, message: describePurchasesError(error) };
+      return { success: false, message: await describePurchasesError(error) };
     } finally {
       isPurchasingRef.current = false;
       setIsPurchasingSproutPlus(false);
@@ -629,18 +634,16 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
 
   const restoreSproutPlusPurchases = useCallback(async () => {
     try {
-      // The Web Billing SDK ties purchases to the identified app user id directly
-      // (there's no separate device/store receipt to "restore" like on mobile),
-      // so refreshing customer info for the current user is the web equivalent.
-      const customerInfo = await fetchCustomerInfo();
-      const status = buildSubscriptionStatus(customerInfo);
-      setSubscription(status);
-      return status.hasSproutPlus
-        ? { success: true, message: 'Sprout+ is active on this account.' }
-        : { success: true, message: 'No active Sprout+ subscription was found for this account.' };
+      // On web this re-fetches customer info for the identified app user
+      // (Web Billing has no separate device/store receipt to restore); on
+      // native this triggers a real StoreKit receipt restore — see
+      // revenuecat.web.ts / revenuecat.native.ts.
+      const result = await restoreSproutPlusPurchasesImpl();
+      if (result.status) setSubscription(result.status);
+      return { success: result.success, message: result.message };
     } catch (error) {
       console.error('Failed to restore Sprout+ purchases', error);
-      return { success: false, message: describePurchasesError(error) };
+      return { success: false, message: await describePurchasesError(error) };
     }
   }, []);
 

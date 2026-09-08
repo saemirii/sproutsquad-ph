@@ -6,6 +6,8 @@ import { formatRelativeTime } from '../../utils/formatRelativeTime';
 import { CampusUniversity, PaymentMethod, FulfillmentType, Order } from '../../types';
 import { playIosTap, playIosSuccess } from '../../utils/haptics';
 import { OrderStatusStepper } from '../Marketplace/OrderStatusStepper';
+import { openExternalUrl } from '../../lib/platformLinks';
+import { isNativeApp } from '../../utils/platform';
 
 interface IosBagViewProps {
   onOpenCheckoutModal?: () => void;
@@ -538,6 +540,14 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
                           href={`https://instagram.com/${business.instagramHandle.replace(/^@/, '')}`}
                           target="_blank"
                           rel="noopener noreferrer"
+                          onClick={(e) => {
+                            // A native WKWebView's default target="_blank" handling has no
+                            // "back to app" affordance — route through the Browser plugin
+                            // there instead; web keeps the plain anchor behavior.
+                            if (!isNativeApp) return;
+                            e.preventDefault();
+                            void openExternalUrl(`https://instagram.com/${business.instagramHandle!.replace(/^@/, '')}`);
+                          }}
                           className="flex items-center gap-1 text-[10px] font-bold text-[#C13584] hover:underline"
                         >
                           <Instagram className="w-3 h-3" />

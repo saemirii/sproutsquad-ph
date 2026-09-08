@@ -3,6 +3,7 @@ import { ExternalLink, Mail } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { makeDefaultShopDraft } from '../utils/shop';
+import { openExternalUrl } from '../lib/platformLinks';
 
 const SHOP_APPLICATION_FORM_URL = 'https://forms.gle/781mZpv46ToztEUYA';
 
@@ -35,7 +36,7 @@ export const CreateShopButton: React.FC<CreateShopButtonProps> = ({ className, c
       return;
     }
 
-    window.open(SHOP_APPLICATION_FORM_URL, '_blank', 'noopener,noreferrer');
+    void openExternalUrl(SHOP_APPLICATION_FORM_URL);
     setStep('pending');
   };
 
