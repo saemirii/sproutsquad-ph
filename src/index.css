@@ -1,6 +1,25 @@
 @import "tailwindcss";
 
 @layer base {
+  /* Lock the document itself so it can never scroll/bounce on its own —
+     without this, WKWebView's native rubber-band scroll can drag the whole
+     page past our own layout (which already handles its own scrolling via
+     the flex-1 overflow-y-auto pane in IPhoneFrame), revealing blank space
+     below the tab bar when you scroll on a real device.
+     Scoped to html.native-app (set in main.tsx) — the web build's outer
+     page can legitimately need to scroll (e.g. a short browser window with
+     the desktop preview toolbar + framed device + notice text below all
+     stacked), and this lock broke that entirely when it applied globally. */
+  html.native-app, html.native-app body {
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  html.native-app #root {
+    height: 100%;
+  }
+
   body {
     background-color: #FFF9E6;
     color: #6B5B4F;
@@ -24,6 +43,17 @@
 
 .animate-float-gentle {
   animation: floatGentle 3s ease-in-out infinite;
+}
+
+/* Soft pulsing ring for a card deep-linked to from a notification — draws
+   the eye without the harsher, static "you clicked this" look of a plain
+   border. */
+@keyframes gentlePulseRing {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(184, 230, 213, 0.6); }
+  50% { box-shadow: 0 0 0 6px rgba(184, 230, 213, 0); }
+}
+.animate-pulse-ring {
+  animation: gentlePulseRing 2s ease-in-out infinite;
 }
 
 .btn-bouncy {

@@ -20,8 +20,10 @@ export const SPROUT_PLUS_PRODUCTS = {
 export interface SproutPlusStatus {
   hasSproutPlus: boolean;
   productIdentifier: string | null;
-  /** 'active' = paid and renewing. 'cancelling' = paid access still active, but won't renew. 'inactive' = no access. */
-  status: 'active' | 'cancelling' | 'inactive';
+  /** 'active' = paid and renewing. 'cancelling' = paid access still active, but won't renew. 'promotional' = a free grant (e.g. a redeemed promo code) with no renewal to speak of. 'inactive' = no access. */
+  status: 'active' | 'cancelling' | 'promotional' | 'inactive';
+  /** True when this entitlement came from a promotional grant (e.g. redeemPromoCode), not a real store purchase — willRenew is naturally false for these, which would otherwise be indistinguishable from an actually-cancelled paid subscription. */
+  isPromotional: boolean;
   purchaseDate: Date | null;
   expirationDate: Date | null;
   willRenew: boolean;
@@ -33,6 +35,7 @@ export const DEFAULT_SUBSCRIPTION_STATUS: SproutPlusStatus = {
   hasSproutPlus: false,
   productIdentifier: null,
   status: 'inactive',
+  isPromotional: false,
   purchaseDate: null,
   expirationDate: null,
   willRenew: false,
@@ -41,11 +44,13 @@ export const DEFAULT_SUBSCRIPTION_STATUS: SproutPlusStatus = {
 };
 
 // The web (`@revenuecat/purchases-js`) and native (`@revenuecat/purchases-capacitor`)
-// SDKs expose the same entitlement fields, with one real divergence confirmed
+// SDKs expose the same entitlement fields, with two real divergences confirmed
 // against both packages' own type declarations: web types latestPurchaseDate/
-// expirationDate as `Date`, native types them as ISO 8601 `string`. This
-// minimal shape captures only what's read below, with dates loosely typed to
-// accept either, so this one function serves both platforms.
+// expirationDate as `Date`, native types them as ISO 8601 `string`; web's
+// `store` literal is lowercase ("promotional"), native's is uppercase
+// ("PROMOTIONAL"). This minimal shape captures only what's read below, with
+// both loosely typed to accept either, so this one function serves both
+// platforms.
 interface MinimalEntitlementInfo {
   isActive: boolean;
   productIdentifier: string;
@@ -53,6 +58,7 @@ interface MinimalEntitlementInfo {
   expirationDate: string | Date | null;
   willRenew: boolean;
   isSandbox: boolean;
+  store: string;
 }
 
 interface MinimalCustomerInfo {
@@ -71,10 +77,13 @@ export function buildSubscriptionStatus(customerInfo: MinimalCustomerInfo | null
   const entitlement = customerInfo.entitlements.active[SPROUT_PLUS_ENTITLEMENT];
   if (!entitlement) return { ...DEFAULT_SUBSCRIPTION_STATUS, managementURL: customerInfo.managementURL };
 
+  const isPromotional = entitlement.store?.toUpperCase() === 'PROMOTIONAL';
+
   return {
     hasSproutPlus: entitlement.isActive,
     productIdentifier: entitlement.productIdentifier,
-    status: !entitlement.isActive ? 'inactive' : entitlement.willRenew ? 'active' : 'cancelling',
+    status: !entitlement.isActive ? 'inactive' : isPromotional ? 'promotional' : entitlement.willRenew ? 'active' : 'cancelling',
+    isPromotional,
     purchaseDate: toDateOrNull(entitlement.latestPurchaseDate),
     expirationDate: toDateOrNull(entitlement.expirationDate),
     willRenew: entitlement.willRenew,

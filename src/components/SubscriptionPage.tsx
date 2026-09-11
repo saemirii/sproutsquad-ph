@@ -26,11 +26,11 @@ import {
   Loader2,
   ExternalLink,
 } from 'lucide-react';
-import { useApp } from '../context/AppContext';
+import { useSubscription } from '../context/AppContext';
 import { triggerConfetti } from '../utils/confetti';
 import { isRevenueCatConfigured, SPROUT_PLUS_PRODUCTS, getPackagePriceString, type Package } from '../lib/revenuecat';
-import { openNativeSubscriptionManagement } from '../lib/platformLinks';
-import { isNativeApp } from '../utils/platform';
+import { openExternalUrl, openNativeSubscriptionManagement } from '../lib/platformLinks';
+import { isNativeApp, API_BASE_URL } from '../utils/platform';
 
 interface SubscriptionPageProps {
   onClose: () => void;
@@ -93,11 +93,14 @@ export const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ onClose }) =
     isPurchasingSproutPlus,
     purchaseSproutPlusPackage,
     restoreSproutPlusPurchases,
-  } = useApp();
+    redeemPromoCode,
+  } = useSubscription();
 
   const [purchasingPackageId, setPurchasingPackageId] = useState<string | null>(null);
   const [isRestoring, setIsRestoring] = useState(false);
   const [banner, setBanner] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
+  const [promoCode, setPromoCode] = useState('');
+  const [isRedeemingCode, setIsRedeemingCode] = useState(false);
 
   useEffect(() => {
     loadSproutPlusOfferings();
@@ -126,6 +129,19 @@ export const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ onClose }) =
     const result = await restoreSproutPlusPurchases();
     setIsRestoring(false);
     setBanner({ type: result.success ? 'info' : 'error', text: result.message || 'Something went wrong. Please try again.' });
+  };
+
+  const handleRedeemCode = async () => {
+    if (!promoCode.trim() || isRedeemingCode) return;
+    setBanner(null);
+    setIsRedeemingCode(true);
+    const result = await redeemPromoCode(promoCode.trim());
+    setIsRedeemingCode(false);
+    if (result.success) {
+      setPromoCode('');
+      triggerConfetti();
+    }
+    setBanner({ type: result.success ? 'success' : 'error', text: result.message || "That code isn't valid." });
   };
 
   const monthlyPkg = offerings?.current?.monthly ?? null;
@@ -167,6 +183,30 @@ export const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ onClose }) =
           </div>
         )}
 
+        {/* Promo code redemption — for reviewers/judges to get free Sprout+
+            access without a real purchase. Hidden once already subscribed. */}
+        {!hasSproutPlus && (
+          <section className="rounded-2xl bg-white border border-[#EDE4D8] shadow-xs p-4">
+            <p className="text-xs font-black text-[#3B2F27] mb-2">Have a promo code?</p>
+            <div className="flex gap-2">
+              <input
+                value={promoCode}
+                onChange={(e) => setPromoCode(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleRedeemCode(); }}
+                placeholder="E.G. SPROUT-XXXXXXXX"
+                className="flex-1 min-w-0 rounded-xl border border-[#E5DACD] bg-white px-3 py-2 text-xs uppercase tracking-wide outline-none focus:ring-2 focus:ring-[#B8E6D5]"
+              />
+              <button
+                onClick={handleRedeemCode}
+                disabled={isRedeemingCode || !promoCode.trim()}
+                className="btn-bouncy shrink-0 rounded-xl bg-[#207559] hover:bg-[#194E3B] text-white text-xs font-black px-4 flex items-center justify-center gap-1.5 disabled:opacity-50"
+              >
+                {isRedeemingCode ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Redeem'}
+              </button>
+            </div>
+          </section>
+        )}
+
         {/* Current Sprout+ status card — only shown when actively subscribed */}
         {hasSproutPlus && (
           <section className="rounded-3xl bg-white border-2 border-[#9FD9C3] shadow-md p-5 space-y-3">
@@ -180,14 +220,18 @@ export const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ onClose }) =
                     {planLabelForProduct(subscription.productIdentifier)}
                   </h2>
                   <p className="text-[11px] text-[#8C7A6D]">
-                    {subscription.status === 'active' ? 'Active — renews automatically' : 'Active — ends at period end'}
+                    {subscription.status === 'active' ? 'Active — renews automatically'
+                      : subscription.status === 'promotional' ? 'Active — free promotional access'
+                      : 'Active — ends at period end'}
                   </p>
                 </div>
               </div>
               <span className={`px-2.5 py-1 rounded-full text-[10px] font-black ${
-                subscription.status === 'active' ? 'bg-[#B8E6D5] text-[#194E3B]' : 'bg-[#FFD3BA] text-[#7A2E1E]'
+                subscription.status === 'active' ? 'bg-[#B8E6D5] text-[#194E3B]'
+                  : subscription.status === 'promotional' ? 'bg-[#F7C948] text-[#3B2F27]'
+                  : 'bg-[#FFD3BA] text-[#7A2E1E]'
               }`}>
-                {subscription.status === 'active' ? 'Active' : 'Cancelling'}
+                {subscription.status === 'active' ? 'Active' : subscription.status === 'promotional' ? 'Promo' : 'Cancelling'}
               </span>
             </div>
 
@@ -210,8 +254,14 @@ export const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ onClose }) =
               </p>
             )}
 
+            {subscription.status === 'promotional' && (
+              <p className="text-[11px] text-[#7A341A] bg-[#FFF8E1] border border-[#F7C948] rounded-xl p-2.5">
+                This is free promotional access, not a paid subscription — nothing to cancel or renew. It runs through {formatDate(subscription.expirationDate)}.
+              </p>
+            )}
+
             <div className="flex gap-2">
-              {isNativeApp ? (
+              {subscription.status === 'promotional' ? null : isNativeApp ? (
                 // Apple's own subscriptions screen isn't a per-user URL like
                 // RevenueCat's web billing portal — it's a fixed system link.
                 <button
@@ -424,18 +474,25 @@ export const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ onClose }) =
           </button>
         )}
 
+        {/* Apple Guideline 3.1.2 subscription disclosure: title, length,
+            price, and auto-renewal terms, plus functional links to the
+            Privacy Policy and Terms of Use — all required for a custom
+            paywall UI. */}
         {isNativeApp ? (
-          // Apple Guideline 3.1.2 subscription disclosure: title, length,
-          // price, and auto-renewal terms for a custom paywall UI. TODO:
-          // add functional Privacy Policy / Terms of Use links here once
-          // those pages exist (see Phase 5 of the App Store readiness plan)
-          // — required before this can actually ship to App Review.
           <p className="text-center text-[10px] text-[#8C7A6D] leading-4">
             Sprout+ (monthly) and Bloom+ (yearly) auto-renew until cancelled. Manage or cancel anytime in Settings &gt; [Your Name] &gt; Subscriptions. Payment is charged to your Apple ID account at confirmation of purchase.
+            <br />
+            <button onClick={() => void openExternalUrl(`${API_BASE_URL}/privacy.html`)} className="underline">Privacy Policy</button>
+            {' · '}
+            <button onClick={() => void openExternalUrl(`${API_BASE_URL}/terms.html`)} className="underline">Terms of Use</button>
           </p>
         ) : (
           <p className="text-center text-[10px] text-[#8C7A6D] leading-4">
             Cancel anytime · Secure checkout powered by RevenueCat · Prices in your local currency
+            <br />
+            <button onClick={() => void openExternalUrl('/privacy.html')} className="underline">Privacy Policy</button>
+            {' · '}
+            <button onClick={() => void openExternalUrl('/terms.html')} className="underline">Terms of Use</button>
           </p>
         )}
       </div>
