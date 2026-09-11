@@ -11,31 +11,25 @@ import {
   ArrowRight,
   HelpCircle,
   Lightbulb,
-  Bot,
   Zap,
   BarChart3,
   Flame,
   ShieldCheck
 } from 'lucide-react';
-import { useApp } from '../../context/AppContext';
+import { useShop, useSession } from '../../context/AppContext';
 import { formatPHP } from '../../utils/analytics';
 import { HealthInsight } from '../../types';
 import { InfoTip } from '../InfoTip';
 
-interface SellerOverviewProps {
-  onOpenAiCoach: (initialPrompt?: string) => void;
-}
-
-export const SellerOverview: React.FC<SellerOverviewProps> = ({ onOpenAiCoach }) => {
+export const SellerOverview: React.FC = () => {
   const {
     activeBusiness,
     activeBusinessMetrics,
     sellerOrders,
     sellerExpenses,
     sellerProducts,
-    setSellerTab,
-    setCurrentView
-  } = useApp();
+  } = useShop();
+  const { setSellerTab, setCurrentView } = useSession();
 
   const {
     revenue,
@@ -89,16 +83,6 @@ export const SellerOverview: React.FC<SellerOverviewProps> = ({ onOpenAiCoach })
             </p>
           </div>
         </div>
-
-        {/* Ask AI Coach Quick Button */}
-        <button
-          id="ask-ai-coach-banner-btn"
-          onClick={() => onOpenAiCoach()}
-          className="px-4 py-2.5 bg-[#B8E6D5] hover:bg-[#A3DEC9] border border-[#9FD9C3] rounded-2xl text-xs font-extrabold text-[#194E3B] shadow-xs transition-all flex items-center gap-2 cursor-pointer btn-bouncy"
-        >
-          <span className="text-base animate-float-gentle">🦉</span>
-          <span>Ask Peanut (AI Business Coach)</span>
-        </button>
       </div>
 
       {/* Primary Financial Metric Cards (Revenue, Expenses, Profit, Margin) */}
@@ -406,28 +390,6 @@ export const SellerOverview: React.FC<SellerOverviewProps> = ({ onOpenAiCoach })
                   </div>
                 );
               })}
-            </div>
-
-            {/* AI Coach Banner Trigger inside recommendations */}
-            <div className="p-4 bg-[#FFF9E6] rounded-2xl border border-[#EDE4D8] flex flex-col sm:flex-row items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl animate-float-gentle">🦉</span>
-                <div>
-                  <h4 className="font-extrabold text-xs text-[#3B2F27] font-['Nunito',sans-serif]">
-                    Need custom advice for campus drops or fair pricing?
-                  </h4>
-                  <p className="text-[11px] text-[#6B5B4F]">
-                    Ask Peanut the AI Coach for student-tailored recommendations.
-                  </p>
-                </div>
-              </div>
-
-              <button
-                onClick={() => onOpenAiCoach("What should I prioritize this week to increase our profit margin?")}
-                className="px-4 py-2 bg-[#B8E6D5] hover:bg-[#A3DEC9] text-[#194E3B] font-extrabold text-xs rounded-2xl shadow-xs transition-colors cursor-pointer whitespace-nowrap btn-bouncy"
-              >
-                Chat with Peanut
-              </button>
             </div>
           </div>
 

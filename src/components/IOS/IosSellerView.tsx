@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ChevronDown, Plus, CheckCircle2, Store, Sparkles } from 'lucide-react';
-import { useApp } from '../../context/AppContext';
+import { useShop, useSession } from '../../context/AppContext';
 import { SellerTab } from '../../types';
 import { SellerOverview } from '../Seller/SellerOverview';
 import { ProductManager } from '../Seller/ProductManager';
@@ -12,24 +12,18 @@ import { playIosTap } from '../../utils/haptics';
 import { KeyRound, LockKeyhole } from 'lucide-react';
 import { CreateShopButton } from '../CreateShopButton';
 
-interface IosSellerViewProps {
-  onOpenAiCoachTab?: () => void;
-}
-
-export const IosSellerView: React.FC<IosSellerViewProps> = ({ onOpenAiCoachTab }) => {
+export const IosSellerView: React.FC = () => {
   const {
     activeBusiness,
     setActiveBusiness,
     businesses,
-    sellerTab,
-    setSellerTab,
     sellerOrders,
     sellerProducts,
     activeBusinessMetrics,
-    currentUser,
     accessibleBusinessIds,
     unlockBusinessByKey,
-  } = useApp();
+  } = useShop();
+  const { sellerTab, setSellerTab, currentUser } = useSession();
 
   const [isStoreSheetOpen, setIsStoreSheetOpen] = useState(false);
   const [besKey, setBesKey] = useState('');
@@ -167,7 +161,7 @@ export const IosSellerView: React.FC<IosSellerViewProps> = ({ onOpenAiCoachTab }
             <p className="text-[10px] text-[#8C7A6D]">Signed in as {currentUser.email}</p>
           </div>
         ) : sellerTab === 'overview' && (
-          <SellerOverview onOpenAiCoach={() => onOpenAiCoachTab && onOpenAiCoachTab()} />
+          <SellerOverview />
         )}
         {hasBusinessAccess && sellerTab === 'products' && <ProductManager />}
         {hasBusinessAccess && sellerTab === 'orders' && <OrderManager />}
