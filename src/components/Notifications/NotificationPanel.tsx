@@ -1,6 +1,6 @@
 import React from 'react';
 import { X } from 'lucide-react';
-import { useApp } from '../../context/AppContext';
+import { useNotifications } from '../../context/AppContext';
 import { NotificationList } from './NotificationList';
 
 interface NotificationPanelProps {
@@ -8,7 +8,7 @@ interface NotificationPanelProps {
 }
 
 export const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
-  const { notifications, unreadNotificationCount, markAllNotificationsRead } = useApp();
+  const { notifications, unreadNotificationCount, markAllNotificationsRead } = useNotifications();
 
   return (
     <div className="fixed inset-0 z-[75] bg-black/30 backdrop-blur-sm flex items-start justify-center pt-14 px-4" onClick={onClose}>

@@ -1,10 +1,10 @@
 import React from 'react';
 import { PackageCheck, AlertTriangle, XCircle, Download } from 'lucide-react';
-import { useApp } from '../../context/AppContext';
+import { useShop } from '../../context/AppContext';
 import { exportInventoryToCsv } from '../../utils/exportInventory';
 
 export const InventoryTracker: React.FC = () => {
-  const { sellerProducts, activeBusiness } = useApp();
+  const { sellerProducts, activeBusiness } = useShop();
 
   const outOfStock = sellerProducts.filter((p) => p.inventoryCount === 0);
   const lowStock = sellerProducts.filter((p) => p.inventoryCount > 0 && p.inventoryCount <= 6);

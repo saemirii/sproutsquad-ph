@@ -13,7 +13,7 @@ import {
   Search,
   Bell
 } from 'lucide-react';
-import { useApp } from '../context/AppContext';
+import { useSession, useShop, useCart } from '../context/AppContext';
 import { CampusUniversity } from '../types';
 
 interface NavbarProps {
@@ -27,15 +27,17 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenCart, onOpenCreateBusiness
     setCurrentView,
     sellerTab,
     setSellerTab,
+    selectedCampusFilter,
+    setSelectedCampusFilter,
+    resetToDefaultData
+  } = useSession();
+  const {
     businesses,
     activeBusiness,
     setActiveBusiness,
-    cartCount,
-    selectedCampusFilter,
-    setSelectedCampusFilter,
     sellerOrders,
-    resetToDefaultData
-  } = useApp();
+  } = useShop();
+  const { cartCount } = useCart();
 
   const [isBizDropdownOpen, setIsBizDropdownOpen] = useState(false);
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);

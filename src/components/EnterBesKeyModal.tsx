@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { KeyRound, X } from 'lucide-react';
-import { useApp } from '../context/AppContext';
+import { useShop } from '../context/AppContext';
 
 interface EnterBesKeyModalProps {
   onClose: () => void;
@@ -12,7 +12,7 @@ interface EnterBesKeyModalProps {
  * ProfileSheet.tsx, which used to list all of them just for this).
  */
 export const EnterBesKeyModal: React.FC<EnterBesKeyModalProps> = ({ onClose }) => {
-  const { unlockBusinessByKey, setActiveBusiness, businesses } = useApp();
+  const { unlockBusinessByKey, setActiveBusiness, businesses } = useShop();
   const [key, setKey] = useState('');
   const [error, setError] = useState('');
   const [successName, setSuccessName] = useState<string | null>(null);

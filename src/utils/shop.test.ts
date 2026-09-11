@@ -15,7 +15,7 @@ const seedBusinesses: Business[] = [
     banner: 'https://example.com/banner.png',
     university: 'UP Diliman',
     campusPickupSpots: ['Gate 1'],
-    category: 'Bakes & Treats',
+    category: 'Food & Drinks',
     gcashNumber: '0917-000-0000',
     rating: 5,
     reviewCount: 1,
@@ -33,7 +33,7 @@ const seedBusinesses: Business[] = [
     banner: 'https://example.com/banner2.png',
     university: 'Ateneo de Manila',
     campusPickupSpots: ['Gate 2'],
-    category: 'Eco & Planters',
+    category: 'Lifestyle & Gifts',
     gcashNumber: '0917-111-1111',
     rating: 4.9,
     reviewCount: 2,
@@ -53,9 +53,9 @@ test('makeDefaultShopDraft creates a valid first store with a handle and default
 });
 
 test('applyBusinessUpdate only updates the active business', () => {
-  const updated = applyBusinessUpdate(seedBusinesses, 'biz-1', { tagline: 'New tagline', category: 'School Supplies' });
+  const updated = applyBusinessUpdate(seedBusinesses, 'biz-1', { tagline: 'New tagline', category: 'Digital & Tech' });
 
   assert.equal(updated[0].tagline, 'New tagline');
-  assert.equal(updated[0].category, 'School Supplies');
+  assert.equal(updated[0].category, 'Digital & Tech');
   assert.equal(updated[1].tagline, 'Second vibe');
 });

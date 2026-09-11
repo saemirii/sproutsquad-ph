@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { Bell } from 'lucide-react';
-import { useApp } from '../../context/AppContext';
+import { useNotifications } from '../../context/AppContext';
 import { NotificationPanel } from './NotificationPanel';
 
 /** Self-contained: owns its own open/closed state and renders its panel as a
  * fixed overlay (same pattern as LevelUpModal/EnterBesKeyModal), so it can be
  * mounted anywhere without lifting state up. */
 export const NotificationBell: React.FC = () => {
-  const { unreadNotificationCount } = useApp();
+  const { unreadNotificationCount } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
 
   return (

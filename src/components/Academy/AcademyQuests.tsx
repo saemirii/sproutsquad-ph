@@ -1,5 +1,5 @@
 import React from 'react';
-import { useApp } from '../../context/AppContext';
+import { useAcademy } from '../../context/AppContext';
 import { getPeriodKey } from '../../data/academyQuests';
 
 const QuestCard: React.FC<{
@@ -45,7 +45,7 @@ const QuestCard: React.FC<{
 );
 
 export const AcademyQuests: React.FC = () => {
-  const { quests, questProgress, claimQuest } = useApp();
+  const { quests, questProgress, claimQuest } = useAcademy();
 
   const daily = quests.filter((q) => q.questType === 'daily' && q.active);
   const weekly = quests.filter((q) => q.questType === 'weekly' && q.active);

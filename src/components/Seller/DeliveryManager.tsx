@@ -5,12 +5,12 @@ import {
   Truck,
   PackageCheck,
 } from 'lucide-react';
-import { useApp } from '../../context/AppContext';
+import { useShop } from '../../context/AppContext';
 import { DeliveryMethod, Order } from '../../types';
 import { formatPHP } from '../../utils/analytics';
 
 export const DeliveryManager: React.FC = () => {
-  const { sellerOrders, updateDeliverySchedule } = useApp();
+  const { sellerOrders, updateDeliverySchedule } = useShop();
   const [dispatchDrafts, setDispatchDrafts] = useState<Record<string, string>>({});
   const [courierDrafts, setCourierDrafts] = useState<Record<string, DeliveryMethod>>({});
 

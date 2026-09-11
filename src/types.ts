@@ -1,14 +1,13 @@
 export type Role = 'seller' | 'customer' | 'both';
 
 export type ProductCategory =
-  | 'Bakes & Treats'
-  | 'Crochet & Crafts'
-  | 'Stickers & Stationery'
-  | 'Thrift & Fashion'
-  | 'Eco & Planters'
-  | 'Tech & Accessories'
-  | 'School Supplies'
-  | 'Art & Prints';
+  | 'Art & Creative'
+  | 'Fashion & Accessories'
+  | 'Food & Drinks'
+  | 'Lifestyle & Gifts'
+  | 'Digital & Tech'
+  | 'Beauty & Self-Care'
+  | 'Education & Services';
 
 export type CampusUniversity =
   | 'MGC New Life Christian Academy'
@@ -32,6 +31,8 @@ export interface User {
   avatar: string;
   role: Role;
   contactNumber?: string;
+  isAdmin: boolean;
+  isAmbassador: boolean;
 }
 
 export interface Business {
@@ -397,6 +398,8 @@ export type NotificationType =
   | 'low_stock' | 'out_of_stock'
   | 'shop_new_product' | 'shop_restock' | 'shop_promotion'
   | 'welcome' | 'subscription_update' | 'announcement'
+  | 'sproutup_hidden_gem' | 'sproutup_rising_sprout' | 'sproutup_shop_featured'
+  | 'sproutup_nomination_published' | 'sproutup_ambassador_pick_published' | 'sproutup_featured_sprout_live'
   // Reserved for future Sprout Academy events — not yet wired to real triggers.
   | 'academy_lesson_available' | 'academy_lesson_completed' | 'academy_xp_earned'
   | 'academy_achievement_unlocked' | 'academy_streak_maintained';
@@ -413,6 +416,7 @@ export type NotificationAction =
   | { view: 'business'; businessId: string }
   | { view: 'announcement'; announcementId: string }
   | { view: 'subscription' }
+  | { view: 'sproutup'; businessId?: string }
   | Record<string, unknown>;
 
 /** Named AppNotification (not Notification) to avoid colliding with the
@@ -429,7 +433,7 @@ export interface AppNotification {
   createdAt: string;
 }
 
-export type NotificationPreferenceCategory = 'orders' | 'newProducts' | 'restocks' | 'promotions' | 'announcements';
+export type NotificationPreferenceCategory = 'orders' | 'newProducts' | 'restocks' | 'promotions' | 'announcements' | 'sproutup';
 
 export interface NotificationPreferences {
   orders: boolean;
@@ -437,6 +441,70 @@ export interface NotificationPreferences {
   restocks: boolean;
   promotions: boolean;
   announcements: boolean;
+  sproutup: boolean;
+}
+
+// ===================================================================
+// SproutUp! — non-AI business visibility/discovery system.
+// ===================================================================
+
+export type SproutUpFeatureType =
+  | 'hidden_gem' | 'rising_sprout'
+  | 'ambassador_pick' | 'community_pick' | 'featured_sprout';
+
+export interface SproutUpFeature {
+  businessId: string;
+  featureType: SproutUpFeatureType;
+  periodStart: string;
+  periodEnd: string;
+  rank: number;
+  score: number;
+}
+
+export type SproutUpModerationStatus = 'pending' | 'approved' | 'rejected' | 'published' | 'expired';
+
+/** A signed-in user's nomination of a business for SproutUp's Community Picks. */
+export interface SproutUpNomination {
+  id: string;
+  businessId: string;
+  nominatedBy: string;
+  reason: string;
+  status: SproutUpModerationStatus;
+  moderatorId?: string;
+  moderatorNote?: string;
+  publishedAt?: string;
+  expiresAt?: string;
+  createdAt: string;
+}
+
+/** A Sprout Ambassador's recommendation of a business. */
+export interface SproutUpAmbassadorPick {
+  id: string;
+  businessId: string;
+  ambassadorId: string;
+  headline: string;
+  description: string;
+  status: SproutUpModerationStatus;
+  moderatorId?: string;
+  moderatorNote?: string;
+  publishedAt?: string;
+  expiresAt?: string;
+  createdAt: string;
+}
+
+/** An admin-authored spotlight — no approval step, the admin is the author. */
+export interface SproutUpFeaturedSprout {
+  id: string;
+  businessId: string;
+  title: string;
+  description: string;
+  imageUrl?: string;
+  startsAt: string;
+  endsAt: string;
+  isPublished: boolean;
+  sortOrder: number;
+  createdBy?: string;
+  createdAt: string;
 }
 
 export interface SimulationScenario {
@@ -450,14 +518,18 @@ export interface SimulationScenario {
   compute: (decisions: Record<string, number | boolean>, startingCapital: number) => SimulationResult;
 }
 
-export interface AiCoachMessage {
-  id: string;
-  sender: 'ai' | 'user';
-  text: string;
-  timestamp: string;
-}
-
 export interface CartItem {
   product: Product;
   quantity: number;
+}
+
+/** A customer's 1-5 star rating for a business, tied to one completed order (see submit_review RPC). */
+export interface BusinessReview {
+  orderId: string;
+  businessId: string;
+  customerName: string;
+  stars: number;
+  comment: string | null;
+  images: string[];
+  createdAt: string;
 }

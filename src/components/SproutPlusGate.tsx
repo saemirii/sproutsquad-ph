@@ -1,6 +1,6 @@
 import React from 'react';
 import { Lock } from 'lucide-react';
-import { useApp } from '../context/AppContext';
+import { useSubscription } from '../context/AppContext';
 
 interface SproutPlusGateProps {
   /** Plain-English name of the gated feature, e.g. "Bundle Builder". */
@@ -16,7 +16,7 @@ interface SproutPlusGateProps {
  * not grant or verify access on its own (see SECURITY notes in revenuecat.ts).
  */
 export const SproutPlusGate: React.FC<SproutPlusGateProps> = ({ featureName, children }) => {
-  const { hasSproutPlus, openSubscriptionPage } = useApp();
+  const { hasSproutPlus, openSubscriptionPage } = useSubscription();
 
   if (hasSproutPlus) return <>{children}</>;
 

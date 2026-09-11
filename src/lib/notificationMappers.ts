@@ -18,6 +18,7 @@ export const rowToNotificationPreferences = (row: any): NotificationPreferences 
   restocks: row.restocks !== false,
   promotions: row.promotions !== false,
   announcements: row.announcements !== false,
+  sproutup: row.sproutup !== false,
 });
 
 export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
@@ -26,4 +27,5 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   restocks: true,
   promotions: true,
   announcements: true,
+  sproutup: true,
 };

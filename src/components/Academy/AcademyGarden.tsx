@@ -1,5 +1,5 @@
 import React from 'react';
-import { useApp } from '../../context/AppContext';
+import { useAcademy } from '../../context/AppContext';
 import { getLevelForXp } from '../../data/academyLevels';
 
 interface GrowthStage {
@@ -21,7 +21,7 @@ interface AcademyGardenProps {
 }
 
 export const AcademyGarden: React.FC<AcademyGardenProps> = ({ onCustomize }) => {
-  const { academyProfile, gardenCatalog, ownedGardenItems } = useApp();
+  const { academyProfile, gardenCatalog, ownedGardenItems } = useAcademy();
   const level = getLevelForXp(academyProfile.xp);
   const stage = growthStageForLevel(level.level);
 

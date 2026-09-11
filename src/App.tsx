@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { AppProvider, AuthenticatedUser, useApp } from './context/AppContext';
-import { AuthPage } from './components/AuthPage';
+import { AppProvider, AuthenticatedUser, useSession, useShop } from './context/AppContext';
+import { AuthPage, LocalAccount } from './components/AuthPage';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
 import { safeSetItem } from './utils/safeStorage';
 import { IPhoneFrame } from './components/IOS/IPhoneFrame';
 import { IosActiveTab } from './components/IOS/IosTabBar';
 import { DynamicIslandAlert } from './components/IOS/DynamicIsland';
 import { IosMarketplaceView } from './components/IOS/IosMarketplaceView';
-import { IosAiCoachTab } from './components/IOS/IosAiCoachTab';
+import { SproutUpTab } from './components/SproutUp/SproutUpTab';
 import { IosSellerView } from './components/IOS/IosSellerView';
 import { IosBagView } from './components/IOS/IosBagView';
 import { AcademyRoot } from './components/Academy/AcademyRoot';
@@ -17,10 +17,11 @@ import { ProductDetailModal } from './components/Marketplace/ProductDetailModal'
 import { OrderSuccessModal } from './components/Marketplace/OrderSuccessModal';
 import { SproutBloomLoader } from './components/SproutBloomLoader';
 import { Product, Business, Order } from './types';
-import { isNativeApp } from './utils/platform';
+import { isNativeApp, API_BASE_URL } from './utils/platform';
 
 const MainAppContent: React.FC = () => {
-  const { currentView, setCurrentView, isRemoteDataLoading, businesses, pendingNavigation, setPendingNavigation } = useApp();
+  const { currentView, setCurrentView, isRemoteDataLoading, pendingNavigation, setPendingNavigation } = useSession();
+  const { businesses } = useShop();
 
   // Active iOS Tab State
   const [activeTab, setActiveTab] = useState<IosActiveTab>('market');
@@ -70,7 +71,10 @@ const MainAppContent: React.FC = () => {
       const biz = pendingNavigation.businessId ? businesses.find((b) => b.id === pendingNavigation.businessId) : null;
       setSelectedBusiness(biz || null);
       setPendingNavigation(null);
-    } else if (pendingNavigation.tab !== 'bag' || !pendingNavigation.orderId) {
+    } else if (
+      (pendingNavigation.tab !== 'bag' || !pendingNavigation.orderId) &&
+      (pendingNavigation.tab !== 'sproutup' || !pendingNavigation.businessId)
+    ) {
       setPendingNavigation(null);
     }
   }, [pendingNavigation]);
@@ -118,8 +122,15 @@ const MainAppContent: React.FC = () => {
         </>
       )}
 
-      {/* 🦉 Tab 2: Sprout AI Co-Pilot (Peanut the Owl) */}
-      {activeTab === 'ai-coach' && <IosAiCoachTab />}
+      {/* 🚀 Tab 2: SproutUp! (business visibility & discovery) */}
+      {activeTab === 'sproutup' && (
+        <SproutUpTab
+          onSelectBusiness={(b) => {
+            setSelectedBusiness(b);
+            setActiveTab('market');
+          }}
+        />
+      )}
 
       {/* 🌱 Tab 3: Sprout Academy (Pip the Sprout) */}
       {activeTab === 'academy' && (
@@ -129,9 +140,7 @@ const MainAppContent: React.FC = () => {
       )}
 
       {/* 🐻 Tab 4: Shop OS (Seller Operating System) */}
-      {activeTab === 'seller' && (
-        <IosSellerView onOpenAiCoachTab={() => setActiveTab('ai-coach')} />
-      )}
+      {activeTab === 'seller' && <IosSellerView />}
 
       {/* 🎒 Tab 5: My Bag & Campus Orders */}
       {activeTab === 'bag' && (
@@ -185,17 +194,35 @@ export default function App() {
       return;
     }
 
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
+    // getSession() can hang indefinitely if a cached session's token needs a
+    // refresh and that network call stalls or fails (e.g. the JWT clock-skew
+    // issue that can produce "issued at future" errors) — with no .catch()
+    // and no timeout, that used to leave the app stuck on this loading
+    // screen forever. A stall now falls through to the sign-in screen after
+    // a few seconds instead of hanging indefinitely; the listener below
+    // still fires normally once auth genuinely settles.
+    let isLoadingResolved = false;
+    const resolveLoading = () => {
+      if (isLoadingResolved) return;
+      isLoadingResolved = true;
       setIsLoading(false);
-    });
+    };
+    const timeout = setTimeout(resolveLoading, 8000);
+
+    supabase.auth.getSession()
+      .then(({ data }) => setSession(data.session))
+      .catch((error) => console.error('Failed to restore session', error))
+      .finally(() => { clearTimeout(timeout); resolveLoading(); });
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
-      setIsLoading(false);
+      resolveLoading();
     });
 
-    return () => listener.subscription.unsubscribe();
+    return () => {
+      clearTimeout(timeout);
+      listener.subscription.unsubscribe();
+    };
   }, []);
 
   const handleSignOut = async () => {
@@ -206,9 +233,46 @@ export default function App() {
     setLocalUser(null);
   };
 
+  // Apple Guideline 5.1.1(v): the app supports account creation, so it must
+  // also offer in-app account deletion. Supabase mode deletes the real
+  // auth.users row (and everything that cascades from it) via a server-side
+  // call — the service-role key that requires can never reach the client.
+  // Local-fallback mode has no server at all, so it just drops the account
+  // from this device's own localStorage list.
+  const handleDeleteAccount = async (): Promise<{ success: boolean; message?: string }> => {
+    if (supabase) {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) return { success: false, message: 'Your session has expired. Please sign in again and retry.' };
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/delete-account`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!response.ok) {
+          const body = await response.json().catch(() => ({}));
+          return { success: false, message: body.error || 'Failed to delete account. Please try again.' };
+        }
+      } catch {
+        return { success: false, message: 'Could not reach the server. Please check your connection and try again.' };
+      }
+
+      await supabase.auth.signOut();
+    } else if (localUser) {
+      const accounts: LocalAccount[] = JSON.parse(localStorage.getItem('sproutsquad_local_accounts') || '[]');
+      const remaining = accounts.filter((account) => account.id !== localUser.id);
+      safeSetItem('sproutsquad_local_accounts', JSON.stringify(remaining));
+    }
+
+    localStorage.removeItem('sproutsquad_local_session');
+    setLocalUser(null);
+    return { success: true };
+  };
+
   if (!isSupabaseConfigured && localUser) {
     return (
-      <AppProvider authUser={localUser} onSignOut={handleSignOut}>
+      <AppProvider authUser={localUser} onSignOut={handleSignOut} onDeleteAccount={handleDeleteAccount}>
         <MainAppContent />
       </AppProvider>
     );
@@ -224,7 +288,7 @@ export default function App() {
   }
 
   return (
-    <AppProvider authUser={session.user} onSignOut={handleSignOut}>
+    <AppProvider authUser={session.user} onSignOut={handleSignOut} onDeleteAccount={handleDeleteAccount}>
       <MainAppContent />
     </AppProvider>
   );

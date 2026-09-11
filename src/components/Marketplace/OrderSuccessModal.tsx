@@ -9,7 +9,7 @@ import {
   TrendingUp,
   X
 } from 'lucide-react';
-import { useApp } from '../../context/AppContext';
+import { useSession, useShop } from '../../context/AppContext';
 import { Order } from '../../types';
 import { formatPHP } from '../../utils/analytics';
 
@@ -22,7 +22,8 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({
   orders,
   onClose,
 }) => {
-  const { setCurrentView, setSellerTab, setActiveBusiness, businesses } = useApp();
+  const { setCurrentView, setSellerTab } = useSession();
+  const { setActiveBusiness, businesses } = useShop();
 
   if (!orders || orders.length === 0) return null;
 

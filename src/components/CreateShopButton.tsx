@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ExternalLink, Mail } from 'lucide-react';
-import { useApp } from '../context/AppContext';
+import { useSession, useShop } from '../context/AppContext';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { makeDefaultShopDraft } from '../utils/shop';
 import { openExternalUrl } from '../lib/platformLinks';
@@ -25,7 +25,8 @@ interface CreateShopButtonProps {
  * instant-create behavior.
  */
 export const CreateShopButton: React.FC<CreateShopButtonProps> = ({ className, children, onBeforeClick }) => {
-  const { businesses, currentUser, createBusiness } = useApp();
+  const { currentUser } = useSession();
+  const { businesses, createBusiness } = useShop();
   const [step, setStep] = useState<FlowStep>('closed');
 
   const handleClick = () => {

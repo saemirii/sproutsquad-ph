@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { CheckCircle2, Clock, RotateCcw } from 'lucide-react';
-import { useApp } from '../../context/AppContext';
+import { useAcademy } from '../../context/AppContext';
 import { Lesson } from '../../types';
 
 interface AcademyLearnProps {
@@ -17,7 +17,7 @@ const getMascotIcon = (mascot: string) => {
 };
 
 export const AcademyLearn: React.FC<AcademyLearnProps> = ({ onOpenSimulations }) => {
-  const { lessons, completedLessonIds, completeLessonWithQuiz } = useApp();
+  const { lessons, completedLessonIds, completeLessonWithQuiz } = useAcademy();
   const [selectedLessonId, setSelectedLessonId] = useState<string>(lessons[0]?.id || 'lesson-1');
   const [selectedAnswerIndex, setSelectedAnswerIndex] = useState<number | null>(null);
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState<boolean>(false);

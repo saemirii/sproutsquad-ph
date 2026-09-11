@@ -1,5 +1,5 @@
 import React from 'react';
-import { useApp } from '../../context/AppContext';
+import { useSession, useAcademy } from '../../context/AppContext';
 import { XpBar } from './shared/XpBar';
 import { SeedBalance } from './shared/SeedBalance';
 import { StreakBadge } from './shared/StreakBadge';
@@ -28,7 +28,8 @@ const getGreeting = () => {
 };
 
 export const AcademyHome: React.FC<AcademyHomeProps> = ({ onNavigate }) => {
-  const { currentUser, academyProfile, lessons, completedLessonIds, quests, questProgress, achievements, unlockedAchievementIds } = useApp();
+  const { currentUser } = useSession();
+  const { academyProfile, lessons, completedLessonIds, quests, questProgress, achievements, unlockedAchievementIds } = useAcademy();
 
   const nextLesson = lessons.find((l) => !completedLessonIds.includes(l.id));
   const dailyQuests = quests.filter((q) => q.questType === 'daily' && q.active);

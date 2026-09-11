@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Tag, Plus, Trash2, Percent, Banknote, Check, X } from 'lucide-react';
-import { useApp } from '../../context/AppContext';
+import { useShop } from '../../context/AppContext';
 import { Coupon, DiscountType } from '../../types';
 import { formatPHP } from '../../utils/analytics';
 
 export const CouponManager: React.FC = () => {
-  const { sellerCoupons, addCoupon, updateCoupon, deleteCoupon } = useApp();
+  const { sellerCoupons, addCoupon, updateCoupon, deleteCoupon } = useShop();
 
   const [isCreating, setIsCreating] = useState(false);
   const [code, setCode] = useState('');

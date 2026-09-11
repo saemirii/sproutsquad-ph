@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Wifi } from 'lucide-react';
-import { useApp } from '../../context/AppContext';
+import { useSession } from '../../context/AppContext';
 import { DynamicIsland, DynamicIslandAlert } from './DynamicIsland';
 import { NotificationBell } from '../Notifications/NotificationBell';
 import { isNativeApp } from '../../utils/platform';
@@ -19,7 +19,7 @@ export const IosStatusBar: React.FC<IosStatusBarProps> = ({
   onOpenProfile,
 }) => {
   const [timeStr, setTimeStr] = useState('9:41');
-  const { currentUser } = useApp();
+  const { currentUser } = useSession();
 
   // The fake clock only matters for the web "simulated iPhone" demo view —
   // a native build sits below the OS's own real status bar, which already
@@ -56,10 +56,11 @@ export const IosStatusBar: React.FC<IosStatusBarProps> = ({
         )}
       </div>
 
-      {/* Dynamic Island in the Center — a real tap-to-expand cart/business
-          widget and toast-alert surface (not just decorative), kept on both
-          platforms. On native this renders below the OS's own real Dynamic
-          Island / notch rather than replacing it. */}
+      {/* Cart + alert surface in the Center — a real tap-to-open cart widget
+          and toast-alert display (not just decorative), kept on both
+          platforms. On web this renders as a fake Dynamic Island pill for
+          the simulated-iPhone preview; on native it's a plain inline
+          control, since the OS already draws the real Dynamic Island. */}
       <div className="flex-1 flex justify-center">
         <DynamicIsland
           activeAlert={activeAlert}

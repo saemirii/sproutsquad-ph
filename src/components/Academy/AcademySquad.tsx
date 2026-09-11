@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useApp } from '../../context/AppContext';
+import { useShop, useAcademy } from '../../context/AppContext';
 import { isSupabaseConfigured } from '../../lib/supabase';
 
 const ProgressRow: React.FC<{ label: string; value: number; goal: number }> = ({ label, value, goal }) => (
@@ -15,7 +15,8 @@ const ProgressRow: React.FC<{ label: string; value: number; goal: number }> = ({
 );
 
 export const AcademySquad: React.FC = () => {
-  const { activeBusiness, activeSquadChallenge, squadChallengeProgress, refreshSquadChallenge, claimSquadChallengeReward } = useApp();
+  const { activeBusiness } = useShop();
+  const { activeSquadChallenge, squadChallengeProgress, refreshSquadChallenge, claimSquadChallengeReward } = useAcademy();
 
   useEffect(() => {
     if (activeBusiness.id) void refreshSquadChallenge();

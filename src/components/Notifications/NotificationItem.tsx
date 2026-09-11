@@ -1,5 +1,5 @@
 import React from 'react';
-import { useApp } from '../../context/AppContext';
+import { useNotifications } from '../../context/AppContext';
 import { AppNotification } from '../../types';
 import { NOTIFICATION_ICON, formatRelativeTime } from './notificationIcons';
 
@@ -9,7 +9,7 @@ interface NotificationItemProps {
 }
 
 export const NotificationItem: React.FC<NotificationItemProps> = ({ notification, onNavigate }) => {
-  const { markNotificationRead, resolveNotificationAction } = useApp();
+  const { markNotificationRead, resolveNotificationAction } = useNotifications();
 
   const handleClick = () => {
     if (!notification.isRead) void markNotificationRead(notification.id);

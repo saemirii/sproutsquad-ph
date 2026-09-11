@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useApp } from '../../context/AppContext';
+import { useAcademy } from '../../context/AppContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 
 interface LeaderboardCategory {
@@ -20,7 +20,7 @@ const CATEGORIES: LeaderboardCategory[] = [
 ];
 
 export const AcademyLeaderboards: React.FC = () => {
-  const { academyProfile, setLeaderboardOptIn } = useApp();
+  const { academyProfile, setLeaderboardOptIn } = useAcademy();
   const [activeCategory, setActiveCategory] = useState<LeaderboardCategory>(CATEGORIES[0]);
   const [rows, setRows] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);

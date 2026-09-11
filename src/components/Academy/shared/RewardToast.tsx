@@ -1,9 +1,9 @@
 import React, { useEffect } from 'react';
-import { useApp } from '../../../context/AppContext';
+import { useAcademy } from '../../../context/AppContext';
 
 /** Small floating "+XP / +Seeds" feedback (section 14) — mount once near the top of the Academy tab. */
 export const RewardToast: React.FC = () => {
-  const { lastReward, clearLastReward } = useApp();
+  const { lastReward, clearLastReward } = useAcademy();
 
   useEffect(() => {
     if (!lastReward) return;

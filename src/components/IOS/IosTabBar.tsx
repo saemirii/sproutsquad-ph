@@ -1,9 +1,10 @@
 import React from 'react';
 import { ShoppingBag, Store, GraduationCap, Bot, Sparkles, Compass } from 'lucide-react';
-import { useApp } from '../../context/AppContext';
+import { useCart, useShop } from '../../context/AppContext';
 import { playIosTap } from '../../utils/haptics';
+import { isNativeApp } from '../../utils/platform';
 
-export type IosActiveTab = 'market' | 'ai-coach' | 'academy' | 'seller' | 'bag';
+export type IosActiveTab = 'market' | 'sproutup' | 'academy' | 'seller' | 'bag';
 
 interface IosTabBarProps {
   activeTab: IosActiveTab;
@@ -11,7 +12,8 @@ interface IosTabBarProps {
 }
 
 export const IosTabBar: React.FC<IosTabBarProps> = ({ activeTab, onTabChange }) => {
-  const { cartCount, sellerOrders } = useApp();
+  const { cartCount } = useCart();
+  const { sellerOrders } = useShop();
 
   const pendingSellerOrders = sellerOrders.filter(
     (o) => o.orderStatus === 'Pending' || o.orderStatus === 'Preparing'
@@ -30,9 +32,9 @@ export const IosTabBar: React.FC<IosTabBarProps> = ({ activeTab, onTabChange }) 
       icon: '🛍️',
     },
     {
-      id: 'ai-coach',
-      label: 'Sprout AI',
-      icon: '🦉',
+      id: 'sproutup',
+      label: 'SproutUp!',
+      icon: '🚀',
     },
     {
       id: 'academy',
@@ -56,7 +58,10 @@ export const IosTabBar: React.FC<IosTabBarProps> = ({ activeTab, onTabChange }) 
   ];
 
   return (
-    <div className="w-full shrink-0 bg-[#FFF9E6]/95 backdrop-blur-xl border-t border-[#EDE4D8] px-3 pt-1.5 pb-1 select-none z-30">
+    <div
+      className="w-full shrink-0 bg-[#FFF9E6]/95 backdrop-blur-xl border-t border-[#EDE4D8] px-3 pt-1.5 pb-1 select-none z-30"
+      style={isNativeApp ? { paddingBottom: 'max(0.25rem, env(safe-area-inset-bottom))' } : undefined}
+    >
       <div className="flex items-center justify-around max-w-md mx-auto">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;

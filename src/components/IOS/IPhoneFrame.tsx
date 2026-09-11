@@ -6,7 +6,7 @@ import { DynamicIslandAlert } from './DynamicIsland';
 import { isSoundEnabled, setSoundEnabled, playIosTap } from '../../utils/haptics';
 import { ProfileSheet } from '../ProfileSheet';
 import { SubscriptionPage } from '../SubscriptionPage';
-import { useApp } from '../../context/AppContext';
+import { useSubscription } from '../../context/AppContext';
 import { isNativeApp } from '../../utils/platform';
 
 interface IPhoneFrameProps {
@@ -35,7 +35,7 @@ export const IPhoneFrame: React.FC<IPhoneFrameProps> = ({
   const [finish, setFinish] = useState<DeviceFinish>('gold');
   const [soundOn, setSoundOn] = useState(isSoundEnabled());
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const { isSubscriptionPageOpen, openSubscriptionPage, closeSubscriptionPage } = useApp();
+  const { isSubscriptionPageOpen, openSubscriptionPage, closeSubscriptionPage } = useSubscription();
 
   const toggleSound = () => {
     const next = !soundOn;
@@ -164,7 +164,7 @@ export const IPhoneFrame: React.FC<IPhoneFrameProps> = ({
           />
 
           {/* Scrollable Main Screen Content */}
-          <div className="flex-1 overflow-y-auto scrollbar-none flex flex-col relative">
+          <div className="flex-1 overflow-y-auto overscroll-contain scrollbar-none flex flex-col relative">
             {children}
           </div>
 

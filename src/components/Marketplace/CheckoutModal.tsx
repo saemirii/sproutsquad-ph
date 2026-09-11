@@ -11,7 +11,7 @@ import {
   ShoppingBag,
   Store
 } from 'lucide-react';
-import { useApp } from '../../context/AppContext';
+import { useCart, useShop } from '../../context/AppContext';
 import { CampusUniversity, PaymentMethod, FulfillmentType, DeliveryMethod } from '../../types';
 import { formatPHP } from '../../utils/analytics';
 import { triggerConfetti } from '../../utils/confetti';
@@ -27,7 +27,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   onClose,
   onOrderPlacedSuccess,
 }) => {
-  const { cart, cartTotal, placeOrder, businesses, activeBusiness } = useApp();
+  const { cart, cartTotal, placeOrder } = useCart();
+  const { businesses, activeBusiness } = useShop();
 
   const [customerName, setCustomerName] = useState('Mika Reyes');
   const [customerContact, setCustomerContact] = useState('0917-555-1234');

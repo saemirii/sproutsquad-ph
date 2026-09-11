@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
-import { useApp } from '../../../context/AppContext';
+import { useAcademy } from '../../../context/AppContext';
 import { triggerAchievementConfetti } from '../../../utils/confetti';
 
 /** The bigger level-up celebration (section 2/14) — mount once near the top of the Academy tab. */
 export const LevelUpModal: React.FC = () => {
-  const { pendingLevelUp, clearPendingLevelUp } = useApp();
+  const { pendingLevelUp, clearPendingLevelUp } = useAcademy();
 
   useEffect(() => {
     if (pendingLevelUp) triggerAchievementConfetti();

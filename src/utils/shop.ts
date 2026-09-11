@@ -1,12 +1,13 @@
 import { Business, CampusUniversity, ProductCategory } from '../types';
 
 const defaultCategories: ProductCategory[] = [
-  'Bakes & Treats',
-  'Crochet & Crafts',
-  'Stickers & Stationery',
-  'Eco & Planters',
-  'School Supplies',
-  'Art & Prints',
+  'Art & Creative',
+  'Fashion & Accessories',
+  'Food & Drinks',
+  'Lifestyle & Gifts',
+  'Digital & Tech',
+  'Beauty & Self-Care',
+  'Education & Services',
 ];
 
 const campusFallbacks: Record<CampusUniversity, string> = {

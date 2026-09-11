@@ -1,5 +1,5 @@
 import React from 'react';
-import { useApp } from '../../context/AppContext';
+import { useAcademy } from '../../context/AppContext';
 import { AchievementRequirementType } from '../../types';
 
 const REQUIREMENT_NOUN: Record<AchievementRequirementType, string> = {
@@ -13,7 +13,7 @@ const REQUIREMENT_NOUN: Record<AchievementRequirementType, string> = {
 };
 
 export const AcademyAchievements: React.FC = () => {
-  const { achievements, unlockedAchievementIds, activityCounts, academyProfile } = useApp();
+  const { achievements, unlockedAchievementIds, activityCounts, academyProfile } = useAcademy();
 
   const countForRequirement = (type: AchievementRequirementType): number => {
     switch (type) {

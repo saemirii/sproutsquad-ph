@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import confetti from 'canvas-confetti';
 import {
   Business,
@@ -28,6 +28,11 @@ import {
   NotificationAction,
   NotificationPreferences,
   NotificationPreferenceCategory,
+  BusinessReview,
+  SproutUpFeatureType,
+  SproutUpNomination,
+  SproutUpAmbassadorPick,
+  SproutUpFeaturedSprout,
 } from '../types';
 import {
   initialBusinesses,
@@ -39,6 +44,7 @@ import {
 } from '../data/seedData';
 import { calculateBusinessMetrics } from '../utils/analytics';
 import { safeSetItem } from '../utils/safeStorage';
+import { API_BASE_URL } from '../utils/platform';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { ACADEMY_LEVELS } from '../data/academyLevels';
 import { initialAchievements } from '../data/academyAchievements';
@@ -70,6 +76,7 @@ import {
   fetchSproutPlusOfferings,
   purchaseSproutPlus,
   restoreSproutPlusPurchases as restoreSproutPlusPurchasesImpl,
+  fetchCustomerInfo,
   addCustomerInfoUpdateListener,
   buildSubscriptionStatus,
   isUserCancelledError,
@@ -91,10 +98,22 @@ import {
   rowToProfile,
   couponToRow,
   rowToCoupon,
+  rowToBusinessReview,
 } from '../lib/supabaseMappers';
+import {
+  rowToSproutUpNomination,
+  rowToSproutUpAmbassadorPick,
+  rowToSproutUpFeaturedSprout,
+} from '../lib/sproutUpMappers';
 
-interface AppContextType {
-  // Navigation & Role
+// ===========================================================================
+// Context is split into six domains so a component only re-renders when the
+// slice of state it actually reads changes (see AppProvider's `useStableActions`
+// helper + per-domain `useMemo`s below for how each of these stays referentially
+// stable across unrelated updates elsewhere in the app).
+// ===========================================================================
+
+interface SessionContextType {
   currentView: 'marketplace' | 'seller' | 'academy' | 'business-detail';
   setCurrentView: (view: 'marketplace' | 'seller' | 'academy' | 'business-detail') => void;
   sellerTab: 'overview' | 'products' | 'orders' | 'delivery' | 'expenses' | 'academy' | 'settings';
@@ -102,10 +121,6 @@ interface AppContextType {
   currentUser: User;
   setCurrentUser: (user: User) => void;
   updateCurrentUser: (updated: Partial<User>) => void;
-  activeBusiness: Business;
-  setActiveBusiness: (business: Business) => void;
-  accessibleBusinessIds: string[];
-  unlockBusinessByKey: (besKey: string) => Promise<{ success: boolean; businessId?: string; businessName?: string; message?: string }>;
   selectedBusinessForDetail: Business | null;
   setSelectedBusinessForDetail: (business: Business | null) => void;
   selectedCampusFilter: CampusUniversity | 'All Campuses';
@@ -117,44 +132,32 @@ interface AppContextType {
    * orderId (to highlight/scroll to that order) and clears it once it has. */
   pendingNavigation: { tab: IosActiveTab; businessId?: string; orderId?: string } | null;
   setPendingNavigation: (nav: { tab: IosActiveTab; businessId?: string; orderId?: string } | null) => void;
+  isRemoteDataLoading: boolean;
+  triggerConfetti: () => void;
+  resetToDefaultData: () => void;
+  signOut: () => void;
+  /** Permanently deletes the current account (Apple Guideline 5.1.1(v) — required since the app supports account creation). */
+  deleteAccount: () => Promise<{ success: boolean; message?: string }>;
+}
 
-  // Data Collections
+/** The current user's own reviews, keyed by order id. */
+type MyReviewsMap = Record<string, { stars: number; comment: string | null; images: string[] }>;
+
+interface ShopContextType {
   businesses: Business[];
   products: Product[];
   orders: Order[];
   expenses: Expense[];
   coupons: Coupon[];
-  lessons: Lesson[];
-  completedLessonIds: string[];
-  cart: CartItem[];
-
-  // Sprout Academy Gamification
-  academyProfile: AcademyProfile;
-  achievements: Achievement[];
-  unlockedAchievementIds: string[];
-  /** Counts of learning_activities by activity_type, for locked-achievement progress display. */
-  activityCounts: Record<string, number>;
-  gardenCatalog: GardenItem[];
-  ownedGardenItems: UserGardenItem[];
-  quests: Quest[];
-  questProgress: Record<string, QuestProgress>;
-  activeSquadChallenge: SquadChallenge | null;
-  squadChallengeProgress: SquadChallengeProgress | null;
-  lastReward: RewardResult | null;
-  clearLastReward: () => void;
-  pendingLevelUp: { level: number; title: string; icon: string; seedBonus: number } | null;
-  clearPendingLevelUp: () => void;
-
-  // Computed
+  activeBusiness: Business;
+  setActiveBusiness: (business: Business) => void;
+  accessibleBusinessIds: string[];
+  unlockBusinessByKey: (besKey: string) => Promise<{ success: boolean; businessId?: string; businessName?: string; message?: string }>;
   activeBusinessMetrics: BusinessMetrics;
   sellerOrders: Order[];
   sellerProducts: Product[];
   sellerExpenses: Expense[];
   sellerCoupons: Coupon[];
-  cartCount: number;
-  cartTotal: number;
-
-  // Actions
   addProduct: (product: Omit<Product, 'id' | 'businessId' | 'businessName' | 'soldCount'>) => void;
   updateProduct: (product: Product) => void;
   deleteProduct: (productId: string) => void;
@@ -169,32 +172,50 @@ interface AppContextType {
   validateCoupon: (code: string, businessId: string, subtotal: number) => { coupon: Coupon; discount: number } | { error: string };
   updateBusinessProfile: (updated: Partial<Business>) => void;
   createBusiness: (newBiz: Omit<Business, 'id' | 'sellerId' | 'rating' | 'reviewCount' | 'establishedDate' | 'badges'>) => void;
+  /** The current user's own reviews, keyed by order id — for "did I already rate this order" and prefilling edits. */
+  myReviews: Record<string, { stars: number; comment: string | null; images: string[] }>;
+  submitReview: (orderId: string, stars: number, comment?: string, images?: string[]) => Promise<{ success: boolean; message?: string }>;
+  /** Fetches all reviews for a business's public profile — not preloaded globally, called on demand when a business profile opens. */
+  fetchBusinessReviews: (businessId: string) => Promise<BusinessReview[]>;
+}
 
-  // Sprout Academy Gamification Actions
-  awardLearningActivity: (activityType: LearningActivityType, refId: string, xp: number, seeds: number) => Promise<RewardResult>;
-  completeLessonWithQuiz: (lessonId: string, isFirstAttempt: boolean) => Promise<RewardResult>;
-  completeSimulation: (scenarioId: string, xp: number, seeds: number) => Promise<RewardResult>;
-  purchaseGardenItem: (itemId: string) => Promise<{ success: boolean; message?: string }>;
-  equipGardenItem: (itemId: string, equip: boolean) => Promise<void>;
-  claimQuest: (questId: string, periodKey: string) => Promise<RewardResult>;
-  refreshSquadChallenge: () => Promise<void>;
-  claimSquadChallengeReward: () => Promise<RewardResult>;
-  setLeaderboardOptIn: (optIn: boolean) => Promise<void>;
+interface SproutUpContextType {
+  /** This week's automated picks — not preloaded globally, fetched on demand when the SproutUp tab opens. */
+  sproutUpHiddenGems: (Business & { sproutUpRank: number; sproutUpScore: number })[];
+  sproutUpRisingSprouts: (Business & { sproutUpRank: number; sproutUpScore: number })[];
+  sproutUpFeaturesByBusinessId: Record<string, SproutUpFeatureType[]>;
+  isSproutUpLoading: boolean;
+  refreshSproutUpFeatures: () => Promise<void>;
 
-  // Notifications
-  notifications: AppNotification[];
-  unreadNotificationCount: number;
-  notificationPreferences: NotificationPreferences;
-  favoritedBusinessIds: string[];
-  markNotificationRead: (id: string) => Promise<void>;
-  markAllNotificationsRead: () => Promise<void>;
-  updateNotificationPreference: (category: NotificationPreferenceCategory, enabled: boolean) => Promise<void>;
-  toggleFavoriteBusiness: (businessId: string) => Promise<void>;
-  resolveNotificationAction: (action?: NotificationAction) => void;
-  /** Fetches an older page of notifications past what's currently loaded (online only — offline mode's small local list is always loaded in full). Returns the rows fetched, empty when there's nothing older. */
-  loadMoreNotifications: () => Promise<AppNotification[]>;
+  /** Published/currently-live human-curated picks, for public display. */
+  sproutUpNominations: (SproutUpNomination & { business?: Business })[];
+  sproutUpAmbassadorPicks: (SproutUpAmbassadorPick & { business?: Business })[];
+  sproutUpFeaturedSprouts: (SproutUpFeaturedSprout & { business?: Business })[];
 
-  // Cart & Checkout Actions
+  submitNomination: (businessId: string, reason: string) => Promise<{ success: boolean; message?: string }>;
+  submitAmbassadorPick: (businessId: string, headline: string, description: string) => Promise<{ success: boolean; message?: string }>;
+
+  /** Admin-only moderation queues + actions. Every action here is re-validated server-side by is_admin() — these client-side entry points are for UI convenience only, never the real security boundary. */
+  pendingNominations: SproutUpNomination[];
+  pendingAmbassadorPicks: SproutUpAmbassadorPick[];
+  allFeaturedSprouts: SproutUpFeaturedSprout[];
+  isSproutUpAdminLoading: boolean;
+  fetchAdminQueues: () => Promise<void>;
+  moderateNomination: (id: string, decision: 'approved' | 'rejected', note?: string) => Promise<{ success: boolean; message?: string }>;
+  publishNomination: (id: string) => Promise<{ success: boolean; message?: string }>;
+  moderateAmbassadorPick: (id: string, decision: 'approved' | 'rejected', note?: string) => Promise<{ success: boolean; message?: string }>;
+  publishAmbassadorPick: (id: string) => Promise<{ success: boolean; message?: string }>;
+  createFeaturedSprout: (input: { businessId: string; title: string; description: string; imageUrl?: string; startsAt: string; endsAt: string }) => Promise<{ success: boolean; message?: string }>;
+  updateFeaturedSprout: (id: string, input: { title: string; description: string; imageUrl?: string; startsAt: string; endsAt: string; sortOrder?: number }) => Promise<{ success: boolean; message?: string }>;
+  publishFeaturedSprout: (id: string) => Promise<{ success: boolean; message?: string }>;
+  unpublishFeaturedSprout: (id: string) => Promise<{ success: boolean; message?: string }>;
+  deleteFeaturedSprout: (id: string) => Promise<{ success: boolean; message?: string }>;
+}
+
+interface CartContextType {
+  cart: CartItem[];
+  cartCount: number;
+  cartTotal: number;
   addToCart: (product: Product, quantity?: number) => void;
   updateCartQuantity: (productId: string, quantity: number) => void;
   removeFromCart: (productId: string) => void;
@@ -211,18 +232,52 @@ interface AppContextType {
     notes?: string;
     couponCode?: string;
   }) => Promise<{ success: boolean; orders: Order[]; failureReason?: string }>;
+}
 
-  // AI Business Coach
-  askAiCoach: (userQuestion?: string) => Promise<{ advice: string; fallback: boolean }>;
-  isAiCoachLoading: boolean;
+interface NotificationsContextType {
+  notifications: AppNotification[];
+  unreadNotificationCount: number;
+  notificationPreferences: NotificationPreferences;
+  favoritedBusinessIds: string[];
+  markNotificationRead: (id: string) => Promise<void>;
+  markAllNotificationsRead: () => Promise<void>;
+  updateNotificationPreference: (category: NotificationPreferenceCategory, enabled: boolean) => Promise<void>;
+  toggleFavoriteBusiness: (businessId: string) => Promise<void>;
+  resolveNotificationAction: (action?: NotificationAction) => void;
+  /** Fetches an older page of notifications past what's currently loaded (online only — offline mode's small local list is always loaded in full). Returns the rows fetched, empty when there's nothing older. */
+  loadMoreNotifications: () => Promise<AppNotification[]>;
+}
 
-  // Utilities
-  triggerConfetti: () => void;
-  resetToDefaultData: () => void;
-  isRemoteDataLoading: boolean;
-  signOut: () => void;
+interface AcademyContextType {
+  lessons: Lesson[];
+  completedLessonIds: string[];
+  academyProfile: AcademyProfile;
+  achievements: Achievement[];
+  unlockedAchievementIds: string[];
+  /** Counts of learning_activities by activity_type, for locked-achievement progress display. */
+  activityCounts: Record<string, number>;
+  gardenCatalog: GardenItem[];
+  ownedGardenItems: UserGardenItem[];
+  quests: Quest[];
+  questProgress: Record<string, QuestProgress>;
+  activeSquadChallenge: SquadChallenge | null;
+  squadChallengeProgress: SquadChallengeProgress | null;
+  lastReward: RewardResult | null;
+  clearLastReward: () => void;
+  pendingLevelUp: { level: number; title: string; icon: string; seedBonus: number } | null;
+  clearPendingLevelUp: () => void;
+  awardLearningActivity: (activityType: LearningActivityType, refId: string, xp: number, seeds: number) => Promise<RewardResult>;
+  completeLessonWithQuiz: (lessonId: string, isFirstAttempt: boolean) => Promise<RewardResult>;
+  completeSimulation: (scenarioId: string, xp: number, seeds: number) => Promise<RewardResult>;
+  purchaseGardenItem: (itemId: string) => Promise<{ success: boolean; message?: string }>;
+  equipGardenItem: (itemId: string, equip: boolean) => Promise<void>;
+  claimQuest: (questId: string, periodKey: string) => Promise<RewardResult>;
+  refreshSquadChallenge: () => Promise<void>;
+  claimSquadChallengeReward: () => Promise<RewardResult>;
+  setLeaderboardOptIn: (optIn: boolean) => Promise<void>;
+}
 
-  // Sprout+ Subscription (RevenueCat)
+interface SubscriptionContextType {
   subscription: SproutPlusStatus;
   hasSproutPlus: boolean;
   isSubscriptionPageOpen: boolean;
@@ -236,9 +291,40 @@ interface AppContextType {
   isPurchasingSproutPlus: boolean;
   purchaseSproutPlusPackage: (pkg: Package) => Promise<{ success: boolean; cancelled?: boolean; message?: string }>;
   restoreSproutPlusPurchases: () => Promise<{ success: boolean; message?: string }>;
+  /** Redeems a shared promo code (e.g. for reviewers/judges) for a free Sprout+ grant — no purchase involved. */
+  redeemPromoCode: (code: string) => Promise<{ success: boolean; message?: string }>;
 }
 
-const AppContext = createContext<AppContextType | undefined>(undefined);
+const SessionContext = createContext<SessionContextType | undefined>(undefined);
+const ShopContext = createContext<ShopContextType | undefined>(undefined);
+const CartContext = createContext<CartContextType | undefined>(undefined);
+const NotificationsContext = createContext<NotificationsContextType | undefined>(undefined);
+const AcademyContext = createContext<AcademyContextType | undefined>(undefined);
+const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
+const SproutUpContext = createContext<SproutUpContextType | undefined>(undefined);
+
+// Gives a group of action functions a permanently stable identity across
+// renders, without hand-writing a `useCallback` dependency array for each one
+// (several of these call each other, which makes those arrays easy to get
+// subtly wrong). `actions` is rebuilt fresh every render like any plain
+// object (cheap — just function references); the object this returns never
+// changes identity, but every call on it always runs the latest closure, via
+// the ref. Same behavior guarantee as before (fresh closure per render,
+// invoked synchronously), just exposed through a stable wrapper so context
+// values that include these actions don't recompute on every unrelated render.
+function useStableActions<T extends Record<string, (...args: any[]) => any>>(actions: T): T {
+  const latestRef = useRef(actions);
+  latestRef.current = actions;
+  const stableRef = useRef<T | undefined>(undefined);
+  if (!stableRef.current) {
+    const stable = {} as T;
+    for (const key of Object.keys(actions) as (keyof T)[]) {
+      stable[key] = ((...args: unknown[]) => latestRef.current[key](...args)) as T[keyof T];
+    }
+    stableRef.current = stable;
+  }
+  return stableRef.current;
+}
 
 const seededBusinessNames = Object.fromEntries(
   initialBusinesses.map((business) => [business.id, business.name])
@@ -257,7 +343,7 @@ const EMPTY_BUSINESS: Business = {
   banner: '',
   university: defaultSchool,
   campusPickupSpots: [],
-  category: 'School Supplies',
+  category: 'Lifestyle & Gifts',
   gcashNumber: '',
   rating: 0,
   reviewCount: 0,
@@ -275,9 +361,10 @@ interface AppProviderProps {
   children: React.ReactNode;
   authUser?: AuthenticatedUser;
   onSignOut?: () => void;
+  onDeleteAccount?: () => Promise<{ success: boolean; message?: string }>;
 }
 
-export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, onSignOut }) => {
+export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, onSignOut, onDeleteAccount }) => {
   // Load state from localStorage or fallback to seeds (offline/local-account mode only —
   // when Supabase is configured, these start empty and are populated by the fetch effect below)
   const [businesses, setBusinesses] = useState<Business[]>(() => {
@@ -409,18 +496,22 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
   const unlockedAchievementIds = isSupabaseConfigured ? onlineUnlockedAchievementIds : offlineAcademy.unlockedAchievementIds;
   const ownedGardenItems = isSupabaseConfigured ? onlineOwnedGardenItems : offlineAcademy.ownedGardenItems;
   const questProgress = isSupabaseConfigured ? onlineQuestProgressMap : offlineAcademy.questProgress;
-  const completedLessonIds = isSupabaseConfigured
-    ? onlineCompletedLessonIds
-    : Object.keys(offlineAcademy.claimedActivities)
-        .filter((key) => key.startsWith('lesson_complete:'))
-        .map((key) => key.slice('lesson_complete:'.length));
-  const activityCounts = isSupabaseConfigured
-    ? onlineActivityCounts
-    : Object.keys(offlineAcademy.claimedActivities).reduce<Record<string, number>>((acc, key) => {
-        const type = key.split(':')[0];
-        acc[type] = (acc[type] || 0) + 1;
-        return acc;
-      }, {});
+  const completedLessonIds = useMemo(() => (
+    isSupabaseConfigured
+      ? onlineCompletedLessonIds
+      : Object.keys(offlineAcademy.claimedActivities)
+          .filter((key) => key.startsWith('lesson_complete:'))
+          .map((key) => key.slice('lesson_complete:'.length))
+  ), [onlineCompletedLessonIds, offlineAcademy.claimedActivities]);
+  const activityCounts = useMemo(() => (
+    isSupabaseConfigured
+      ? onlineActivityCounts
+      : Object.keys(offlineAcademy.claimedActivities).reduce<Record<string, number>>((acc, key) => {
+          const type = key.split(':')[0];
+          acc[type] = (acc[type] || 0) + 1;
+          return acc;
+        }, {})
+  ), [onlineActivityCounts, offlineAcademy.claimedActivities]);
 
   // Notifications state. Online rows come from Supabase (fetched + kept live
   // via Realtime below); offline/local-demo mode synthesizes equivalent
@@ -430,6 +521,12 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
   const [onlineNotifications, setOnlineNotifications] = useState<AppNotification[]>([]);
   const [onlineNotificationPreferences, setOnlineNotificationPreferences] = useState<NotificationPreferences>(DEFAULT_NOTIFICATION_PREFERENCES);
   const [onlineFavoritedBusinessIds, setOnlineFavoritedBusinessIds] = useState<string[]>([]);
+  // This user's own reviews, keyed by order id — public table
+  // (business_reviews), but only this user's own rows are ever relevant to
+  // the UI (e.g. "did I already rate this order", prefilling an edit), so
+  // only those are kept — the full content (not just stars) so editing a
+  // review doesn't silently blank out a previously-attached comment/photos.
+  const [onlineMyReviews, setOnlineMyReviews] = useState<MyReviewsMap>({});
 
   const [offlineNotifications, setOfflineNotifications] = useState<AppNotification[]>(() => {
     if (isSupabaseConfigured) return [];
@@ -446,11 +543,36 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
     const saved = localStorage.getItem(`sproutsquad_favorites_${authUser?.id || 'guest'}`);
     return saved ? JSON.parse(saved) : [];
   });
+  const [offlineMyReviews, setOfflineMyReviews] = useState<MyReviewsMap>(() => {
+    if (isSupabaseConfigured) return {};
+    const saved = localStorage.getItem(`sproutsquad_reviews_${authUser?.id || 'guest'}`);
+    return saved ? JSON.parse(saved) : {};
+  });
 
   const notifications = isSupabaseConfigured ? onlineNotifications : offlineNotifications;
   const notificationPreferences = isSupabaseConfigured ? onlineNotificationPreferences : offlineNotificationPreferences;
   const favoritedBusinessIds = isSupabaseConfigured ? onlineFavoritedBusinessIds : offlineFavoritedBusinessIds;
-  const unreadNotificationCount = notifications.filter((n) => !n.isRead).length;
+  const myReviews = isSupabaseConfigured ? onlineMyReviews : offlineMyReviews;
+  const unreadNotificationCount = useMemo(() => notifications.filter((n) => !n.isRead).length, [notifications]);
+
+  // SproutUp! — Supabase-only (offline/local-account mode has no
+  // cross-user data to rank against, so these just stay empty and the UI
+  // shows its empty state, same posture as toggleFavoriteBusiness's
+  // offline branch). Not preloaded on app load — fetched on demand the
+  // first time the SproutUp tab opens.
+  const [sproutUpHiddenGems, setSproutUpHiddenGems] = useState<(Business & { sproutUpRank: number; sproutUpScore: number })[]>([]);
+  const [sproutUpRisingSprouts, setSproutUpRisingSprouts] = useState<(Business & { sproutUpRank: number; sproutUpScore: number })[]>([]);
+  const [sproutUpFeaturesByBusinessId, setSproutUpFeaturesByBusinessId] = useState<Record<string, SproutUpFeatureType[]>>({});
+  const [isSproutUpLoading, setIsSproutUpLoading] = useState(false);
+
+  // SproutUp! Phase 2 — human-curated picks (public display) + admin queues.
+  const [sproutUpNominations, setSproutUpNominations] = useState<(SproutUpNomination & { business?: Business })[]>([]);
+  const [sproutUpAmbassadorPicks, setSproutUpAmbassadorPicks] = useState<(SproutUpAmbassadorPick & { business?: Business })[]>([]);
+  const [sproutUpFeaturedSprouts, setSproutUpFeaturedSprouts] = useState<(SproutUpFeaturedSprout & { business?: Business })[]>([]);
+  const [pendingNominations, setPendingNominations] = useState<SproutUpNomination[]>([]);
+  const [pendingAmbassadorPicks, setPendingAmbassadorPicks] = useState<SproutUpAmbassadorPick[]>([]);
+  const [allFeaturedSprouts, setAllFeaturedSprouts] = useState<SproutUpFeaturedSprout[]>([]);
+  const [isSproutUpAdminLoading, setIsSproutUpAdminLoading] = useState(false);
 
   const [currentUser, setCurrentUser] = useState<User>(() => ({
     ...initialUsers[0],
@@ -459,7 +581,17 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
     name: authUser?.user_metadata?.full_name || authUser?.email?.split('@')[0] || initialUsers[0].name,
     email: authUser?.email || initialUsers[0].email,
   }));
-  const [activeBusinessId, setActiveBusinessId] = useState<string>(isSupabaseConfigured ? '' : 'biz-1');
+  // Persisted per-user so a seller who owns more than one shop keeps landing
+  // on the one they were actually using, instead of silently re-deriving
+  // "first owned business" (in whatever order the backend happens to return
+  // them — not guaranteed stable) on every single reload. Without this, a
+  // seller with e.g. one active shop and one empty just-created one could
+  // land back on the empty shop at random and see Shop OS read all zeros.
+  const [activeBusinessId, setActiveBusinessId] = useState<string>(() => {
+    if (!isSupabaseConfigured) return 'biz-1';
+    const saved = localStorage.getItem(`sproutsquad_active_business_${authUser?.id || 'guest'}`);
+    return saved || '';
+  });
   const [isRemoteDataLoading, setIsRemoteDataLoading] = useState<boolean>(isSupabaseConfigured);
   const [unlockedBusinessIds, setUnlockedBusinessIds] = useState<string[]>(() => {
     const saved = localStorage.getItem(`sproutsquad_access_${authUser?.id || 'guest'}`);
@@ -476,8 +608,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
     const saved = localStorage.getItem('sproutsquad_cart');
     return saved ? JSON.parse(saved) : [];
   });
-
-  const [isAiCoachLoading, setIsAiCoachLoading] = useState<boolean>(false);
 
   // Sprout+ Subscription (RevenueCat) state
   const [subscription, setSubscription] = useState<SproutPlusStatus>(DEFAULT_SUBSCRIPTION_STATUS);
@@ -502,9 +632,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
     }
   };
 
-  const accessibleBusinessIds = businesses
+  const accessibleBusinessIds = useMemo(() => businesses
     .filter((business) => business.sellerId === currentUser.id || unlockedBusinessIds.includes(business.id))
-    .map((business) => business.id);
+    .map((business) => business.id), [businesses, currentUser.id, unlockedBusinessIds]);
 
   // Joins a business by BES key alone — the server resolves which business
   // the key belongs to, so the client never needs to know/display a
@@ -536,6 +666,11 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
   useEffect(() => {
     safeSetItem(`sproutsquad_access_${currentUser.id}`, JSON.stringify(unlockedBusinessIds));
   }, [currentUser.id, unlockedBusinessIds]);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured || !activeBusinessId) return;
+    safeSetItem(`sproutsquad_active_business_${currentUser.id}`, activeBusinessId);
+  }, [activeBusinessId, currentUser.id]);
 
   useEffect(() => {
     if (!authUser) return;
@@ -647,45 +782,100 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
     }
   }, []);
 
+  // Grants a free Sprout+ entitlement via a shared promo code (e.g. for
+  // hackathon judges) — no purchase involved. The actual grant happens
+  // server-side (server/promoCode.ts) using RevenueCat's Secret API key,
+  // which must never reach client code; this just calls that endpoint and
+  // then re-fetches CustomerInfo so `hasSproutPlus` reflects the grant
+  // immediately, without waiting on the native push listener / next focus
+  // refresh.
+  const redeemPromoCode = async (code: string): Promise<{ success: boolean; message?: string }> => {
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (supabase) {
+        const { data } = await supabase.auth.getSession();
+        if (data.session?.access_token) headers.Authorization = `Bearer ${data.session.access_token}`;
+      }
+      const response = await fetch(`${API_BASE_URL}/api/redeem-promo-code`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ code }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success) {
+        return { success: false, message: result.message || "That code isn't valid." };
+      }
+      const info = await fetchCustomerInfo();
+      setSubscription(buildSubscriptionStatus(info));
+      return { success: true, message: result.message };
+    } catch (error) {
+      console.error('Failed to redeem promo code', error);
+      return { success: false, message: 'Something went wrong. Please try again.' };
+    }
+  };
+
   // Load real data from Supabase (businesses/products are shared marketplace data,
   // orders/expenses/profile are scoped to this user via RLS).
   //
   // The `logo` / `image_url` columns hold base64 data URLs from user uploads and can
-  // run into megabytes per row, which made the initial load painfully slow. We fetch
-  // every other column first so the app can render almost immediately, then backfill
-  // the images in the background without blocking or re-showing the loading screen.
-  // bes_key is deliberately excluded here — see migration_11_bes_key_privacy.sql.
+  // run into megabytes per row, which made the initial load painfully slow. The RPC
+  // below (see migration_18_initial_data_rpc.sql) excludes both, selecting every
+  // other column instead, so the app can render almost immediately; the images get
+  // backfilled in the background without blocking or re-showing the loading screen.
+  // bes_key is deliberately excluded there too — see migration_11_bes_key_privacy.sql.
   // SELECT on that column is revoked for client roles entirely (an owner's
   // own key is fetched separately below via the get_my_business_bes_key RPC),
   // since this businesses query is shared, public marketplace data (RLS
   // allows anyone to read every row) and previously leaked every shop's
   // "secret" key to every signed-in user.
-  const BUSINESS_LIGHT_COLUMNS = 'id, seller_id, name, handle, tagline, description, banner, university, campus_pickup_spots, category, gcash_number, maya_number, instagram_handle, tiktok_handle, rating, review_count, established_date, badges';
-  const PRODUCT_LIGHT_COLUMNS = 'id, business_id, business_name, university, name, description, price, cost_price, category, inventory_count, tags, is_available, unit, sku, sold_count, bundled_product_ids, is_pre_order, pre_order_release_date, drop_date';
 
   useEffect(() => {
     if (!supabase || !authUser) return;
     let cancelled = false;
 
-    setIsRemoteDataLoading(true);
-    Promise.all([
-      supabase.from('businesses').select(BUSINESS_LIGHT_COLUMNS),
-      supabase.from('products').select(PRODUCT_LIGHT_COLUMNS),
-      supabase.from('orders').select('*'),
-      supabase.from('expenses').select('*'),
-      supabase.from('coupons').select('*'),
-      supabase.from('profiles').select('*').eq('id', authUser.id).maybeSingle(),
-    ]).then(([businessesRes, productsRes, ordersRes, expensesRes, couponsRes, profileRes]) => {
-      if (cancelled) return;
+    // Wrapped in a retrying function (not just a one-shot fetch) because a
+    // timeout/failure here previously landed on empty orders/businesses/etc.
+    // permanently — which *looks* like legitimate empty data (e.g. "0
+    // revenue") rather than an error, with nothing prompting a retry. Under
+    // this project's known free-tier connection contention, that's a real,
+    // recurring failure mode, not just a hypothetical one.
+    const loadInitialData = (attempt = 1) => {
+      setIsRemoteDataLoading(true);
 
-      if (businessesRes.error) console.error('Failed to load businesses', businessesRes.error);
-      else {
-        const loadedBusinesses = (businessesRes.data || []).map(rowToBusiness);
+      // A stalled request here (no response, not even an error — the
+      // .catch() below only helps once something actually rejects) used to
+      // leave this loading screen stuck forever, since Promise.all never
+      // settles until every query does. Racing it against a timeout
+      // guarantees the app still gets to render, even with stale/empty
+      // data, instead of hanging.
+      const timedOut = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Timed out loading initial data')), 15000);
+      });
+
+      // Consolidated into one RPC call (see migration_18_initial_data_rpc.sql)
+      // instead of 6 separate concurrent queries — this project's connection
+      // pool (currently free-tier) was getting contended by that many
+      // simultaneous requests, which was the direct cause of intermittent
+      // "0 revenue" / "no orders found" empty-state failures even though
+      // the underlying queries are individually cheap. security invoker on
+      // that function means every table's existing RLS policy still
+      // applies exactly as before — this only reduces round-trips.
+      Promise.race([
+        supabase.rpc('get_initial_app_data'),
+        timedOut,
+      ]).then(({ data, error }) => {
+        if (cancelled) return;
+
+        if (error || !data) {
+          throw error || new Error('No data returned from get_initial_app_data');
+        }
+
+        const loadedBusinesses = ((data.businesses || []) as any[]).map(rowToBusiness);
         setBusinesses(loadedBusinesses);
 
-        // bes_key can no longer be bulk-fetched (see BUSINESS_LIGHT_COLUMNS
-        // above) — pull it in just for shops this user owns, one RPC call
-        // each, so they can still view/share their own key.
+        // bes_key is excluded from the RPC (see migration_11_bes_key_privacy.sql)
+        // — pull it in just for shops this user owns, one RPC call each, so
+        // they can still view/share their own key.
         const ownedBusinessIds = loadedBusinesses
           .filter((b) => b.sellerId === authUser.id)
           .map((b) => b.id);
@@ -695,49 +885,84 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
             setBusinesses((previous) => previous.map((b) => (b.id === ownedId ? { ...b, besKey: data as string } : b)));
           });
         }
-      }
 
-      if (productsRes.error) console.error('Failed to load products', productsRes.error);
-      else setProducts((productsRes.data || []).map(rowToProduct));
+        setProducts(((data.products || []) as any[]).map(rowToProduct));
+        setOrders(((data.orders || []) as any[]).map(rowToOrder));
+        setExpenses(((data.expenses || []) as any[]).map(rowToExpense));
+        setCoupons(((data.coupons || []) as any[]).map(rowToCoupon));
 
-      if (ordersRes.error) console.error('Failed to load orders', ordersRes.error);
-      else setOrders((ordersRes.data || []).map(rowToOrder));
+        if (data.profile) {
+          const profile = rowToProfile(data.profile);
+          setCurrentUser((previous) => ({
+            ...previous,
+            name: profile.name || previous.name,
+            university: profile.university || previous.university,
+            avatar: profile.avatar || previous.avatar,
+            isAdmin: profile.isAdmin,
+            isAmbassador: profile.isAmbassador,
+          }));
+        }
 
-      if (expensesRes.error) console.error('Failed to load expenses', expensesRes.error);
-      else setExpenses((expensesRes.data || []).map(rowToExpense));
+        setIsRemoteDataLoading(false);
 
-      if (couponsRes.error) console.error('Failed to load coupons', couponsRes.error);
-      else setCoupons((couponsRes.data || []).map(rowToCoupon));
+        // Logos/images are fetched separately from the light columns above
+        // (to keep the initial payload small) — everything starts on a
+        // blank placeholder (see rowToBusiness/rowToProduct) until these
+        // fill in. Previously had no error handling at all, so a failure
+        // here (e.g. the free-tier connection contention this project has
+        // hit before) left every image blank forever with no way to
+        // recover short of a reload. A few retries gives transient
+        // failures a real chance to resolve.
+        const loadBusinessLogos = (logoAttempt = 1) => {
+          supabase.from('businesses').select('id, logo').then(({ data, error }) => {
+            if (cancelled) return;
+            if (error || !data) {
+              console.error('Failed to load business logos', error);
+              if (logoAttempt < 3) setTimeout(() => loadBusinessLogos(logoAttempt + 1), 3000);
+              return;
+            }
+            const logoById = new Map(data.map((row) => [row.id, row.logo as string]));
+            setBusinesses((previous) => previous.map((b) => (
+              logoById.has(b.id) ? { ...b, logo: logoById.get(b.id) || b.logo } : b
+            )));
+          });
+        };
+        loadBusinessLogos();
 
-      if (profileRes.error) console.error('Failed to load profile', profileRes.error);
-      else if (profileRes.data) {
-        const profile = rowToProfile(profileRes.data);
-        setCurrentUser((previous) => ({
-          ...previous,
-          name: profile.name || previous.name,
-          university: profile.university || previous.university,
-          avatar: profile.avatar || previous.avatar,
-        }));
-      }
-
-      setIsRemoteDataLoading(false);
-
-      void supabase.from('businesses').select('id, logo').then(({ data, error }) => {
-        if (cancelled || error || !data) return;
-        const logoById = new Map(data.map((row) => [row.id, row.logo as string]));
-        setBusinesses((previous) => previous.map((b) => (
-          logoById.has(b.id) ? { ...b, logo: logoById.get(b.id) || b.logo } : b
-        )));
+        const loadProductImages = (imageAttempt = 1) => {
+          supabase.from('products').select('id, image_url').then(({ data, error }) => {
+            if (cancelled) return;
+            if (error || !data) {
+              console.error('Failed to load product images', error);
+              if (imageAttempt < 3) setTimeout(() => loadProductImages(imageAttempt + 1), 3000);
+              return;
+            }
+            const imageById = new Map(data.map((row) => [row.id, row.image_url as string]));
+            setProducts((previous) => previous.map((p) => (
+              imageById.has(p.id) ? { ...p, imageUrl: imageById.get(p.id) || p.imageUrl } : p
+            )));
+          });
+        };
+        loadProductImages();
+      }).catch((error) => {
+        // Reached on a rejected query (e.g. a network error — Promise.all
+        // rejects as a whole if any single query throws) or on the
+        // timedOut race above. Retrying gives a transient failure (this
+        // project's known free-tier contention) a real chance to resolve,
+        // instead of silently settling on empty orders/businesses/etc.
+        // forever — which looks exactly like legitimate empty data (e.g.
+        // "0 revenue") rather than a loading error.
+        if (cancelled) return;
+        console.error(`Failed to load initial data (attempt ${attempt})`, error);
+        if (attempt < 3) {
+          setTimeout(() => loadInitialData(attempt + 1), 3000);
+        } else {
+          setIsRemoteDataLoading(false);
+        }
       });
+    };
 
-      void supabase.from('products').select('id, image_url').then(({ data, error }) => {
-        if (cancelled || error || !data) return;
-        const imageById = new Map(data.map((row) => [row.id, row.image_url as string]));
-        setProducts((previous) => previous.map((p) => (
-          imageById.has(p.id) ? { ...p, imageUrl: imageById.get(p.id) || p.imageUrl } : p
-        )));
-      });
-    });
+    loadInitialData();
 
     return () => { cancelled = true; };
   }, [authUser?.id]);
@@ -821,7 +1046,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
       supabase.from('notifications').select('*').eq('user_id', authUser.id).order('created_at', { ascending: false }).limit(50),
       supabase.from('notification_preferences').select('*').eq('user_id', authUser.id).maybeSingle(),
       supabase.from('business_favorites').select('business_id').eq('user_id', authUser.id),
-    ]).then(([notifRes, prefRes, favRes]) => {
+      supabase.from('business_reviews').select('order_id, stars, comment, images').eq('customer_id', authUser.id),
+    ]).then(([notifRes, prefRes, favRes, reviewsRes]) => {
       if (cancelled) return;
 
       if (notifRes.error) console.error('Failed to load notifications', notifRes.error);
@@ -832,6 +1058,15 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
 
       if (favRes.error) console.error('Failed to load favorited shops', favRes.error);
       else setOnlineFavoritedBusinessIds((favRes.data || []).map((row: any) => row.business_id));
+
+      if (reviewsRes.error) console.error('Failed to load my reviews', reviewsRes.error);
+      else {
+        const map: MyReviewsMap = {};
+        for (const row of reviewsRes.data || []) {
+          map[row.order_id] = { stars: Number(row.stars), comment: row.comment || null, images: row.images || [] };
+        }
+        setOnlineMyReviews(map);
+      }
     });
 
     return () => { cancelled = true; };
@@ -941,29 +1176,33 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
   }, [offlineFavoritedBusinessIds, currentUser.id]);
 
   useEffect(() => {
+    if (isSupabaseConfigured) return;
+    safeSetItem(`sproutsquad_reviews_${currentUser.id}`, JSON.stringify(offlineMyReviews));
+  }, [offlineMyReviews, currentUser.id]);
+
+  useEffect(() => {
     safeSetItem('sproutsquad_cart', JSON.stringify(cart));
   }, [cart]);
 
   // Derived state for the active business
-  const activeBusiness =
+  const activeBusiness = useMemo(() => (
     businesses.find((b) => b.id === activeBusinessId)
     || businesses.find((b) => b.sellerId === currentUser.id)
     || businesses[0]
-    || EMPTY_BUSINESS;
-  const sellerProducts = products.filter((p) => p.businessId === activeBusiness.id);
-  const sellerOrders = orders.filter((o) => o.businessId === activeBusiness.id);
-  const sellerExpenses = expenses.filter((e) => e.businessId === activeBusiness.id);
-  const sellerCoupons = coupons.filter((c) => c.businessId === activeBusiness.id);
+    || EMPTY_BUSINESS
+  ), [businesses, activeBusinessId, currentUser.id]);
+  const sellerProducts = useMemo(() => products.filter((p) => p.businessId === activeBusiness.id), [products, activeBusiness.id]);
+  const sellerOrders = useMemo(() => orders.filter((o) => o.businessId === activeBusiness.id), [orders, activeBusiness.id]);
+  const sellerExpenses = useMemo(() => expenses.filter((e) => e.businessId === activeBusiness.id), [expenses, activeBusiness.id]);
+  const sellerCoupons = useMemo(() => coupons.filter((c) => c.businessId === activeBusiness.id), [coupons, activeBusiness.id]);
 
-  const activeBusinessMetrics = calculateBusinessMetrics(
-    sellerOrders,
-    sellerExpenses,
-    sellerProducts,
-    completedLessonIds
+  const activeBusinessMetrics = useMemo(
+    () => calculateBusinessMetrics(sellerOrders, sellerExpenses, sellerProducts, completedLessonIds),
+    [sellerOrders, sellerExpenses, sellerProducts, completedLessonIds]
   );
 
-  const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
-  const cartTotal = cart.reduce((total, item) => total + item.product.price * item.quantity, 0);
+  const cartCount = useMemo(() => cart.reduce((total, item) => total + item.quantity, 0), [cart]);
+  const cartTotal = useMemo(() => cart.reduce((total, item) => total + item.product.price * item.quantity, 0), [cart]);
 
   const triggerConfetti = () => {
     try {
@@ -1227,7 +1466,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
       ...newBizData,
       id: newId,
       sellerId: currentUser.id,
-      rating: 5.0,
+      rating: 0,
       reviewCount: 0,
       establishedDate: new Date().toISOString().split('T')[0],
       badges: ['New Sprout 🌱', 'Campus Verified'],
@@ -1243,6 +1482,331 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
     setCurrentView('seller');
     setSellerTab('settings');
     triggerConfetti();
+  };
+
+  // Star Reviews — a customer can rate a business 1-5 stars, but only for an
+  // order they actually completed. Re-rating the same order updates it
+  // rather than creating a duplicate (see migration_19's submit_review RPC,
+  // which does the real validation + aggregate recompute server-side; this
+  // just calls it and refreshes local state to match).
+  const submitReview = async (
+    orderId: string,
+    stars: number,
+    comment?: string,
+    images?: string[]
+  ): Promise<{ success: boolean; message?: string }> => {
+    if (stars < 1 || stars > 5) return { success: false, message: 'Rating must be between 1 and 5 stars.' };
+    const trimmedComment = comment?.trim() || null;
+    const clippedImages = (images || []).slice(0, 3);
+
+    if (supabase) {
+      const { error } = await supabase.rpc('submit_review', {
+        p_order_id: orderId,
+        p_stars: stars,
+        p_comment: trimmedComment,
+        p_images: clippedImages,
+      });
+      if (error) {
+        console.error('Failed to submit review', error);
+        return { success: false, message: error.message || 'Could not submit your rating right now.' };
+      }
+      setOnlineMyReviews((prev) => ({ ...prev, [orderId]: { stars, comment: trimmedComment, images: clippedImages } }));
+
+      // submit_review already recomputed rating/review_count server-side —
+      // re-fetch just this one business row so the UI reflects the new
+      // average immediately, without a full reload.
+      const order = orders.find((o) => o.id === orderId);
+      if (order) {
+        const { data, error: fetchError } = await supabase
+          .from('businesses')
+          .select('rating, review_count')
+          .eq('id', order.businessId)
+          .single();
+        if (!fetchError && data) {
+          setBusinesses((prev) => prev.map((b) => (
+            b.id === order.businessId ? { ...b, rating: Number(data.rating) || 0, reviewCount: Number(data.review_count) || 0 } : b
+          )));
+        }
+      }
+      return { success: true };
+    }
+
+    // Offline/local-account fallback: validate the same rules the RPC would,
+    // then recompute the business's average from local state alone.
+    const order = orders.find((o) => o.id === orderId);
+    if (!order) return { success: false, message: 'Order not found.' };
+    if (order.customerId !== currentUser.id) return { success: false, message: 'This is not your order.' };
+    if (order.orderStatus !== 'Completed') return { success: false, message: 'You can only rate completed orders.' };
+
+    const alreadyRated = orderId in offlineMyReviews;
+    const previousStars = offlineMyReviews[orderId]?.stars ?? 0;
+    setOfflineMyReviews((prev) => ({ ...prev, [orderId]: { stars, comment: trimmedComment, images: clippedImages } }));
+    setBusinesses((prev) => prev.map((b) => {
+      if (b.id !== order.businessId) return b;
+      const nextCount = alreadyRated ? b.reviewCount : b.reviewCount + 1;
+      const priorTotal = b.rating * b.reviewCount - (alreadyRated ? previousStars : 0);
+      const nextRating = nextCount > 0 ? Math.round(((priorTotal + stars) / nextCount) * 10) / 10 : 0;
+      return { ...b, rating: nextRating, reviewCount: nextCount };
+    }));
+    return { success: true };
+  };
+
+  // Fetches a business's public reviews for display — on-demand (called when
+  // a business profile opens), not preloaded into global state, since most
+  // businesses' reviews are never viewed in a given session. business_reviews
+  // has a public select policy, so this is a plain read, no RPC needed.
+  const fetchBusinessReviews = async (businessId: string): Promise<BusinessReview[]> => {
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('business_reviews')
+        .select('*')
+        .eq('business_id', businessId)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      if (error) {
+        console.error('Failed to load reviews', error);
+        return [];
+      }
+      return (data || []).map(rowToBusinessReview);
+    }
+
+    // Offline/local-account fallback: this device's own review, if any, for
+    // that business (there's no other "customer" to have reviewed it).
+    return Object.entries(offlineMyReviews)
+      .filter(([orderId]) => orders.find((o) => o.id === orderId)?.businessId === businessId)
+      .map(([orderId, review]) => ({
+        orderId,
+        businessId,
+        customerName: currentUser.name,
+        stars: review.stars,
+        comment: review.comment,
+        images: review.images,
+        createdAt: orders.find((o) => o.id === orderId)?.createdAt || new Date().toISOString(),
+      }));
+  };
+
+  // SproutUp! — fetches this week's automated Hidden Gems / Rising Sprouts
+  // picks. Not preloaded globally (see state comment above) — called when
+  // the SproutUp tab opens. recompute_sproutup_features() is idempotent
+  // per ISO week (see migration_22), so calling it on every tab open is
+  // cheap after the first caller of a given week has already locked in
+  // that week's picks; a failed recompute is non-fatal since reads still
+  // work against whatever was already computed.
+  const refreshSproutUpFeatures = async (): Promise<void> => {
+    if (!supabase) return;
+    setIsSproutUpLoading(true);
+    const { error: recomputeError } = await supabase.rpc('recompute_sproutup_features');
+    if (recomputeError) console.error('SproutUp recompute failed (non-fatal, reads still work)', recomputeError);
+
+    const today = new Date().toISOString().slice(0, 10);
+    const nowIso = new Date().toISOString();
+
+    // Every active ledger row, across all 5 recognition types — this is
+    // what the SproutedUp! badge reads (sproutUpFeaturesByBusinessId), so
+    // it's intentionally not filtered to just Phase 1's two automated
+    // types. Only hidden_gem/rising_sprout also populate the two ranked
+    // arrays below; the human-curated types (Phase 2) surface through
+    // their own tables instead, since the ledger only stores a generic
+    // score_breakdown, not the nomination reason / ambassador headline /
+    // featured-sprout copy the public sections actually need to render.
+    const [ledgerRes, nominationsRes, ambassadorPicksRes, featuredSproutsRes] = await Promise.all([
+      supabase
+        .from('business_feature_history')
+        .select('business_id, feature_type, rank, score, businesses(*)')
+        .eq('status', 'active')
+        .gte('period_end', today)
+        .order('rank', { ascending: true }),
+      supabase
+        .from('sproutup_nominations')
+        .select('*, businesses(*)')
+        .eq('status', 'published')
+        .order('published_at', { ascending: false }),
+      supabase
+        .from('sproutup_ambassador_picks')
+        .select('*, businesses(*)')
+        .eq('status', 'published')
+        .order('published_at', { ascending: false }),
+      supabase
+        .from('sproutup_featured_sprouts')
+        .select('*, businesses(*)')
+        .eq('is_published', true)
+        .lte('starts_at', nowIso)
+        .gte('ends_at', nowIso)
+        .order('sort_order', { ascending: true }),
+    ]);
+
+    if (ledgerRes.error) {
+      console.error('Failed to load SproutUp features', ledgerRes.error);
+    } else {
+      const hiddenGems: (Business & { sproutUpRank: number; sproutUpScore: number })[] = [];
+      const risingSprouts: (Business & { sproutUpRank: number; sproutUpScore: number })[] = [];
+      const byBusinessId: Record<string, SproutUpFeatureType[]> = {};
+
+      for (const row of (ledgerRes.data || []) as any[]) {
+        if (!row.businesses) continue;
+        const featureType = row.feature_type as SproutUpFeatureType;
+        if (featureType === 'hidden_gem' || featureType === 'rising_sprout') {
+          const entry = { ...rowToBusiness(row.businesses), sproutUpRank: row.rank, sproutUpScore: Number(row.score) };
+          if (featureType === 'hidden_gem') hiddenGems.push(entry);
+          else risingSprouts.push(entry);
+        }
+        byBusinessId[row.business_id] = [...(byBusinessId[row.business_id] || []), featureType];
+      }
+
+      setSproutUpHiddenGems(hiddenGems);
+      setSproutUpRisingSprouts(risingSprouts);
+      setSproutUpFeaturesByBusinessId(byBusinessId);
+    }
+
+    if (nominationsRes.error) console.error('Failed to load SproutUp nominations', nominationsRes.error);
+    else setSproutUpNominations((nominationsRes.data || []).map((row: any) => ({
+      ...rowToSproutUpNomination(row),
+      business: row.businesses ? rowToBusiness(row.businesses) : undefined,
+    })));
+
+    if (ambassadorPicksRes.error) console.error('Failed to load SproutUp ambassador picks', ambassadorPicksRes.error);
+    else setSproutUpAmbassadorPicks((ambassadorPicksRes.data || []).map((row: any) => ({
+      ...rowToSproutUpAmbassadorPick(row),
+      business: row.businesses ? rowToBusiness(row.businesses) : undefined,
+    })));
+
+    if (featuredSproutsRes.error) console.error('Failed to load Featured Sprouts', featuredSproutsRes.error);
+    else setSproutUpFeaturedSprouts((featuredSproutsRes.data || []).map((row: any) => ({
+      ...rowToSproutUpFeaturedSprout(row),
+      business: row.businesses ? rowToBusiness(row.businesses) : undefined,
+    })));
+
+    setIsSproutUpLoading(false);
+  };
+
+  // Admin-only moderation queues — fetched separately from the public
+  // refresh above (only ever called from the admin screen, gated by
+  // currentUser.isAdmin client-side and is_admin() server-side via RLS).
+  const fetchAdminQueues = async (): Promise<void> => {
+    if (!supabase) return;
+    setIsSproutUpAdminLoading(true);
+    await supabase.rpc('sync_sproutup_nomination_expirations');
+    await supabase.rpc('sync_sproutup_ambassador_pick_expirations');
+
+    const [pendingNomsRes, pendingPicksRes, allFeaturedRes] = await Promise.all([
+      supabase.from('sproutup_nominations').select('*').eq('status', 'pending').order('created_at', { ascending: true }),
+      supabase.from('sproutup_ambassador_picks').select('*').eq('status', 'pending').order('created_at', { ascending: true }),
+      supabase.from('sproutup_featured_sprouts').select('*').order('created_at', { ascending: false }),
+    ]);
+
+    if (pendingNomsRes.error) console.error('Failed to load pending nominations', pendingNomsRes.error);
+    else setPendingNominations((pendingNomsRes.data || []).map(rowToSproutUpNomination));
+
+    if (pendingPicksRes.error) console.error('Failed to load pending ambassador picks', pendingPicksRes.error);
+    else setPendingAmbassadorPicks((pendingPicksRes.data || []).map(rowToSproutUpAmbassadorPick));
+
+    if (allFeaturedRes.error) console.error('Failed to load Featured Sprouts', allFeaturedRes.error);
+    else setAllFeaturedSprouts((allFeaturedRes.data || []).map(rowToSproutUpFeaturedSprout));
+
+    setIsSproutUpAdminLoading(false);
+  };
+
+  const submitNomination = async (businessId: string, reason: string): Promise<{ success: boolean; message?: string }> => {
+    if (!supabase) return { success: false, message: 'Nominations require an online account.' };
+    const { error } = await supabase.rpc('submit_sproutup_nomination', { p_business_id: businessId, p_reason: reason });
+    if (error) return { success: false, message: error.message || 'Could not submit your nomination right now.' };
+    await refreshSproutUpFeatures();
+    return { success: true };
+  };
+
+  const submitAmbassadorPick = async (businessId: string, headline: string, description: string): Promise<{ success: boolean; message?: string }> => {
+    if (!supabase) return { success: false, message: 'Ambassador picks require an online account.' };
+    const { error } = await supabase.rpc('submit_ambassador_pick', { p_business_id: businessId, p_headline: headline, p_description: description });
+    if (error) return { success: false, message: error.message || 'Could not submit this pick right now.' };
+    await refreshSproutUpFeatures();
+    return { success: true };
+  };
+
+  const moderateNomination = async (id: string, decision: 'approved' | 'rejected', note?: string): Promise<{ success: boolean; message?: string }> => {
+    if (!supabase) return { success: false, message: 'Admin tools require an online account.' };
+    const { error } = await supabase.rpc('moderate_sproutup_nomination', { p_id: id, p_decision: decision, p_note: note || null });
+    if (error) return { success: false, message: error.message || 'Could not update this nomination.' };
+    await fetchAdminQueues();
+    return { success: true };
+  };
+
+  const publishNomination = async (id: string): Promise<{ success: boolean; message?: string }> => {
+    if (!supabase) return { success: false, message: 'Admin tools require an online account.' };
+    const { error } = await supabase.rpc('publish_sproutup_nomination', { p_id: id });
+    if (error) return { success: false, message: error.message || 'Could not publish this nomination.' };
+    await Promise.all([fetchAdminQueues(), refreshSproutUpFeatures()]);
+    return { success: true };
+  };
+
+  const moderateAmbassadorPick = async (id: string, decision: 'approved' | 'rejected', note?: string): Promise<{ success: boolean; message?: string }> => {
+    if (!supabase) return { success: false, message: 'Admin tools require an online account.' };
+    const { error } = await supabase.rpc('moderate_ambassador_pick', { p_id: id, p_decision: decision, p_note: note || null });
+    if (error) return { success: false, message: error.message || 'Could not update this pick.' };
+    await fetchAdminQueues();
+    return { success: true };
+  };
+
+  const publishAmbassadorPick = async (id: string): Promise<{ success: boolean; message?: string }> => {
+    if (!supabase) return { success: false, message: 'Admin tools require an online account.' };
+    const { error } = await supabase.rpc('publish_ambassador_pick', { p_id: id });
+    if (error) return { success: false, message: error.message || 'Could not publish this pick.' };
+    await Promise.all([fetchAdminQueues(), refreshSproutUpFeatures()]);
+    return { success: true };
+  };
+
+  const createFeaturedSprout = async (input: { businessId: string; title: string; description: string; imageUrl?: string; startsAt: string; endsAt: string }): Promise<{ success: boolean; message?: string }> => {
+    if (!supabase) return { success: false, message: 'Admin tools require an online account.' };
+    const { error } = await supabase.rpc('create_featured_sprout', {
+      p_business_id: input.businessId,
+      p_title: input.title,
+      p_description: input.description,
+      p_image_url: input.imageUrl || null,
+      p_starts_at: input.startsAt,
+      p_ends_at: input.endsAt,
+    });
+    if (error) return { success: false, message: error.message || 'Could not create this Featured Sprout.' };
+    await fetchAdminQueues();
+    return { success: true };
+  };
+
+  const updateFeaturedSprout = async (id: string, input: { title: string; description: string; imageUrl?: string; startsAt: string; endsAt: string; sortOrder?: number }): Promise<{ success: boolean; message?: string }> => {
+    if (!supabase) return { success: false, message: 'Admin tools require an online account.' };
+    const { error } = await supabase.rpc('update_featured_sprout', {
+      p_id: id,
+      p_title: input.title,
+      p_description: input.description,
+      p_image_url: input.imageUrl || null,
+      p_starts_at: input.startsAt,
+      p_ends_at: input.endsAt,
+      p_sort_order: input.sortOrder ?? null,
+    });
+    if (error) return { success: false, message: error.message || 'Could not update this Featured Sprout.' };
+    await fetchAdminQueues();
+    return { success: true };
+  };
+
+  const publishFeaturedSprout = async (id: string): Promise<{ success: boolean; message?: string }> => {
+    if (!supabase) return { success: false, message: 'Admin tools require an online account.' };
+    const { error } = await supabase.rpc('publish_featured_sprout', { p_id: id });
+    if (error) return { success: false, message: error.message || 'Could not publish this Featured Sprout.' };
+    await Promise.all([fetchAdminQueues(), refreshSproutUpFeatures()]);
+    return { success: true };
+  };
+
+  const unpublishFeaturedSprout = async (id: string): Promise<{ success: boolean; message?: string }> => {
+    if (!supabase) return { success: false, message: 'Admin tools require an online account.' };
+    const { error } = await supabase.rpc('unpublish_featured_sprout', { p_id: id });
+    if (error) return { success: false, message: error.message || 'Could not unpublish this Featured Sprout.' };
+    await Promise.all([fetchAdminQueues(), refreshSproutUpFeatures()]);
+    return { success: true };
+  };
+
+  const deleteFeaturedSprout = async (id: string): Promise<{ success: boolean; message?: string }> => {
+    if (!supabase) return { success: false, message: 'Admin tools require an online account.' };
+    const { error } = await supabase.rpc('delete_featured_sprout', { p_id: id });
+    if (error) return { success: false, message: error.message || 'Could not delete this Featured Sprout.' };
+    await fetchAdminQueues();
+    return { success: true };
   };
 
   // ===================================================================
@@ -1548,6 +2112,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
     restocks: 'restocks',
     promotions: 'promotions',
     announcements: 'announcements',
+    sproutup: 'sproutup',
   };
 
   const updateNotificationPreference = async (category: NotificationPreferenceCategory, enabled: boolean): Promise<void> => {
@@ -1601,6 +2166,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
       setIsSubscriptionPageOpen(true);
     } else if (view === 'marketplace') {
       setPendingNavigation({ tab: 'market' });
+    } else if (view === 'sproutup') {
+      setPendingNavigation({ tab: 'sproutup', businessId: (action as { businessId?: string }).businessId });
     }
     // 'announcement' has no dedicated screen yet — reading it is the whole action.
   };
@@ -1856,87 +2423,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
     return { success: !failureReason, orders: newCreatedOrders, failureReason };
   };
 
-  // AI Business Coach
-  const askAiCoach = async (userQuestion?: string): Promise<{ advice: string; fallback: boolean }> => {
-    setIsAiCoachLoading(true);
-    try {
-      // The endpoint requires a valid session token from any deployment
-      // with Supabase configured (see isAuthorizedAiCoachRequest in
-      // server/aiCoach.ts) — otherwise it's unauthenticated and anyone who
-      // finds the URL can run up the Gemini bill.
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (supabase) {
-        const { data } = await supabase.auth.getSession();
-        if (data.session?.access_token) headers.Authorization = `Bearer ${data.session.access_token}`;
-      }
-
-      const response = await fetch('/api/ai-coach', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          businessName: activeBusiness.name,
-          category: activeBusiness.category,
-          university: activeBusiness.university,
-          metrics: activeBusinessMetrics,
-          // Deliberately a lean summary, not the raw Order objects — each
-          // order's line items carry imageUrl (this app stores product
-          // images as base64 data URLs, which can run into megabytes),
-          // and the AI coach only ever uses recentOrders for its count
-          // anyway (see server/aiCoach.ts). Sending full orders here used
-          // to blow past Express's default 100kb JSON body limit, so the
-          // request was silently rejected and the UI fell back to the
-          // same canned rule-based tip regardless of what was asked.
-          recentOrders: sellerOrders.slice(0, 5).map((o) => ({
-            orderNumber: o.orderNumber,
-            totalAmount: o.totalAmount,
-            orderStatus: o.orderStatus,
-            itemCount: o.items.length,
-          })),
-          recentExpenses: sellerExpenses.slice(0, 5),
-          userQuestion: userQuestion || 'What are the top 3 high-impact steps I should take this week?',
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Server response not ok');
-      }
-
-      const data = await response.json();
-      setIsAiCoachLoading(false);
-      return {
-        advice: data.advice || 'Keep your cost-of-goods-sold low and maintain consistent campus meetup windows!',
-        fallback: !!data.fallback,
-      };
-    } catch (err) {
-      console.error('AI Coach request failed, using local rule-based smart advice', err);
-      setIsAiCoachLoading(false);
-      // Fallback rule-based smart advice
-      const topExpense = [...sellerExpenses].sort((a, b) => b.amount - a.amount)[0];
-      const lowStock = sellerProducts.filter((p) => p.inventoryCount <= 5);
-
-      const adviceText = `🦉 **Peanut the Sprout Owl's Action Plan for ${activeBusiness.name}**:
-
-1. **Protect Profit Margin (${activeBusinessMetrics.profitMargin}%):**
-   ${activeBusinessMetrics.profitMargin < 35 
-     ? 'Your current margin is tight. Increase prices by ₱15-₱20 or introduce a "Value Bundle" (e.g. 2 boxes + iced latte) to raise your Average Order Value.' 
-     : 'Your margin is in a great spot! Lock in bulk rates with your suppliers to preserve this advantage.'}
-
-2. **Expense & Sourcing Audit:**
-   ${topExpense 
-     ? `Your largest recorded expense is "${topExpense.description}" (₱${topExpense.amount.toLocaleString()}). Try partnering with other student sellers to split wholesale batches in Divisoria or Shopee.` 
-     : 'Record every small fare or tape purchase so your net calculations remain accurate.'}
-
-3. **Inventory & Campus Meetup Readiness:**
-   ${lowStock.length > 0 
-     ? `You have ${lowStock.length} items low on stock (${lowStock.map(p => p.name).join(', ')}). Prep stock before Friday campus drops!` 
-     : 'Inventory levels are healthy for incoming campus orders.'}
-
-⚡ **15-Minute Actionable Step:** Review your best-selling product and create a 3-item combo discount for upcoming midterm study groups!`;
-
-      return { advice: adviceText, fallback: true };
-    }
-  };
-
   const resetToDefaultData = () => {
     localStorage.removeItem('sproutsquad_cart');
     setCart([]);
@@ -1959,129 +2445,233 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
     }
   };
 
+  // Every action below is rebuilt fresh each render (as it always was) — the
+  // useStableActions() calls beneath give each group a permanently stable
+  // wrapper identity so a domain's memoized context value doesn't have to
+  // recompute (and re-render every consumer) just because some unrelated
+  // render happened. See useStableActions' own comment above for how.
+  const sessionActions = useStableActions({
+    setCurrentView,
+    setSellerTab,
+    setCurrentUser,
+    updateCurrentUser,
+    setSelectedBusinessForDetail,
+    setSelectedCampusFilter,
+    setPendingNavigation,
+    triggerConfetti,
+    resetToDefaultData,
+    signOut: () => {
+      // Reset RevenueCat's identified user *before* the auth sign-out completes,
+      // so the next person on this browser/tab never inherits this user's
+      // entitlements. Best-effort — sign-out proceeds regardless of outcome.
+      void resetRevenueCatUser().finally(() => onSignOut?.());
+    },
+    deleteAccount: async () => {
+      if (!onDeleteAccount) return { success: false, message: 'Account deletion is not available right now.' };
+      // Same ordering as signOut above — release this user's RevenueCat
+      // identity first (best-effort), then delete the account itself.
+      await resetRevenueCatUser().catch(() => {});
+      return onDeleteAccount();
+    },
+  });
+
+  const shopActions = useStableActions({
+    setActiveBusiness: (b: Business) => setActiveBusinessId(b.id),
+    unlockBusinessByKey,
+    addProduct,
+    updateProduct,
+    deleteProduct,
+    updateOrderStatus,
+    updateDeliverySchedule,
+    confirmOrderReceived,
+    addExpense,
+    deleteExpense,
+    addCoupon,
+    updateCoupon,
+    deleteCoupon,
+    validateCoupon,
+    updateBusinessProfile,
+    createBusiness,
+    submitReview,
+    fetchBusinessReviews,
+  });
+
+  const cartActions = useStableActions({
+    addToCart,
+    updateCartQuantity,
+    removeFromCart,
+    clearCart,
+    placeOrder,
+  });
+
+  const notificationsActions = useStableActions({
+    markNotificationRead,
+    markAllNotificationsRead,
+    updateNotificationPreference,
+    toggleFavoriteBusiness,
+    resolveNotificationAction,
+    loadMoreNotifications,
+  });
+
+  const academyActions = useStableActions({
+    clearLastReward: () => setLastReward(null),
+    clearPendingLevelUp: () => setPendingLevelUp(null),
+    awardLearningActivity,
+    completeLessonWithQuiz,
+    completeSimulation,
+    purchaseGardenItem,
+    equipGardenItem,
+    claimQuest,
+    refreshSquadChallenge,
+    claimSquadChallengeReward,
+    setLeaderboardOptIn,
+  });
+
+  const subscriptionActions = useStableActions({
+    openSubscriptionPage: () => setIsSubscriptionPageOpen(true),
+    closeSubscriptionPage: () => setIsSubscriptionPageOpen(false),
+    loadSproutPlusOfferings,
+    purchaseSproutPlusPackage,
+    restoreSproutPlusPurchases,
+    redeemPromoCode,
+  });
+
+  const sessionValue = useMemo<SessionContextType>(() => ({
+    currentView,
+    sellerTab,
+    currentUser,
+    selectedBusinessForDetail,
+    selectedCampusFilter,
+    pendingNavigation,
+    isRemoteDataLoading,
+    ...sessionActions,
+  }), [currentView, sellerTab, currentUser, selectedBusinessForDetail, selectedCampusFilter, pendingNavigation, isRemoteDataLoading, sessionActions]);
+
+  const shopValue = useMemo<ShopContextType>(() => ({
+    businesses,
+    products,
+    orders,
+    expenses,
+    coupons,
+    activeBusiness,
+    accessibleBusinessIds,
+    activeBusinessMetrics,
+    sellerOrders,
+    sellerProducts,
+    sellerExpenses,
+    sellerCoupons,
+    myReviews,
+    ...shopActions,
+  }), [businesses, products, orders, expenses, coupons, activeBusiness, accessibleBusinessIds, activeBusinessMetrics, sellerOrders, sellerProducts, sellerExpenses, sellerCoupons, myReviews, shopActions]);
+
+  const cartValue = useMemo<CartContextType>(() => ({
+    cart,
+    cartCount,
+    cartTotal,
+    ...cartActions,
+  }), [cart, cartCount, cartTotal, cartActions]);
+
+  const notificationsValue = useMemo<NotificationsContextType>(() => ({
+    notifications,
+    unreadNotificationCount,
+    notificationPreferences,
+    favoritedBusinessIds,
+    ...notificationsActions,
+  }), [notifications, unreadNotificationCount, notificationPreferences, favoritedBusinessIds, notificationsActions]);
+
+  const academyValue = useMemo<AcademyContextType>(() => ({
+    lessons,
+    completedLessonIds,
+    academyProfile,
+    achievements,
+    unlockedAchievementIds,
+    activityCounts,
+    gardenCatalog,
+    ownedGardenItems,
+    quests,
+    questProgress,
+    activeSquadChallenge,
+    squadChallengeProgress,
+    lastReward,
+    pendingLevelUp,
+    ...academyActions,
+  }), [lessons, completedLessonIds, academyProfile, achievements, unlockedAchievementIds, activityCounts, gardenCatalog, ownedGardenItems, quests, questProgress, activeSquadChallenge, squadChallengeProgress, lastReward, pendingLevelUp, academyActions]);
+
+  const subscriptionValue = useMemo<SubscriptionContextType>(() => ({
+    subscription,
+    hasSproutPlus: subscription.hasSproutPlus,
+    isSubscriptionPageOpen,
+    offerings,
+    isRevenueCatReady,
+    isOfferingsLoading,
+    offeringsError,
+    isPurchasingSproutPlus,
+    ...subscriptionActions,
+  }), [subscription, isSubscriptionPageOpen, offerings, isRevenueCatReady, isOfferingsLoading, offeringsError, isPurchasingSproutPlus, subscriptionActions]);
+
+  const sproutUpActions = useStableActions({
+    refreshSproutUpFeatures,
+    submitNomination,
+    submitAmbassadorPick,
+    fetchAdminQueues,
+    moderateNomination,
+    publishNomination,
+    moderateAmbassadorPick,
+    publishAmbassadorPick,
+    createFeaturedSprout,
+    updateFeaturedSprout,
+    publishFeaturedSprout,
+    unpublishFeaturedSprout,
+    deleteFeaturedSprout,
+  });
+
+  const sproutUpValue = useMemo<SproutUpContextType>(() => ({
+    sproutUpHiddenGems,
+    sproutUpRisingSprouts,
+    sproutUpFeaturesByBusinessId,
+    isSproutUpLoading,
+    sproutUpNominations,
+    sproutUpAmbassadorPicks,
+    sproutUpFeaturedSprouts,
+    pendingNominations,
+    pendingAmbassadorPicks,
+    allFeaturedSprouts,
+    isSproutUpAdminLoading,
+    ...sproutUpActions,
+  }), [sproutUpHiddenGems, sproutUpRisingSprouts, sproutUpFeaturesByBusinessId, isSproutUpLoading, sproutUpNominations, sproutUpAmbassadorPicks, sproutUpFeaturedSprouts, pendingNominations, pendingAmbassadorPicks, allFeaturedSprouts, isSproutUpAdminLoading, sproutUpActions]);
+
   return (
-    <AppContext.Provider
-      value={{
-        currentView,
-        setCurrentView,
-        sellerTab,
-        setSellerTab,
-        currentUser,
-        setCurrentUser,
-        updateCurrentUser,
-        activeBusiness,
-        setActiveBusiness: (b) => setActiveBusinessId(b.id),
-        accessibleBusinessIds,
-        unlockBusinessByKey,
-        selectedBusinessForDetail,
-        setSelectedBusinessForDetail,
-        selectedCampusFilter,
-        setSelectedCampusFilter,
-        pendingNavigation,
-        setPendingNavigation,
-        businesses,
-        products,
-        orders,
-        expenses,
-        coupons,
-        lessons,
-        completedLessonIds,
-        cart,
-        academyProfile,
-        achievements,
-        unlockedAchievementIds,
-        activityCounts,
-        gardenCatalog,
-        ownedGardenItems,
-        quests,
-        questProgress,
-        activeSquadChallenge,
-        squadChallengeProgress,
-        lastReward,
-        clearLastReward: () => setLastReward(null),
-        pendingLevelUp,
-        clearPendingLevelUp: () => setPendingLevelUp(null),
-        activeBusinessMetrics,
-        sellerOrders,
-        sellerProducts,
-        sellerExpenses,
-        sellerCoupons,
-        cartCount,
-        cartTotal,
-        addProduct,
-        updateProduct,
-        deleteProduct,
-        updateOrderStatus,
-        updateDeliverySchedule,
-        confirmOrderReceived,
-        addExpense,
-        deleteExpense,
-        addCoupon,
-        updateCoupon,
-        deleteCoupon,
-        validateCoupon,
-        updateBusinessProfile,
-        createBusiness,
-        awardLearningActivity,
-        completeLessonWithQuiz,
-        completeSimulation,
-        purchaseGardenItem,
-        equipGardenItem,
-        claimQuest,
-        refreshSquadChallenge,
-        claimSquadChallengeReward,
-        setLeaderboardOptIn,
-        notifications,
-        unreadNotificationCount,
-        notificationPreferences,
-        favoritedBusinessIds,
-        markNotificationRead,
-        markAllNotificationsRead,
-        updateNotificationPreference,
-        toggleFavoriteBusiness,
-        resolveNotificationAction,
-        loadMoreNotifications,
-        addToCart,
-        updateCartQuantity,
-        removeFromCart,
-        clearCart,
-        placeOrder,
-        askAiCoach,
-        isAiCoachLoading,
-        triggerConfetti,
-        resetToDefaultData,
-        isRemoteDataLoading,
-        signOut: () => {
-          // Reset RevenueCat's identified user *before* the auth sign-out completes,
-          // so the next person on this browser/tab never inherits this user's
-          // entitlements. Best-effort — sign-out proceeds regardless of outcome.
-          void resetRevenueCatUser().finally(() => onSignOut?.());
-        },
-        subscription,
-        hasSproutPlus: subscription.hasSproutPlus,
-        isSubscriptionPageOpen,
-        openSubscriptionPage: () => setIsSubscriptionPageOpen(true),
-        closeSubscriptionPage: () => setIsSubscriptionPageOpen(false),
-        offerings,
-        isRevenueCatReady,
-        isOfferingsLoading,
-        offeringsError,
-        loadSproutPlusOfferings,
-        isPurchasingSproutPlus,
-        purchaseSproutPlusPackage,
-        restoreSproutPlusPurchases,
-      }}
-    >
-      {children}
-    </AppContext.Provider>
+    <SessionContext.Provider value={sessionValue}>
+      <ShopContext.Provider value={shopValue}>
+        <CartContext.Provider value={cartValue}>
+          <NotificationsContext.Provider value={notificationsValue}>
+            <AcademyContext.Provider value={academyValue}>
+              <SubscriptionContext.Provider value={subscriptionValue}>
+                <SproutUpContext.Provider value={sproutUpValue}>
+                  {children}
+                </SproutUpContext.Provider>
+              </SubscriptionContext.Provider>
+            </AcademyContext.Provider>
+          </NotificationsContext.Provider>
+        </CartContext.Provider>
+      </ShopContext.Provider>
+    </SessionContext.Provider>
   );
 };
 
-export const useApp = () => {
-  const context = useContext(AppContext);
-  if (!context) {
-    throw new Error('useApp must be used within an AppProvider');
+function useRequiredContext<T>(context: React.Context<T | undefined>, hookName: string): T {
+  const value = useContext(context);
+  if (!value) {
+    throw new Error(`${hookName} must be used within an AppProvider`);
   }
-  return context;
-};
+  return value;
+}
+
+export const useSession = () => useRequiredContext(SessionContext, 'useSession');
+export const useShop = () => useRequiredContext(ShopContext, 'useShop');
+export const useCart = () => useRequiredContext(CartContext, 'useCart');
+export const useNotifications = () => useRequiredContext(NotificationsContext, 'useNotifications');
+export const useAcademy = () => useRequiredContext(AcademyContext, 'useAcademy');
+export const useSubscription = () => useRequiredContext(SubscriptionContext, 'useSubscription');
+export const useSproutUp = () => useRequiredContext(SproutUpContext, 'useSproutUp');
 

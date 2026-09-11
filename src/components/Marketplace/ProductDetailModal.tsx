@@ -14,7 +14,7 @@ import {
   CalendarClock
 } from 'lucide-react';
 import { Product, Business } from '../../types';
-import { useApp } from '../../context/AppContext';
+import { useShop, useCart } from '../../context/AppContext';
 import { formatPHP } from '../../utils/analytics';
 
 interface ProductDetailModalProps {
@@ -28,7 +28,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   onClose,
   onViewBusiness,
 }) => {
-  const { businesses, products, addToCart } = useApp();
+  const { businesses, products } = useShop();
+  const { addToCart } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [isAdded, setIsAdded] = useState(false);
 

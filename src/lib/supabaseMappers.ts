@@ -1,4 +1,4 @@
-import { Business, Product, Order, Expense, Coupon, CampusUniversity, ProductCategory, OrderStatus, DeliveryMethod, FulfillmentType, ExpenseCategory, DiscountType } from '../types';
+import { Business, Product, Order, Expense, Coupon, CampusUniversity, ProductCategory, OrderStatus, DeliveryMethod, FulfillmentType, ExpenseCategory, DiscountType, BusinessReview } from '../types';
 
 export const businessToRow = (b: Business) => ({
   id: b.id,
@@ -198,4 +198,16 @@ export const rowToProfile = (row: any) => ({
   email: row.email || undefined,
   university: (row.university || undefined) as CampusUniversity | undefined,
   avatar: row.avatar || undefined,
+  isAdmin: Boolean(row.is_admin),
+  isAmbassador: Boolean(row.is_ambassador),
+});
+
+export const rowToBusinessReview = (row: any): BusinessReview => ({
+  orderId: row.order_id,
+  businessId: row.business_id,
+  customerName: row.customer_name || 'A SproutSquad customer',
+  stars: Number(row.stars),
+  comment: row.comment || null,
+  images: row.images || [],
+  createdAt: row.created_at,
 });

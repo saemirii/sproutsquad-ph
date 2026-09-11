@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useApp } from '../../context/AppContext';
+import { useAcademy } from '../../context/AppContext';
 import { SeedBalance } from './shared/SeedBalance';
 import { GardenItemCategory } from '../../types';
 import { isSeasonalItemFeatured } from '../../data/gardenItems';
@@ -21,7 +21,7 @@ const rarityBorder: Record<string, string> = {
 };
 
 export const SeedShop: React.FC = () => {
-  const { academyProfile, gardenCatalog, ownedGardenItems, purchaseGardenItem, equipGardenItem } = useApp();
+  const { academyProfile, gardenCatalog, ownedGardenItems, purchaseGardenItem, equipGardenItem } = useAcademy();
   const [activeCategory, setActiveCategory] = useState<GardenItemCategory>('plants');
   const [message, setMessage] = useState<string | null>(null);
   const [busyItemId, setBusyItemId] = useState<string | null>(null);

@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Boxes, Plus, Trash2, X, Check } from 'lucide-react';
-import { useApp } from '../../context/AppContext';
+import { useShop } from '../../context/AppContext';
 import { Product } from '../../types';
 import { formatPHP } from '../../utils/analytics';
 
 export const BundleBuilder: React.FC = () => {
-  const { activeBusiness, sellerProducts, addProduct, deleteProduct } = useApp();
+  const { activeBusiness, sellerProducts, addProduct, deleteProduct } = useShop();
 
   const componentProducts = sellerProducts.filter((p) => !p.bundledProductIds);
   const bundles = sellerProducts.filter((p) => p.bundledProductIds && p.bundledProductIds.length > 0);

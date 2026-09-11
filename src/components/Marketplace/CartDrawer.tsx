@@ -10,7 +10,7 @@ import {
   MapPin,
   Sparkles
 } from 'lucide-react';
-import { useApp } from '../../context/AppContext';
+import { useCart } from '../../context/AppContext';
 import { formatPHP } from '../../utils/analytics';
 
 interface CartDrawerProps {
@@ -24,7 +24,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   onClose,
   onProceedToCheckout,
 }) => {
-  const { cart, updateCartQuantity, removeFromCart, clearCart, cartTotal, cartCount } = useApp();
+  const { cart, updateCartQuantity, removeFromCart, clearCart, cartTotal, cartCount } = useCart();
 
   if (!isOpen) return null;
 

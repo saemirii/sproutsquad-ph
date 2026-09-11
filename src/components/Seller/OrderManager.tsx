@@ -14,14 +14,15 @@ import {
   Download,
   Lock
 } from 'lucide-react';
-import { useApp } from '../../context/AppContext';
+import { useShop, useSubscription } from '../../context/AppContext';
 import { OrderStatus } from '../../types';
 import { formatPHP } from '../../utils/analytics';
 import { triggerConfetti } from '../../utils/confetti';
 import { exportOrdersToCsv } from '../../utils/exportOrders';
 
 export const OrderManager: React.FC = () => {
-  const { sellerOrders, updateOrderStatus, hasSproutPlus, openSubscriptionPage, activeBusiness } = useApp();
+  const { sellerOrders, updateOrderStatus, activeBusiness } = useShop();
+  const { hasSproutPlus, openSubscriptionPage } = useSubscription();
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<OrderStatus | 'All'>('All');
 
   const handleExport = () => {

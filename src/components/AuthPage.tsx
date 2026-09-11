@@ -7,7 +7,7 @@ interface AuthPageProps {
   onLocalAuth?: (user: { id: string; email: string; user_metadata: { full_name: string } }) => void;
 }
 
-interface LocalAccount {
+export interface LocalAccount {
   id: string;
   name: string;
   email: string;

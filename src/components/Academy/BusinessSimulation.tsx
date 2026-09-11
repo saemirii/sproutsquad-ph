@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ArrowLeft, RotateCcw } from 'lucide-react';
-import { useApp } from '../../context/AppContext';
+import { useAcademy } from '../../context/AppContext';
 import { simulationScenarios } from '../../data/simulationScenarios';
 import { SimulationResult, SimulationScenario } from '../../types';
 
@@ -12,7 +12,7 @@ const healthColor: Record<SimulationResult['businessHealth'], string> = {
 };
 
 const ScenarioPlayer: React.FC<{ scenario: SimulationScenario; onBack: () => void }> = ({ scenario, onBack }) => {
-  const { completeSimulation } = useApp();
+  const { completeSimulation } = useAcademy();
   const [decisions, setDecisions] = useState<Record<string, number | boolean>>(() =>
     Object.fromEntries(scenario.decisions.map((d) => [d.key, d.default]))
   );

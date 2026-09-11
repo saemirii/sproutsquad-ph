@@ -11,12 +11,12 @@ import {
   Calendar,
   X
 } from 'lucide-react';
-import { useApp } from '../../context/AppContext';
+import { useShop } from '../../context/AppContext';
 import { Expense, ExpenseCategory } from '../../types';
 import { formatPHP } from '../../utils/analytics';
 
 export const ExpenseTracker: React.FC = () => {
-  const { sellerExpenses, addExpense, deleteExpense, activeBusinessMetrics } = useApp();
+  const { sellerExpenses, addExpense, deleteExpense, activeBusinessMetrics } = useShop();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Form State

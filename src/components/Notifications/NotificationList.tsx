@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useApp } from '../../context/AppContext';
+import { useNotifications } from '../../context/AppContext';
 import { AppNotification } from '../../types';
 import { NotificationItem } from './NotificationItem';
 import { NotificationEmptyState } from './NotificationEmptyState';
@@ -10,7 +10,7 @@ interface NotificationListProps {
 }
 
 export const NotificationList: React.FC<NotificationListProps> = ({ notifications, onNavigate }) => {
-  const { loadMoreNotifications } = useApp();
+  const { loadMoreNotifications } = useNotifications();
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
 
