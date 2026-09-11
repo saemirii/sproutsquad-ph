@@ -144,6 +144,7 @@ export const rowToOrder = (row: any): Order => ({
   notes: row.notes || undefined,
   couponCode: row.coupon_code || undefined,
   discountAmount: row.discount_amount ? Number(row.discount_amount) : undefined,
+  proofOfPaymentUrl: row.proof_of_payment_url || undefined,
 });
 
 export const expenseToRow = (e: Expense) => ({

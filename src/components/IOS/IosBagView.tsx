@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { ShoppingBag, Trash2, Plus, Minus, MapPin, CheckCircle2, ArrowRight, Clock, Store, Tag, X, Instagram, PackageCheck, Star, ImagePlus, Loader2 } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ShoppingBag, Trash2, Plus, Minus, MapPin, CheckCircle2, ArrowRight, Clock, Store, Tag, X, Instagram, PackageCheck, Star, ImagePlus, Loader2, QrCode, AlertTriangle } from 'lucide-react';
 import { useCart, useShop, useSession } from '../../context/AppContext';
 import { formatPHP } from '../../utils/analytics';
 import { formatRelativeTime } from '../../utils/formatRelativeTime';
@@ -53,8 +53,40 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [couponInput, setCouponInput] = useState('');
-  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number; businessId: string } | null>(null);
   const [couponError, setCouponError] = useState('');
+  // Keyed by businessId — each shop is its own transaction, so proof of
+  // payment is attached per shop, not once for the whole bag.
+  const [proofOfPaymentByBusiness, setProofOfPaymentByBusiness] = useState<Record<string, string>>({});
+  const [proofUploadError, setProofUploadError] = useState<Record<string, string>>({});
+
+  const handleProofUpload = (businessId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setProofUploadError((prev) => ({ ...prev, [businessId]: '' }));
+    if (!file.type.startsWith('image/')) {
+      setProofUploadError((prev) => ({ ...prev, [businessId]: 'Please choose an image file.' }));
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setProofUploadError((prev) => ({ ...prev, [businessId]: 'Please choose an image smaller than 2MB.' }));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setProofOfPaymentByBusiness((prev) => ({ ...prev, [businessId]: String(reader.result) }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveProof = (businessId: string) => {
+    setProofOfPaymentByBusiness((prev) => {
+      const next = { ...prev };
+      delete next[businessId];
+      return next;
+    });
+  };
 
   const handleApplyCoupon = () => {
     setCouponError('');
@@ -66,7 +98,7 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
         .reduce((sum, item) => sum + item.product.price * item.quantity, 0);
       const result = validateCoupon(couponInput, businessId, subtotalForBusiness);
       if ('coupon' in result) {
-        setAppliedCoupon({ code: result.coupon.code, discount: result.discount });
+        setAppliedCoupon({ code: result.coupon.code, discount: result.discount, businessId });
         playIosSuccess();
         return;
       }
@@ -77,6 +109,35 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
 
   const discount = appliedCoupon?.discount || 0;
   const finalTotal = Math.max(0, cartTotal - discount);
+
+  // Every shop in the bag gets its own subtotal, its own payment
+  // instruction (this app has no combined checkout gateway — buyers pay
+  // each shop directly), and becomes its own `orders` row server-side
+  // (see placeOrder in AppContext.tsx), so the cart is grouped and
+  // rendered per business rather than as one flat list with one total.
+  const cartByBusiness = useMemo(() => {
+    const map = new Map<string, typeof cart>();
+    for (const item of cart) {
+      const list = map.get(item.product.businessId) || [];
+      list.push(item);
+      map.set(item.product.businessId, list);
+    }
+    return Array.from(map.entries()).map(([businessId, items]) => ({
+      businessId,
+      business: businesses.find((b) => b.id === businessId),
+      items,
+      subtotal: items.reduce((sum, i) => sum + i.product.price * i.quantity, 0),
+    }));
+  }, [cart, businesses]);
+
+  // Proof of payment is required for every shop being paid electronically
+  // (GCash/Maya) — Cash on Campus Meetup needs none, payment happens in
+  // person. This drives both the submit button's disabled state and the
+  // inline error if someone still manages to submit without it.
+  const shopsMissingProof = useMemo(() => {
+    if (paymentMethod === 'Cash on Campus Meetup') return [];
+    return cartByBusiness.filter((group) => !proofOfPaymentByBusiness[group.businessId]);
+  }, [cartByBusiness, paymentMethod, proofOfPaymentByBusiness]);
 
   const campusPickupSpots: Record<CampusUniversity, string[]> = {
     'MGC New Life Christian Academy': ['Main Gate', 'Student Center', 'Covered Court', 'Library Entrance'],
@@ -218,6 +279,12 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
     e.preventDefault();
     if (cart.length === 0 || isSubmitting) return;
 
+    if (shopsMissingProof.length > 0) {
+      const names = shopsMissingProof.map((g) => g.business?.name || g.items[0]?.product.businessName).join(', ');
+      setOrderError(`Please attach proof of payment for ${names} before placing your order.`);
+      return;
+    }
+
     setIsSubmitting(true);
     setOrderError('');
     playIosSuccess();
@@ -232,6 +299,7 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
         meetupLocation,
         notes,
         couponCode: appliedCoupon?.code,
+        proofOfPaymentByBusiness,
       });
 
       setIsSubmitting(false);
@@ -244,6 +312,7 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
       setActiveSegment('orders');
       setAppliedCoupon(null);
       setCouponInput('');
+      setProofOfPaymentByBusiness({});
       if (onOrderCompleted) {
         onOrderCompleted(result.orders);
       }
@@ -343,55 +412,158 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
                   </button>
                 </div>
 
-                {cart.map((item) => (
-                  <div
-                    key={item.product.id}
-                    className="bg-white rounded-2xl border border-[#EDE4D8] p-3 flex items-center gap-3 shadow-xs"
-                  >
-                    <img
-                      src={item.product.imageUrl}
-                      alt={item.product.name}
-                      className="w-14 h-14 rounded-xl object-cover border border-[#EDE4D8]"
-                    />
+                {cartByBusiness.map((group) => {
+                  const groupCoupon = appliedCoupon?.businessId === group.businessId ? appliedCoupon : null;
+                  const groupTotal = Math.max(0, group.subtotal - (groupCoupon?.discount || 0));
+                  const businessName = group.business?.name || group.items[0]?.product.businessName;
 
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[10px] text-[#8C7A6D] truncate">
-                        {item.product.businessName}
-                      </p>
-                      <h4 className="font-extrabold text-xs text-[#3B2F27] truncate font-['Nunito',sans-serif]">
-                        {item.product.name}
-                      </h4>
-                      <p className="text-xs font-black text-[#194E3B] mt-0.5">
-                        {formatPHP(item.product.price)}
-                      </p>
-                    </div>
+                  return (
+                    <div
+                      key={group.businessId}
+                      className="bg-white rounded-2xl border border-[#EDE4D8] overflow-hidden shadow-xs"
+                    >
+                      {/* Shop header — each shop here becomes its own order and its own payment, so items are grouped rather than shown as one flat list. */}
+                      <div className="flex items-center gap-2 px-3 py-2 bg-[#FAF3DE] border-b border-[#EDE4D8]">
+                        {group.business && (
+                          <img
+                            src={group.business.logo}
+                            alt={businessName}
+                            className="w-7 h-7 rounded-lg object-cover border border-[#EDE4D8] shrink-0"
+                          />
+                        )}
+                        <span className="text-xs font-extrabold text-[#3B2F27] truncate flex-1 font-['Nunito',sans-serif]">
+                          {businessName}
+                        </span>
+                        <span className="text-[10px] font-bold text-[#8C7A6D] shrink-0">
+                          {group.items.length} {group.items.length === 1 ? 'item' : 'items'}
+                        </span>
+                      </div>
 
-                    {/* Stepper Controls */}
-                    <div className="flex items-center gap-1.5 bg-[#FAF3DE] px-2 py-1 rounded-xl border border-[#EDE4D8]">
-                      <button
-                        onClick={() => {
-                          playIosTap();
-                          updateCartQuantity(item.product.id, item.quantity - 1);
-                        }}
-                        className="w-6 h-6 rounded-lg bg-white text-[#6B5B4F] flex items-center justify-center text-xs font-bold active:scale-90"
-                      >
-                        <Minus className="w-3 h-3" />
-                      </button>
-                      <span className="text-xs font-black text-[#3B2F27] w-5 text-center">
-                        {item.quantity}
-                      </span>
-                      <button
-                        onClick={() => {
-                          playIosTap();
-                          updateCartQuantity(item.product.id, item.quantity + 1);
-                        }}
-                        className="w-6 h-6 rounded-lg bg-white text-[#6B5B4F] flex items-center justify-center text-xs font-bold active:scale-90"
-                      >
-                        <Plus className="w-3 h-3" />
-                      </button>
+                      <div className="p-3 space-y-2.5">
+                        {group.items.map((item) => (
+                          <div key={item.product.id} className="flex items-center gap-3">
+                            <img
+                              src={item.product.imageUrl}
+                              alt={item.product.name}
+                              className="w-14 h-14 rounded-xl object-cover border border-[#EDE4D8]"
+                            />
+
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-extrabold text-xs text-[#3B2F27] truncate font-['Nunito',sans-serif]">
+                                {item.product.name}
+                              </h4>
+                              <p className="text-xs font-black text-[#194E3B] mt-0.5">
+                                {formatPHP(item.product.price)}
+                              </p>
+                            </div>
+
+                            {/* Stepper Controls */}
+                            <div className="flex items-center gap-1.5 bg-[#FAF3DE] px-2 py-1 rounded-xl border border-[#EDE4D8]">
+                              <button
+                                onClick={() => {
+                                  playIosTap();
+                                  updateCartQuantity(item.product.id, item.quantity - 1);
+                                }}
+                                className="w-6 h-6 rounded-lg bg-white text-[#6B5B4F] flex items-center justify-center text-xs font-bold active:scale-90"
+                              >
+                                <Minus className="w-3 h-3" />
+                              </button>
+                              <span className="text-xs font-black text-[#3B2F27] w-5 text-center">
+                                {item.quantity}
+                              </span>
+                              <button
+                                onClick={() => {
+                                  playIosTap();
+                                  updateCartQuantity(item.product.id, item.quantity + 1);
+                                }}
+                                className="w-6 h-6 rounded-lg bg-white text-[#6B5B4F] flex items-center justify-center text-xs font-bold active:scale-90"
+                              >
+                                <Plus className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+
+                        {/* Per-shop subtotal + exactly where to send payment for this shop */}
+                        <div className="pt-2.5 border-t border-[#EDE4D8] space-y-1.5">
+                          <div className="flex justify-between text-[11px] text-[#6B5B4F]">
+                            <span>Subtotal</span>
+                            <span>{formatPHP(group.subtotal)}</span>
+                          </div>
+                          {groupCoupon && (
+                            <div className="flex justify-between text-[11px] text-[#207559] font-bold">
+                              <span>{groupCoupon.code} discount</span>
+                              <span>−{formatPHP(groupCoupon.discount)}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between text-xs font-black text-[#194E3B]">
+                            <span>Pay this shop</span>
+                            <span>{formatPHP(groupTotal)}</span>
+                          </div>
+
+                          {group.business && (
+                            paymentMethod === 'Cash on Campus Meetup' ? (
+                              <p className="flex items-center gap-1.5 text-[10px] text-[#8C7A6D]">
+                                <QrCode className="w-3 h-3 shrink-0" />
+                                Bring {formatPHP(groupTotal)} cash to hand over at the meetup.
+                              </p>
+                            ) : paymentMethod === 'Maya' && !group.business.mayaNumber ? (
+                              <p className="flex items-center gap-1.5 text-[10px] text-[#92400E] bg-[#FFF7E6] border border-[#FDE1A8] rounded-lg px-2 py-1.5">
+                                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                                This shop doesn't take Maya — arrange GCash or cash with them directly.
+                              </p>
+                            ) : (
+                              <p className="flex items-center gap-1.5 text-[10px] text-[#8C7A6D]">
+                                <QrCode className="w-3 h-3 shrink-0" />
+                                Send via {paymentMethod} to{' '}
+                                <strong className="text-[#3B2F27]">
+                                  {paymentMethod === 'Maya' ? group.business.mayaNumber : group.business.gcashNumber}
+                                </strong>
+                              </p>
+                            )
+                          )}
+
+                          {/* Required for GCash/Maya — this app has no payment gateway, so a screenshot is the only evidence the seller has that they were actually paid. Enforced server-side too (place_order raises if missing), not just here. */}
+                          {paymentMethod !== 'Cash on Campus Meetup' && (
+                            <div className="pt-1">
+                              {proofOfPaymentByBusiness[group.businessId] ? (
+                                <div className="flex items-center gap-2">
+                                  <img
+                                    src={proofOfPaymentByBusiness[group.businessId]}
+                                    alt="Proof of payment"
+                                    className="w-10 h-10 rounded-lg object-cover border border-[#9FD9C3]"
+                                  />
+                                  <span className="text-[10px] font-bold text-[#207559] flex-1">Proof attached ✓</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveProof(group.businessId)}
+                                    className="text-[10px] font-bold text-[#A39284] hover:text-[#7A341A] cursor-pointer"
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
+                              ) : (
+                                <label className="flex items-center justify-center gap-1.5 py-1.5 border border-dashed border-[#F8BA9E] bg-[#FFF7F0] rounded-lg text-[10px] font-bold text-[#7A341A] cursor-pointer hover:border-[#E8935E] transition-colors">
+                                  <ImagePlus className="w-3.5 h-3.5" />
+                                  Attach proof of payment (required)
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => handleProofUpload(group.businessId, e)}
+                                    className="sr-only"
+                                  />
+                                </label>
+                              )}
+                              {proofUploadError[group.businessId] && (
+                                <p className="text-[10px] font-bold text-[#991B1B] mt-1">{proofUploadError[group.businessId]}</p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Campus Meetup Logistics */}
@@ -514,28 +686,25 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
                 )}
               </div>
 
-              {/* Order Breakdown & Submit */}
+              {/* Grand total across every shop — each shop's own subtotal/discount/payment info is already shown above, this is just the final confirmation. */}
               <div className="bg-white rounded-3xl border border-[#EDE4D8] p-4 space-y-3 shadow-xs">
-                <div className="space-y-1.5 text-xs">
-                  <div className="flex justify-between text-[#6B5B4F]">
-                    <span>Items Subtotal:</span>
-                    <span>{formatPHP(cartTotal)}</span>
-                  </div>
-                  {discount > 0 && (
-                    <div className="flex justify-between text-[#207559] font-bold">
-                      <span>Coupon Discount:</span>
-                      <span>−{formatPHP(discount)}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between text-[#194E3B] font-bold">
-                    <span>Campus Meetup Fee:</span>
-                    <span>FREE ₱0</span>
-                  </div>
-                  <div className="pt-2 border-t border-[#EDE4D8] flex justify-between font-black text-sm text-[#3B2F27]">
-                    <span>Total Amount:</span>
-                    <span className="text-[#194E3B]">{formatPHP(finalTotal)}</span>
-                  </div>
+                <div className="flex justify-between font-black text-sm text-[#3B2F27]">
+                  <span>
+                    Total across {cartByBusiness.length} {cartByBusiness.length === 1 ? 'shop' : 'shops'}:
+                  </span>
+                  <span className="text-[#194E3B]">{formatPHP(finalTotal)}</span>
                 </div>
+                {cartByBusiness.length > 1 && (
+                  <p className="text-[10px] text-[#8C7A6D] -mt-1.5">
+                    This places {cartByBusiness.length} separate orders — one per shop, paid to that shop directly.
+                  </p>
+                )}
+
+                {shopsMissingProof.length > 0 && (
+                  <p className="text-[11px] font-bold text-[#7A341A] bg-[#FFF7F0] border border-[#F8BA9E]/50 rounded-xl px-3 py-2.5">
+                    Attach proof of payment above for every shop before you can place this order.
+                  </p>
+                )}
 
                 {orderError && (
                   <p className="text-[11px] font-bold text-[#991B1B] bg-[#FEE2E2] border border-[#EF4444]/30 rounded-xl px-3 py-2.5">
@@ -545,11 +714,15 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
 
                 <button
                   onClick={handlePlaceOrder}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || shopsMissingProof.length > 0}
                   className="w-full py-3.5 bg-[#B8E6D5] hover:bg-[#A3DEC9] disabled:opacity-60 text-[#194E3B] font-black text-xs rounded-2xl shadow-xs active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>{isSubmitting ? 'Placing order...' : `Confirm Campus Order (${formatPHP(finalTotal)}) ✨`}</span>
+                  <span>
+                    {isSubmitting
+                      ? 'Placing order...'
+                      : `Place ${cartByBusiness.length} Order${cartByBusiness.length > 1 ? 's' : ''} (${formatPHP(finalTotal)}) ✨`}
+                  </span>
                 </button>
               </div>
             </div>
@@ -590,6 +763,26 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
                     </div>
 
                     <OrderStatusStepper status={order.orderStatus} fulfillmentType={order.fulfillmentType} />
+
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                          order.paymentStatus === 'Pending Verification'
+                            ? 'bg-[#FFF7E6] text-[#92400E]'
+                            : 'bg-[#EBFBF0] text-[#207559]'
+                        }`}
+                      >
+                        {order.paymentMethod} • {order.paymentStatus}
+                      </span>
+                      {order.proofOfPaymentUrl && (
+                        <img
+                          src={order.proofOfPaymentUrl}
+                          alt="Your proof of payment"
+                          title="Your uploaded proof of payment"
+                          className="w-6 h-6 rounded-md object-cover border border-[#EDE4D8]"
+                        />
+                      )}
+                    </div>
 
                     <div className="space-y-1">
                       {order.items.map((it, idx) => (

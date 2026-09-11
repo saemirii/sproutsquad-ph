@@ -162,6 +162,7 @@ interface ShopContextType {
   updateProduct: (product: Product) => void;
   deleteProduct: (productId: string) => void;
   updateOrderStatus: (orderId: string, status: OrderStatus) => void;
+  markPaymentVerified: (orderId: string) => void;
   updateDeliverySchedule: (orderId: string, deliveryMethod: DeliveryMethod, deliveryDate: string) => void;
   confirmOrderReceived: (orderId: string) => Promise<{ success: boolean; message?: string }>;
   addExpense: (expense: Omit<Expense, 'id' | 'businessId'>) => void;
@@ -231,6 +232,8 @@ interface CartContextType {
     meetupLocation: string;
     notes?: string;
     couponCode?: string;
+    /** Keyed by businessId — a base64 screenshot of that shop's GCash/Maya payment, attached optionally per shop since each shop is its own transaction. */
+    proofOfPaymentByBusiness?: Record<string, string>;
   }) => Promise<{ success: boolean; orders: Order[]; failureReason?: string }>;
 }
 
@@ -1303,6 +1306,21 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
     }
   };
 
+  // Lets a seller confirm a buyer's uploaded proof of payment (see
+  // migration_24) — flips the order out of 'Pending Verification' once
+  // they've actually checked the screenshot against their own GCash/Maya
+  // history. Same direct-update shape as updateOrderStatus above; this
+  // app's orders RLS already lets a business's own seller/team update
+  // their own orders' payment_status.
+  const markPaymentVerified = (orderId: string) => {
+    setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, paymentStatus: 'Paid' } : o)));
+    if (supabase) {
+      void supabase.from('orders').update({ payment_status: 'Paid' }).eq('id', orderId).then(({ error }) => {
+        if (error) console.error('Failed to mark payment verified', error);
+      });
+    }
+  };
+
   const updateDeliverySchedule = (orderId: string, deliveryMethod: DeliveryMethod, deliveryDate: string) => {
     let nextPaymentStatus: Order['paymentStatus'] | undefined;
     setOrders((prev) =>
@@ -2260,6 +2278,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
     meetupLocation: string;
     notes?: string;
     couponCode?: string;
+    proofOfPaymentByBusiness?: Record<string, string>;
   }): Promise<{ success: boolean; orders: Order[]; failureReason?: string }> => {
     if (cart.length === 0) return { success: false, orders: [] };
 
@@ -2305,6 +2324,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
         }
       }
       const totalAmount = Math.max(0, subtotal - discountAmount);
+      const proofOfPaymentUrl = orderData.proofOfPaymentByBusiness?.[bId];
 
       const newOrder: Order = {
         id: `ord-${Date.now()}-${idx}`,
@@ -2326,7 +2346,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
             ? 'Pay on Meetup'
             : orderData.deliveryMethod === 'Cash on Delivery'
               ? 'Pay on Delivery'
-              : 'Paid',
+              : proofOfPaymentUrl
+                ? 'Pending Verification'
+                : 'Paid',
         fulfillmentType: orderData.fulfillmentType,
         deliveryMethod: orderData.deliveryMethod,
         deliveryDate: orderData.deliveryDate || new Date(Date.now() + 86400000).toISOString().slice(0, 10),
@@ -2334,6 +2356,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
         orderStatus: 'Pending',
         createdAt: new Date().toISOString(),
         notes: orderData.notes,
+        proofOfPaymentUrl,
       };
 
       if (supabase) {
@@ -2482,6 +2505,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
     updateProduct,
     deleteProduct,
     updateOrderStatus,
+    markPaymentVerified,
     updateDeliverySchedule,
     confirmOrderReceived,
     addExpense,

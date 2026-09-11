@@ -123,6 +123,7 @@ export interface Order {
   notes?: string;
   couponCode?: string;
   discountAmount?: number;
+  proofOfPaymentUrl?: string;
 }
 
 export type DiscountType = 'percentage' | 'fixed';

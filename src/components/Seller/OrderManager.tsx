@@ -12,7 +12,8 @@ import {
   MessageCircle,
   Truck,
   Download,
-  Lock
+  Lock,
+  ShieldCheck
 } from 'lucide-react';
 import { useShop, useSubscription } from '../../context/AppContext';
 import { OrderStatus } from '../../types';
@@ -21,7 +22,7 @@ import { triggerConfetti } from '../../utils/confetti';
 import { exportOrdersToCsv } from '../../utils/exportOrders';
 
 export const OrderManager: React.FC = () => {
-  const { sellerOrders, updateOrderStatus, activeBusiness } = useShop();
+  const { sellerOrders, updateOrderStatus, markPaymentVerified, activeBusiness } = useShop();
   const { hasSproutPlus, openSubscriptionPage } = useSubscription();
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<OrderStatus | 'All'>('All');
 
@@ -33,9 +34,9 @@ export const OrderManager: React.FC = () => {
     exportOrdersToCsv(filteredOrders, activeBusiness.name);
   };
 
-  const filteredOrders = sellerOrders.filter(
-    (o) => selectedStatusFilter === 'All' || o.orderStatus === selectedStatusFilter
-  );
+  const filteredOrders = sellerOrders
+    .filter((o) => selectedStatusFilter === 'All' || o.orderStatus === selectedStatusFilter)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   const getStatusBadge = (status: OrderStatus) => {
     switch (status) {
@@ -150,7 +151,13 @@ export const OrderManager: React.FC = () => {
 
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-[#7A6B5F]">Payment:</span>
-                    <span className="text-xs font-bold text-[#207559] bg-[#EBFBF0] px-2 py-0.5 rounded-md">
+                    <span
+                      className={`text-xs font-bold px-2 py-0.5 rounded-md ${
+                        order.paymentStatus === 'Pending Verification'
+                          ? 'text-[#92400E] bg-[#FFF7E6]'
+                          : 'text-[#207559] bg-[#EBFBF0]'
+                      }`}
+                    >
                       {order.paymentMethod} • {order.paymentStatus}
                     </span>
                   </div>
@@ -166,6 +173,31 @@ export const OrderManager: React.FC = () => {
                     {order.deliveryDate ? new Date(order.deliveryDate).toLocaleDateString([], { month: 'short', day: 'numeric' }) : 'No date set'}
                   </span>
                 </div>
+
+                {order.proofOfPaymentUrl && (
+                  <div className="flex items-center gap-3 p-3 bg-[#FFF7E6] border border-[#FDE1A8] rounded-2xl">
+                    <a href={order.proofOfPaymentUrl} target="_blank" rel="noreferrer">
+                      <img
+                        src={order.proofOfPaymentUrl}
+                        alt="Buyer's proof of payment"
+                        className="w-14 h-14 rounded-xl object-cover border border-[#FDE1A8] shrink-0 cursor-pointer"
+                      />
+                    </a>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-[#92400E]">Buyer attached proof of payment</p>
+                      <p className="text-[11px] text-[#7A5B0E]">Tap the photo to view it full-size before confirming.</p>
+                    </div>
+                    {order.paymentStatus === 'Pending Verification' && (
+                      <button
+                        onClick={() => markPaymentVerified(order.id)}
+                        className="shrink-0 flex items-center gap-1.5 px-3 py-2 bg-[#B8E6D5] hover:bg-[#A3DEC9] text-[#194E3B] font-black text-[11px] rounded-xl shadow-xs transition-colors cursor-pointer btn-bouncy"
+                      >
+                        <ShieldCheck className="w-3.5 h-3.5" />
+                        Mark Verified
+                      </button>
+                    )}
+                  </div>
+                )}
 
                 {/* Main Order Content */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
