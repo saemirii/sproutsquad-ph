@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   MapPin,
   Star,
@@ -11,11 +11,15 @@ import {
   Instagram,
   QrCode,
   Tag,
-  Heart
+  Heart,
+  MessageSquareText,
+  Loader2,
 } from 'lucide-react';
-import { Business, Product } from '../../types';
-import { useApp } from '../../context/AppContext';
+import { Business, Product, BusinessReview } from '../../types';
+import { useShop, useCart, useSession, useNotifications } from '../../context/AppContext';
 import { formatPHP } from '../../utils/analytics';
+import { formatRelativeTime } from '../../utils/formatRelativeTime';
+import { SproutedUpBadge } from '../SproutUp/SproutedUpBadge';
 
 interface BusinessDetailViewProps {
   business: Business;
@@ -28,11 +32,29 @@ export const BusinessDetailView: React.FC<BusinessDetailViewProps> = ({
   onBack,
   onSelectProduct,
 }) => {
-  const { products, addToCart, setCurrentView, setSellerTab, setActiveBusiness, favoritedBusinessIds, toggleFavoriteBusiness, currentUser } = useApp();
+  const { products, setActiveBusiness, fetchBusinessReviews } = useShop();
+  const { addToCart } = useCart();
+  const { setCurrentView, setSellerTab, currentUser } = useSession();
+  const { favoritedBusinessIds, toggleFavoriteBusiness } = useNotifications();
   const isFavorited = favoritedBusinessIds.includes(business.id);
   const isOwnBusiness = business.sellerId === currentUser.id;
 
   const bizProducts = products.filter((p) => p.businessId === business.id);
+
+  const [reviews, setReviews] = useState<BusinessReview[]>([]);
+  const [isLoadingReviews, setIsLoadingReviews] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setIsLoadingReviews(true);
+    fetchBusinessReviews(business.id).then((data) => {
+      if (!cancelled) {
+        setReviews(data);
+        setIsLoadingReviews(false);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [business.id]);
 
   return (
     <div className="space-y-8 pb-16">
@@ -58,38 +80,44 @@ export const BusinessDetailView: React.FC<BusinessDetailViewProps> = ({
 
         {/* Profile Content */}
         <div className="p-6 sm:p-8 relative">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 -mt-16 sm:-mt-20">
-            <div className="flex items-end gap-4">
-              <img
-                src={business.logo}
-                alt={business.name}
-                className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl object-cover border-4 border-white shadow-md bg-white"
-              />
-              <div className="space-y-1 mb-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h1 className="text-2xl sm:text-3xl font-extrabold text-[#3B2F27] font-['Nunito',sans-serif]">
-                    {business.name}
-                  </h1>
-                  {business.badges.map((b) => (
-                    <span
-                      key={b}
-                      className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#B8E6D5] text-[#194E3B]"
-                    >
-                      {b}
-                    </span>
-                  ))}
-                </div>
-                <div className="flex items-center gap-3 text-xs text-[#6B5B4F] flex-wrap">
-                  <span className="flex items-center gap-1 font-semibold text-[#194E3B]">
-                    <MapPin className="w-3.5 h-3.5" />
-                    {business.university}
+          {/* Avatar alone in its own row — only this element overlaps the
+              banner, via its own negative margin. Kept independent of the
+              name/badges block below so a long name or wrapping badges can
+              never push text up into the banner image (the old layout put
+              them side-by-side in one bottom-aligned flex row sharing a
+              single overlap margin sized only for the avatar's height). */}
+          <img
+            src={business.logo}
+            alt={business.name}
+            className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl object-cover border-4 border-white shadow-md bg-white -mt-12 sm:-mt-14"
+          />
+
+          <div className="mt-4 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-[#3B2F27] font-['Nunito',sans-serif]">
+                  {business.name}
+                </h1>
+                {business.badges.map((b) => (
+                  <span
+                    key={b}
+                    className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#B8E6D5] text-[#194E3B]"
+                  >
+                    {b}
                   </span>
-                  <span>•</span>
-                  <span className="flex items-center gap-1 font-bold text-[#7A341A]">
-                    <Star className="w-3.5 h-3.5 fill-[#FFD3BA] text-[#7A341A]" />
-                    {business.rating} ({business.reviewCount} campus orders)
-                  </span>
-                </div>
+                ))}
+                <SproutedUpBadge businessId={business.id} />
+              </div>
+              <div className="flex items-center gap-3 text-xs text-[#6B5B4F] flex-wrap">
+                <span className="flex items-center gap-1 font-semibold text-[#194E3B]">
+                  <MapPin className="w-3.5 h-3.5" />
+                  {business.university}
+                </span>
+                <span>•</span>
+                <span className="flex items-center gap-1 font-bold text-[#7A341A]">
+                  <Star className="w-3.5 h-3.5 fill-[#FFD3BA] text-[#7A341A]" />
+                  {business.rating} ({business.reviewCount} campus orders)
+                </span>
               </div>
             </div>
 
@@ -164,6 +192,58 @@ export const BusinessDetailView: React.FC<BusinessDetailViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Reviews */}
+      <section className="space-y-4">
+        <h2 className="text-xl font-bold text-[#3B2F27] font-['Nunito',sans-serif] flex items-center gap-2">
+          <MessageSquareText className="w-5 h-5 text-[#207559]" />
+          Reviews {business.reviewCount > 0 && `(${business.reviewCount})`}
+        </h2>
+
+        {isLoadingReviews ? (
+          <div className="bg-white rounded-2xl border border-[#EDE4D8] p-6 flex justify-center">
+            <Loader2 className="w-5 h-5 text-[#207559] animate-spin" />
+          </div>
+        ) : reviews.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-[#EDE4D8] p-6 text-center text-xs text-[#7A6B5F]">
+            No reviews yet — be the first to complete an order and rate this shop!
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {reviews.map((review) => (
+              <div key={review.orderId} className="bg-white rounded-2xl border border-[#EDE4D8] p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-[#3B2F27]">{review.customerName}</span>
+                  <span className="text-[10px] text-[#8C7A6D]">{formatRelativeTime(review.createdAt)}</span>
+                </div>
+                <div className="flex items-center gap-0.5">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <Star
+                      key={n}
+                      className={`w-3.5 h-3.5 ${n <= review.stars ? 'fill-[#F7C948] text-[#F7C948]' : 'text-[#E5DACD]'}`}
+                    />
+                  ))}
+                </div>
+                {review.comment && (
+                  <p className="text-xs text-[#6E5D52] leading-relaxed">{review.comment}</p>
+                )}
+                {review.images.length > 0 && (
+                  <div className="flex items-center gap-2 flex-wrap pt-1">
+                    {review.images.map((img, idx) => (
+                      <img
+                        key={idx}
+                        src={img}
+                        alt="Review attachment"
+                        className="w-16 h-16 rounded-xl object-cover border border-[#EDE4D8]"
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
 
       {/* Products list for this business */}
       <section className="space-y-4">

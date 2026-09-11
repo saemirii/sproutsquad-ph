@@ -14,7 +14,7 @@ import {
   Package,
   Heart
 } from 'lucide-react';
-import { useApp } from '../../context/AppContext';
+import { useShop, useCart, useSession } from '../../context/AppContext';
 import { Product, ProductCategory, CampusUniversity, Business } from '../../types';
 import { formatPHP } from '../../utils/analytics';
 
@@ -30,13 +30,15 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
   const {
     products,
     businesses,
-    addToCart,
+    setActiveBusiness
+  } = useShop();
+  const { addToCart } = useCart();
+  const {
     selectedCampusFilter,
     setSelectedCampusFilter,
     setCurrentView,
     setSellerTab,
-    setActiveBusiness
-  } = useApp();
+  } = useSession();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory | 'All'>('All');
@@ -45,12 +47,13 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
 
   const categories: (ProductCategory | 'All')[] = [
     'All',
-    'Bakes & Treats',
-    'Crochet & Crafts',
-    'Stickers & Stationery',
-    'Eco & Planters',
-    'Thrift & Fashion',
-    'Tech & Accessories',
+    'Art & Creative',
+    'Fashion & Accessories',
+    'Food & Drinks',
+    'Lifestyle & Gifts',
+    'Digital & Tech',
+    'Beauty & Self-Care',
+    'Education & Services',
   ];
 
   const campuses: (CampusUniversity | 'All Campuses')[] = [
@@ -79,6 +82,17 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
       return 0;
     });
   }, [products, searchQuery, selectedCategory, selectedCampusFilter, sortBy]);
+
+  // Featured Shops respects the same category/campus filters as the product
+  // grid — previously the category pills only ever filtered products, so
+  // every shop stayed listed no matter which category was selected.
+  const filteredBusinesses = useMemo(() => {
+    return businesses.filter((biz) => {
+      const matchesCategory = selectedCategory === 'All' || biz.category === selectedCategory;
+      const matchesCampus = selectedCampusFilter === 'All Campuses' || biz.university === selectedCampusFilter;
+      return matchesCategory && matchesCampus;
+    });
+  }, [businesses, selectedCategory, selectedCampusFilter]);
 
   const handleQuickAdd = (e: React.MouseEvent, product: Product) => {
     e.stopPropagation();
@@ -158,8 +172,14 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
           </div>
         </div>
 
+        {filteredBusinesses.length === 0 && (
+          <div className="bg-white rounded-2xl border border-[#EDE4D8] p-6 text-center text-xs text-[#7A6B5F]">
+            No shops match this category yet.
+          </div>
+        )}
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {businesses.map((biz) => (
+          {filteredBusinesses.map((biz) => (
             <div
               key={biz.id}
               onClick={() => onSelectBusiness(biz)}
@@ -250,7 +270,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
 
           {/* Category Filter Pills */}
           <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
-            {categories.slice(0, 5).map((cat) => (
+            {categories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
@@ -360,7 +380,14 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
 
                     {/* Product Details */}
                     <div className="p-4 space-y-1.5">
-                      <p className="text-[11px] text-[#8C7A6D] font-medium truncate">
+                      <p
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const biz = businesses.find((b) => b.id === product.businessId);
+                          if (biz) onSelectBusiness(biz);
+                        }}
+                        className="text-[11px] text-[#8C7A6D] font-medium truncate hover:text-[#207559] hover:underline w-fit cursor-pointer"
+                      >
                         {product.businessName}
                       </p>
 

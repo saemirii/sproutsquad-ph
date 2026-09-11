@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { ShoppingBag, Trash2, Plus, Minus, MapPin, CheckCircle2, ArrowRight, Clock, Store, Tag, X, Instagram, PackageCheck } from 'lucide-react';
-import { useApp } from '../../context/AppContext';
+import { ShoppingBag, Trash2, Plus, Minus, MapPin, CheckCircle2, ArrowRight, Clock, Store, Tag, X, Instagram, PackageCheck, Star, ImagePlus, Loader2 } from 'lucide-react';
+import { useCart, useShop, useSession } from '../../context/AppContext';
 import { formatPHP } from '../../utils/analytics';
 import { formatRelativeTime } from '../../utils/formatRelativeTime';
 import { CampusUniversity, PaymentMethod, FulfillmentType, Order } from '../../types';
@@ -28,14 +28,20 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
     removeFromCart,
     clearCart,
     placeOrder,
+  } = useCart();
+  const {
     orders,
     businesses,
-    currentUser,
     validateCoupon,
     confirmOrderReceived,
+    myReviews,
+    submitReview,
+  } = useShop();
+  const {
+    currentUser,
     pendingNavigation,
     setPendingNavigation,
-  } = useApp();
+  } = useSession();
 
   const [activeSegment, setActiveSegment] = useState<'bag' | 'orders'>('bag');
   const [customerName, setCustomerName] = useState(currentUser.name);
@@ -91,6 +97,10 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
   const [highlightedOrderId, setHighlightedOrderId] = useState<string | null>(null);
   const [confirmingOrderId, setConfirmingOrderId] = useState<string | null>(null);
   const [confirmError, setConfirmError] = useState<{ orderId: string; message: string } | null>(null);
+  const [ratingOrderId, setRatingOrderId] = useState<string | null>(null);
+  const [ratingError, setRatingError] = useState<{ orderId: string; message: string } | null>(null);
+  const [expandedReviewOrderId, setExpandedReviewOrderId] = useState<string | null>(null);
+  const [reviewDrafts, setReviewDrafts] = useState<Record<string, { stars: number; comment: string; images: string[] }>>({});
 
   // A notification's deep link ("your order is ready") should land right on
   // that order, not just "somewhere in My Bag" — this jumps to Orders
@@ -117,6 +127,73 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
     const result = await confirmOrderReceived(orderId);
     setConfirmingOrderId(null);
     if (!result.success) setConfirmError({ orderId, message: result.message || 'Could not confirm this order right now.' });
+  };
+
+  // A star tap stages a draft (comment/photos are optional, added before the
+  // real submit) rather than posting immediately — pre-filled from any
+  // existing review so re-opening one to edit never silently drops a
+  // previously attached comment/photos.
+  const getReviewDraft = (orderId: string) => reviewDrafts[orderId] || {
+    stars: myReviews[orderId]?.stars || 0,
+    comment: myReviews[orderId]?.comment || '',
+    images: myReviews[orderId]?.images || [],
+  };
+
+  const handleStarTap = (orderId: string, stars: number) => {
+    playIosTap();
+    setExpandedReviewOrderId(orderId);
+    setReviewDrafts((prev) => ({
+      ...prev,
+      [orderId]: {
+        stars,
+        comment: prev[orderId]?.comment ?? (myReviews[orderId]?.comment || ''),
+        images: prev[orderId]?.images ?? (myReviews[orderId]?.images || []),
+      },
+    }));
+  };
+
+  const handleDraftCommentChange = (orderId: string, comment: string) => {
+    setReviewDrafts((prev) => ({ ...prev, [orderId]: { ...(prev[orderId] || getReviewDraft(orderId)), comment } }));
+  };
+
+  const handleDraftImageUpload = (orderId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { alert('Please choose an image file.'); return; }
+    if (file.size > 2 * 1024 * 1024) { alert('Please choose an image smaller than 2MB.'); return; }
+    if (getReviewDraft(orderId).images.length >= 3) { alert('You can attach up to 3 photos.'); return; }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = String(reader.result);
+      setReviewDrafts((prev) => {
+        const draft = prev[orderId] || getReviewDraft(orderId);
+        return { ...prev, [orderId]: { ...draft, images: [...draft.images, dataUrl] } };
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveDraftImage = (orderId: string, idx: number) => {
+    setReviewDrafts((prev) => {
+      const draft = prev[orderId] || getReviewDraft(orderId);
+      return { ...prev, [orderId]: { ...draft, images: draft.images.filter((_, i) => i !== idx) } };
+    });
+  };
+
+  const handleSubmitReview = async (orderId: string) => {
+    const draft = getReviewDraft(orderId);
+    if (draft.stars < 1) return;
+    setRatingOrderId(orderId);
+    setRatingError(null);
+    const result = await submitReview(orderId, draft.stars, draft.comment, draft.images);
+    setRatingOrderId(null);
+    if (result.success) {
+      playIosSuccess();
+      setExpandedReviewOrderId(null);
+    } else {
+      setRatingError({ orderId, message: result.message || "Couldn't submit your rating right now." });
+    }
   };
 
   // RLS on `orders` lets a user read both orders they placed as a customer
@@ -570,6 +647,91 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
                           <p className="text-[10px] font-bold text-[#991B1B] text-center">{confirmError.message}</p>
                         )}
                       </div>
+                    )}
+
+                    {order.orderStatus === 'Completed' && (() => {
+                      const draft = getReviewDraft(order.id);
+                      const isExpanded = expandedReviewOrderId === order.id;
+                      const hasExistingReview = Boolean(myReviews[order.id]);
+                      return (
+                        <div className="pt-2 border-t border-[#EDE4D8] space-y-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[10px] font-bold text-[#8C7A6D]">
+                              {hasExistingReview ? 'Your rating' : 'Rate this shop'}
+                            </span>
+                            <div className="flex items-center gap-0.5">
+                              {[1, 2, 3, 4, 5].map((n) => (
+                                <button
+                                  key={n}
+                                  onClick={() => handleStarTap(order.id, n)}
+                                  disabled={ratingOrderId === order.id}
+                                  title={`${n} star${n > 1 ? 's' : ''}`}
+                                  className="p-0.5 disabled:opacity-50 cursor-pointer active:scale-90 transition-transform"
+                                >
+                                  <Star
+                                    className={`w-4 h-4 ${
+                                      n <= draft.stars ? 'fill-[#F7C948] text-[#F7C948]' : 'text-[#D7CBBE]'
+                                    }`}
+                                  />
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {isExpanded && (
+                            <div className="space-y-2 pt-1">
+                              <textarea
+                                value={draft.comment}
+                                onChange={(e) => handleDraftCommentChange(order.id, e.target.value)}
+                                placeholder="Add a description (optional)"
+                                rows={2}
+                                className="w-full rounded-xl border border-[#E5DACD] bg-white px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-[#B8E6D5] resize-none"
+                              />
+
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {draft.images.map((img, idx) => (
+                                  <div key={idx} className="relative w-12 h-12 shrink-0">
+                                    <img src={img} alt="Attached" className="w-full h-full rounded-lg object-cover border border-[#E5DACD]" />
+                                    <button
+                                      onClick={() => handleRemoveDraftImage(order.id, idx)}
+                                      className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-[#3B2F27] text-white flex items-center justify-center cursor-pointer"
+                                    >
+                                      <X className="w-2.5 h-2.5" />
+                                    </button>
+                                  </div>
+                                ))}
+                                {draft.images.length < 3 && (
+                                  <label className="w-12 h-12 shrink-0 rounded-lg border border-dashed border-[#D7CBBE] flex items-center justify-center cursor-pointer text-[#8C7A6D] hover:border-[#B8E6D5]">
+                                    <ImagePlus className="w-4 h-4" />
+                                    <input type="file" accept="image/*" onChange={(e) => handleDraftImageUpload(order.id, e)} className="sr-only" />
+                                  </label>
+                                )}
+                              </div>
+
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => setExpandedReviewOrderId(null)}
+                                  className="flex-1 rounded-xl border border-[#E5DACD] bg-white text-[#6B5B4F] text-[11px] font-black py-2 cursor-pointer"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  onClick={() => void handleSubmitReview(order.id)}
+                                  disabled={ratingOrderId === order.id || draft.stars < 1}
+                                  className="flex-1 rounded-xl bg-[#207559] hover:bg-[#194E3B] text-white text-[11px] font-black py-2 disabled:opacity-50 flex items-center justify-center gap-1 cursor-pointer"
+                                >
+                                  {ratingOrderId === order.id ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  ) : hasExistingReview ? 'Update review' : 'Submit review'}
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+                    {ratingError?.orderId === order.id && (
+                      <p className="text-[10px] font-bold text-[#991B1B] text-center">{ratingError.message}</p>
                     )}
                   </div>
                 );

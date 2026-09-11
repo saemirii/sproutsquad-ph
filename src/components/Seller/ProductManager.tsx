@@ -14,7 +14,7 @@ import {
   ShoppingBag,
   Upload
 } from 'lucide-react';
-import { useApp } from '../../context/AppContext';
+import { useShop, useSubscription } from '../../context/AppContext';
 import { Product, ProductCategory } from '../../types';
 import { formatPHP } from '../../utils/analytics';
 import { InfoTip } from '../InfoTip';
@@ -27,9 +27,8 @@ export const ProductManager: React.FC = () => {
     addProduct,
     updateProduct,
     deleteProduct,
-    hasSproutPlus,
-    openSubscriptionPage,
-  } = useApp();
+  } = useShop();
+  const { hasSproutPlus, openSubscriptionPage } = useSubscription();
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -39,7 +38,7 @@ export const ProductManager: React.FC = () => {
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState<number>(150);
   const [costPrice, setCostPrice] = useState<number>(60);
-  const [category, setCategory] = useState<ProductCategory>('Bakes & Treats');
+  const [category, setCategory] = useState<ProductCategory>('Food & Drinks');
   const [inventoryCount, setInventoryCount] = useState<number>(20);
   const [unit, setUnit] = useState('Box of 4');
   const [imageUrl, setImageUrl] = useState('https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=600&auto=format&fit=crop&q=80');
@@ -186,14 +185,13 @@ export const ProductManager: React.FC = () => {
   };
 
   const categories: ProductCategory[] = [
-    'Bakes & Treats',
-    'Crochet & Crafts',
-    'Stickers & Stationery',
-    'Eco & Planters',
-    'Thrift & Fashion',
-    'Tech & Accessories',
-    'School Supplies',
-    'Art & Prints',
+    'Art & Creative',
+    'Fashion & Accessories',
+    'Food & Drinks',
+    'Lifestyle & Gifts',
+    'Digital & Tech',
+    'Beauty & Self-Care',
+    'Education & Services',
   ];
 
   return (

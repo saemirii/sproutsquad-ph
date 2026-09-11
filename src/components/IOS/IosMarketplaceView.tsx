@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Search, MapPin, ChevronDown, ShoppingBag, Star, Sparkles, Filter, X } from 'lucide-react';
-import { useApp } from '../../context/AppContext';
+import { useShop, useCart, useSession } from '../../context/AppContext';
 import { Product, ProductCategory, CampusUniversity, Business } from '../../types';
 import { formatPHP } from '../../utils/analytics';
 import { CampusStories } from './CampusStories';
@@ -20,29 +20,27 @@ export const IosMarketplaceView: React.FC<IosMarketplaceViewProps> = ({
   const {
     products,
     businesses,
-    addToCart,
-    selectedCampusFilter,
-    setSelectedCampusFilter,
     activeBusiness,
     setActiveBusiness,
-    cartCount,
-  } = useApp();
+  } = useShop();
+  const { addToCart, cartCount } = useCart();
+  const { selectedCampusFilter, setSelectedCampusFilter } = useSession();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory | 'All'>('All');
-  const [selectedBizFilter, setSelectedBizFilter] = useState<string | null>(null);
   const [isCampusSheetOpen, setIsCampusSheetOpen] = useState(false);
   const [isBizSheetOpen, setIsBizSheetOpen] = useState(false);
   const [quickAddedId, setQuickAddedId] = useState<string | null>(null);
 
   const categories: (ProductCategory | 'All')[] = [
     'All',
-    'Bakes & Treats',
-    'Crochet & Crafts',
-    'Stickers & Stationery',
-    'Eco & Planters',
-    'Thrift & Fashion',
-    'Tech & Accessories',
+    'Art & Creative',
+    'Fashion & Accessories',
+    'Food & Drinks',
+    'Lifestyle & Gifts',
+    'Digital & Tech',
+    'Beauty & Self-Care',
+    'Education & Services',
   ];
 
   const campuses: (CampusUniversity | 'All Campuses')[] = [
@@ -61,14 +59,13 @@ export const IosMarketplaceView: React.FC<IosMarketplaceViewProps> = ({
 
       const matchesCategory = selectedCategory === 'All' || p.category === selectedCategory;
       const matchesCampus = selectedCampusFilter === 'All Campuses' || p.university === selectedCampusFilter;
-      const matchesBiz = !selectedBizFilter || p.businessId === selectedBizFilter;
       // Product Drop Scheduler: hide anything scheduled for a future drop —
       // it shows up automatically once that moment passes, no seller action needed.
       const hasDropped = !p.dropDate || new Date(p.dropDate).getTime() <= Date.now();
 
-      return matchesSearch && matchesCategory && matchesCampus && matchesBiz && hasDropped;
+      return matchesSearch && matchesCategory && matchesCampus && hasDropped;
     });
-  }, [products, searchQuery, selectedCategory, selectedCampusFilter, selectedBizFilter]);
+  }, [products, searchQuery, selectedCategory, selectedCampusFilter]);
 
   const handleQuickAdd = (e: React.MouseEvent, product: Product) => {
     e.stopPropagation();
@@ -145,22 +142,8 @@ export const IosMarketplaceView: React.FC<IosMarketplaceViewProps> = ({
           <span className="text-[10px] font-extrabold text-[#8C7A6D] uppercase tracking-wider">
             Verified Student Makers
           </span>
-          {selectedBizFilter && (
-            <button
-              onClick={() => setSelectedBizFilter(null)}
-              className="text-[10px] font-bold text-[#194E3B] hover:underline"
-            >
-              Reset Filter
-            </button>
-          )}
         </div>
-        <CampusStories
-          onSelectBusiness={(biz) => {
-            setSelectedBizFilter((prev) => (prev === biz.id ? null : biz.id));
-          }}
-          selectedBizId={selectedBizFilter}
-          onClearFilter={() => setSelectedBizFilter(null)}
-        />
+        <CampusStories onSelectBusiness={onSelectBusiness} categoryFilter={selectedCategory} />
       </div>
 
       {/* Category Filter Pills (Horizontal Scroll) */}
@@ -189,11 +172,6 @@ export const IosMarketplaceView: React.FC<IosMarketplaceViewProps> = ({
           <span className="text-[11px] font-bold text-[#8C7A6D]">
             {filteredProducts.length} campus creations
           </span>
-          {selectedBizFilter && (
-            <span className="text-[10px] font-black bg-[#FFD3BA] text-[#7A341A] px-2 py-0.5 rounded-full">
-              Shop Filtered
-            </span>
-          )}
         </div>
 
         {filteredProducts.length === 0 ? (
@@ -205,7 +183,6 @@ export const IosMarketplaceView: React.FC<IosMarketplaceViewProps> = ({
               onClick={() => {
                 setSearchQuery('');
                 setSelectedCategory('All');
-                setSelectedBizFilter(null);
                 setSelectedCampusFilter('All Campuses');
               }}
               className="mt-2 px-3 py-1.5 bg-[#B8E6D5] text-[#194E3B] text-[11px] font-bold rounded-xl"
@@ -270,7 +247,14 @@ export const IosMarketplaceView: React.FC<IosMarketplaceViewProps> = ({
 
                     {/* Content */}
                     <div className="p-2.5 space-y-1">
-                      <p className="text-[10px] text-[#8C7A6D] font-medium truncate">
+                      <p
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const biz = businesses.find((b) => b.id === product.businessId);
+                          if (biz) onSelectBusiness(biz);
+                        }}
+                        className="text-[10px] text-[#8C7A6D] font-medium truncate w-fit cursor-pointer"
+                      >
                         {product.businessName}
                       </p>
                       <h3 className="font-extrabold text-xs text-[#3B2F27] line-clamp-1 font-['Nunito',sans-serif]">

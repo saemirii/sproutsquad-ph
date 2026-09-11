@@ -10,7 +10,7 @@ import {
   Trash2,
   Upload
 } from 'lucide-react';
-import { useApp } from '../../context/AppContext';
+import { useShop } from '../../context/AppContext';
 import { CampusUniversity, ProductCategory } from '../../types';
 import { triggerConfetti } from '../../utils/confetti';
 import { SproutPlusGate } from '../SproutPlusGate';
@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 
 export const BusinessSettings: React.FC = () => {
-  const { activeBusiness, updateBusinessProfile } = useApp();
+  const { activeBusiness, updateBusinessProfile } = useShop();
 
   const [name, setName] = useState(activeBusiness.name);
   const [tagline, setTagline] = useState(activeBusiness.tagline);
@@ -80,6 +80,23 @@ export const BusinessSettings: React.FC = () => {
 
     const reader = new FileReader();
     reader.onload = () => setLogo(String(reader.result));
+    reader.readAsDataURL(file);
+  };
+
+  const handleBannerUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('Please choose an image file.');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Please choose an image smaller than 2MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => setBanner(String(reader.result));
     reader.readAsDataURL(file);
   };
 
@@ -182,6 +199,23 @@ export const BusinessSettings: React.FC = () => {
                   <input type="file" accept="image/*" onChange={handleLogoUpload} className="sr-only" />
                 </label>
               </div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-[#EDE4D8] bg-[#FAF7F2] p-3.5">
+            <img
+              src={banner}
+              alt="Business banner preview"
+              className="w-full aspect-[3/1] rounded-xl object-cover border border-[#D7E9D9] bg-white"
+            />
+            <div className="mt-2.5">
+              <p className="text-[11px] font-black text-[#3B2F27]">Shop banner</p>
+              <p className="mt-1 text-[10px] leading-4 text-[#7A6B5F]">Upload a wide image up to 2MB. It's the header photo on your shop's public profile.</p>
+              <label className="mt-2 inline-flex items-center gap-1.5 rounded-xl bg-[#B8E6D5] px-3 py-2 text-[11px] font-black text-[#194E3B] cursor-pointer hover:bg-[#A3DEC9]">
+                <Upload className="w-3.5 h-3.5" />
+                <span>Upload banner</span>
+                <input type="file" accept="image/*" onChange={handleBannerUpload} className="sr-only" />
+              </label>
             </div>
           </div>
 

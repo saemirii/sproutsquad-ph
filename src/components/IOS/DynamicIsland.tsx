@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingBag, Sparkles, CheckCircle2, ChevronUp, ChevronDown, Store } from 'lucide-react';
-import { useApp } from '../../context/AppContext';
+import { useCart, useShop } from '../../context/AppContext';
 import { playIosTap } from '../../utils/haptics';
+import { isNativeApp } from '../../utils/platform';
 
 export interface DynamicIslandAlert {
   id: string;
@@ -22,7 +23,8 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
   onClearAlert,
   onOpenBag,
 }) => {
-  const { cartCount, activeBusiness, activeBusinessMetrics } = useApp();
+  const { cartCount } = useCart();
+  const { activeBusiness, activeBusinessMetrics } = useShop();
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Auto-collapse alert after duration
@@ -40,6 +42,41 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
     playIosTap();
     setIsExpanded((prev) => !prev);
   };
+
+  // The real device already has its own Dynamic Island / notch, so the fake
+  // pill-shaped chrome only makes sense for the web "simulated iPhone"
+  // preview. Native just needs the underlying cart + alert functionality,
+  // surfaced as plain inline controls in the status bar row.
+  if (isNativeApp) {
+    return (
+      <div className="flex items-center text-[#3B2F27]">
+        {activeAlert ? (
+          <div className="flex items-center gap-1.5 max-w-[220px] px-2.5 py-1 rounded-full bg-[#FAF3DE] border border-[#EDE4D8]">
+            <span className="text-sm shrink-0">{activeAlert.icon}</span>
+            <div className="truncate text-left">
+              <p className="text-[11px] font-bold leading-tight truncate">{activeAlert.title}</p>
+              {activeAlert.subtitle && (
+                <p className="text-[9px] text-[#8C7A6D] leading-none truncate">{activeAlert.subtitle}</p>
+              )}
+            </div>
+          </div>
+        ) : onOpenBag && (
+          <button
+            onClick={() => { playIosTap(); onOpenBag(); }}
+            className="flex items-center gap-1 pl-2 pr-2.5 py-1 rounded-full bg-[#F2EAE0] active:scale-95 transition-transform"
+            title="Open bag"
+          >
+            <ShoppingBag className="w-3.5 h-3.5" strokeWidth={2.25} />
+            {cartCount > 0 && (
+              <span className="text-[10px] font-black leading-none">
+                {cartCount > 9 ? '9+' : cartCount}
+              </span>
+            )}
+          </button>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="flex justify-center w-full z-50 pointer-events-auto">

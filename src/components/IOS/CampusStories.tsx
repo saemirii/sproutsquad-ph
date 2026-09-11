@@ -1,22 +1,26 @@
 import React from 'react';
-import { useApp } from '../../context/AppContext';
-import { Business } from '../../types';
+import { useShop, useSession } from '../../context/AppContext';
+import { Business, ProductCategory } from '../../types';
 import { playIosTap } from '../../utils/haptics';
 import { isSupabaseConfigured } from '../../lib/supabase';
 import { CreateShopButton } from '../CreateShopButton';
 
 interface CampusStoriesProps {
   onSelectBusiness: (business: Business) => void;
-  selectedBizId?: string | null;
-  onClearFilter?: () => void;
+  /** Only show shops in this category — omit or pass 'All' to show every shop. */
+  categoryFilter?: ProductCategory | 'All';
 }
 
 export const CampusStories: React.FC<CampusStoriesProps> = ({
   onSelectBusiness,
-  selectedBizId,
-  onClearFilter,
+  categoryFilter = 'All',
 }) => {
-  const { businesses, setCurrentView, setSellerTab } = useApp();
+  const { businesses } = useShop();
+  const { setCurrentView, setSellerTab } = useSession();
+
+  const visibleBusinesses = categoryFilter === 'All'
+    ? businesses
+    : businesses.filter((biz) => biz.category === categoryFilter);
 
   const storyGradients = [
     'border-[#B8E6D5] bg-[#B8E6D5]/20',
@@ -27,35 +31,7 @@ export const CampusStories: React.FC<CampusStoriesProps> = ({
   return (
     <div className="w-full overflow-x-auto scrollbar-none py-1 px-1">
       <div className="flex items-center gap-3.5 min-w-max">
-        {/* "All Shops" Story Circle */}
-        <button
-          onClick={() => {
-            playIosTap();
-            if (onClearFilter) onClearFilter();
-          }}
-          className="flex flex-col items-center gap-1.5 cursor-pointer group active:scale-95 transition-transform"
-        >
-          <div
-            className={`w-14 h-14 rounded-full p-0.5 border-2 flex items-center justify-center transition-all ${
-              !selectedBizId
-                ? 'border-[#194E3B] bg-[#B8E6D5]'
-                : 'border-[#EDE4D8] bg-white'
-            }`}
-          >
-            <div className="w-full h-full rounded-full bg-[#FFF9E6] flex items-center justify-center text-xl shadow-inner">
-              ✨
-            </div>
-          </div>
-          <span
-            className={`text-[10px] font-extrabold max-w-[62px] truncate ${
-              !selectedBizId ? 'text-[#194E3B]' : 'text-[#6B5B4F]'
-            }`}
-          >
-            All Drops
-          </span>
-        </button>
-
-        {/* Create Your Own Venture Pill — placed right after "All Drops" so
+        {/* Create Your Own Venture Pill — placed first so
             it's visible without scrolling through every business first. */}
         <CreateShopButton
           onBeforeClick={() => {
@@ -78,9 +54,8 @@ export const CampusStories: React.FC<CampusStoriesProps> = ({
           </span>
         </CreateShopButton>
 
-        {/* Verified Student Venture Stories */}
-        {businesses.map((biz, index) => {
-          const isSelected = selectedBizId === biz.id;
+        {/* Verified Student Venture Stories — tapping one opens that shop's profile. */}
+        {visibleBusinesses.map((biz, index) => {
           const borderStyle = storyGradients[index % storyGradients.length];
 
           return (
@@ -92,11 +67,7 @@ export const CampusStories: React.FC<CampusStoriesProps> = ({
               }}
               className="flex flex-col items-center gap-1.5 cursor-pointer group active:scale-95 transition-transform"
             >
-              <div
-                className={`w-14 h-14 rounded-full p-0.5 border-2 flex items-center justify-center transition-all relative ${
-                  isSelected ? 'border-[#194E3B] ring-2 ring-[#B8E6D5]' : borderStyle
-                }`}
-              >
+              <div className={`w-14 h-14 rounded-full p-0.5 border-2 flex items-center justify-center transition-all relative ${borderStyle}`}>
                 <img
                   src={biz.logo}
                   alt={biz.name}
@@ -106,11 +77,7 @@ export const CampusStories: React.FC<CampusStoriesProps> = ({
                   ✓
                 </span>
               </div>
-              <span
-                className={`text-[10px] font-bold max-w-[62px] truncate ${
-                  isSelected ? 'text-[#194E3B] font-extrabold' : 'text-[#6B5B4F]'
-                }`}
-              >
+              <span className="text-[10px] font-bold max-w-[62px] truncate text-[#6B5B4F]">
                 {biz.name}
               </span>
             </button>
