@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { Bell, Check, KeyRound, LogOut, Save, Sparkles, Upload, UserRound, X } from 'lucide-react';
-import { useApp } from '../context/AppContext';
+import { AlertTriangle, Bell, Check, KeyRound, LogOut, Save, Sparkles, Trash2, Upload, UserRound, X } from 'lucide-react';
+import { useSession, useShop, useNotifications } from '../context/AppContext';
 import { CampusUniversity, NotificationPreferenceCategory } from '../types';
 import { EnterBesKeyModal } from './EnterBesKeyModal';
+import { SproutUpAdminScreen } from './SproutUp/Admin/SproutUpAdminScreen';
+import { ShieldCheck } from 'lucide-react';
 
 const NOTIFICATION_CATEGORIES: { key: NotificationPreferenceCategory; label: string }[] = [
   { key: 'orders', label: 'Order updates' },
@@ -10,6 +12,7 @@ const NOTIFICATION_CATEGORIES: { key: NotificationPreferenceCategory; label: str
   { key: 'restocks', label: 'Restocks' },
   { key: 'promotions', label: 'Promotions' },
   { key: 'announcements', label: 'SproutSquad announcements' },
+  { key: 'sproutup', label: 'SproutUp! features & picks' },
 ];
 
 interface ProfileSheetProps {
@@ -23,15 +26,33 @@ const campuses: CampusUniversity[] = [
 
 export const ProfileSheet: React.FC<ProfileSheetProps> = ({ onClose, onOpenSubscription }) => {
   const {
-    currentUser, updateCurrentUser, businesses, activeBusiness,
-    setActiveBusiness, accessibleBusinessIds, signOut,
-    notificationPreferences, updateNotificationPreference,
-  } = useApp();
+    currentUser, updateCurrentUser, signOut, deleteAccount,
+  } = useSession();
+  const {
+    businesses, activeBusiness, setActiveBusiness, accessibleBusinessIds,
+  } = useShop();
+  const { notificationPreferences, updateNotificationPreference } = useNotifications();
   const [name, setName] = useState(currentUser.name);
   const [school, setSchool] = useState<CampusUniversity>(currentUser.university);
   const [avatar, setAvatar] = useState(currentUser.avatar);
   const [saved, setSaved] = useState(false);
   const [isBesKeyModalOpen, setIsBesKeyModalOpen] = useState(false);
+  const [isAdminScreenOpen, setIsAdminScreenOpen] = useState(false);
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    setDeleteError('');
+    const result = await deleteAccount();
+    if (!result.success) {
+      setDeleteError(result.message || 'Failed to delete account. Please try again.');
+      setIsDeleting(false);
+      return;
+    }
+    onClose();
+  };
   const myBusinesses = businesses.filter((business) => accessibleBusinessIds.includes(business.id));
 
   const saveProfile = () => {
@@ -152,6 +173,18 @@ export const ProfileSheet: React.FC<ProfileSheetProps> = ({ onClose, onOpenSubsc
           <p className="text-[10px] text-[#8C7A6D] leading-4">Account notices and, if you run a shop, new-order/inventory alerts always stay on — they're not affected by these toggles.</p>
         </div>
 
+        {currentUser.isAdmin && (
+          <button
+            onClick={() => setIsAdminScreenOpen(true)}
+            className="btn-bouncy w-full flex items-center justify-center gap-2 rounded-xl border border-[#9FD9C3] bg-[#F2FBF7] py-2.5 text-xs font-black text-[#194E3B] hover:bg-[#E5F6ED] cursor-pointer"
+          >
+            <ShieldCheck className="w-3.5 h-3.5" />
+            SproutUp! Admin Tools
+          </button>
+        )}
+
+        {isAdminScreenOpen && <SproutUpAdminScreen onClose={() => setIsAdminScreenOpen(false)} />}
+
         <button
           onClick={() => { onClose(); signOut(); }}
           className="w-full rounded-xl border border-[#F8BA9E] bg-white py-2.5 text-xs font-black text-[#991B1B] flex items-center justify-center gap-2 hover:bg-[#FFF0E8]"
@@ -159,6 +192,44 @@ export const ProfileSheet: React.FC<ProfileSheetProps> = ({ onClose, onOpenSubsc
           <LogOut className="w-3.5 h-3.5" />
           Sign out
         </button>
+
+        <div className="border-t border-[#EDE4D8] pt-4">
+          {isConfirmingDelete ? (
+            <div className="rounded-2xl border border-[#991B1B]/30 bg-[#FFF0E8] p-3.5 space-y-3">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 text-[#991B1B] shrink-0 mt-0.5" />
+                <p className="text-[11px] leading-5 text-[#7A341A]">
+                  This permanently deletes your account, shops, orders, and Academy progress. This cannot be undone.
+                </p>
+              </div>
+              {deleteError && <p className="text-[11px] font-bold text-[#991B1B]">{deleteError}</p>}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => { setIsConfirmingDelete(false); setDeleteError(''); }}
+                  disabled={isDeleting}
+                  className="flex-1 rounded-xl border border-[#E5DACD] bg-white py-2 text-xs font-black text-[#3B2F27] hover:bg-[#FAF4EA] disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteAccount}
+                  disabled={isDeleting}
+                  className="flex-1 rounded-xl bg-[#991B1B] py-2 text-xs font-black text-white hover:bg-[#7A1515] disabled:opacity-50"
+                >
+                  {isDeleting ? 'Deleting...' : 'Yes, delete my account'}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setIsConfirmingDelete(true)}
+              className="w-full rounded-xl py-2 text-[11px] font-bold text-[#8C7A6D] flex items-center justify-center gap-1.5 hover:text-[#991B1B]"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Delete account
+            </button>
+          )}
+        </div>
       </section>
     </div>
   );
