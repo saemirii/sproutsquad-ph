@@ -24,6 +24,9 @@ import {
   SquadChallengeProgress,
   RewardResult,
   LearningActivityType,
+  AcademyModule,
+  Challenge,
+  ChallengeResult,
   AppNotification,
   NotificationAction,
   NotificationPreferences,
@@ -33,15 +36,21 @@ import {
   SproutUpNomination,
   SproutUpAmbassadorPick,
   SproutUpFeaturedSprout,
+  OrderIssue,
+  OrderIssueReporterRole,
+  ReviewReport,
+  ReviewReportDecision,
+  ProductCategory,
+  AdminLookedUpUser,
 } from '../types';
 import {
   initialBusinesses,
   initialProducts,
   initialOrders,
   initialExpenses,
-  initialLessons,
   initialUsers
 } from '../data/seedData';
+import { ACADEMY_MODULES, ALL_LESSONS, ALL_CHALLENGES, getCheckpointForModule } from '../data/academy';
 import { calculateBusinessMetrics } from '../utils/analytics';
 import { safeSetItem } from '../utils/safeStorage';
 import { API_BASE_URL } from '../utils/platform';
@@ -99,6 +108,8 @@ import {
   couponToRow,
   rowToCoupon,
   rowToBusinessReview,
+  rowToOrderIssue,
+  rowToReviewReport,
 } from '../lib/supabaseMappers';
 import {
   rowToSproutUpNomination,
@@ -178,6 +189,47 @@ interface ShopContextType {
   submitReview: (orderId: string, stars: number, comment?: string, images?: string[]) => Promise<{ success: boolean; message?: string }>;
   /** Fetches all reviews for a business's public profile — not preloaded globally, called on demand when a business profile opens. */
   fetchBusinessReviews: (businessId: string) => Promise<BusinessReview[]>;
+  fetchBusinessFollowerCount: (businessId: string) => Promise<number>;
+
+  /** Existing reports, keyed by orderId — populated on demand (see
+   * fetchOrderIssuesForOrders) rather than preloaded globally. */
+  orderIssuesByOrderId: Record<string, OrderIssue>;
+  fetchOrderIssuesForOrders: (orderIds: string[]) => Promise<void>;
+  reportOrderIssue: (orderId: string, businessId: string, reporterRole: OrderIssueReporterRole, reason: string, message?: string) => Promise<{ success: boolean; message?: string }>;
+  /** Admin-only queue — every action here is re-validated server-side by is_admin(). */
+  openOrderIssues: (OrderIssue & { order?: Order })[];
+  isOrderIssuesAdminLoading: boolean;
+  fetchOpenOrderIssues: () => Promise<void>;
+  resolveOrderIssue: (issueId: string) => Promise<{ success: boolean; message?: string }>;
+
+  /** Existing review reports, keyed by the review's orderId — populated on
+   * demand (see fetchReviewReportsForOrders) rather than preloaded globally. */
+  reviewReportsByOrderId: Record<string, ReviewReport>;
+  fetchReviewReportsForOrders: (orderIds: string[]) => Promise<void>;
+  reportReview: (orderId: string, reason: string, message?: string) => Promise<{ success: boolean; message?: string }>;
+  /** Admin-only queue — every action here is re-validated server-side by is_admin(). */
+  openReviewReports: ReviewReport[];
+  isReviewReportsAdminLoading: boolean;
+  fetchOpenReviewReports: () => Promise<void>;
+  moderateReviewReport: (reportId: string, decision: ReviewReportDecision, note?: string) => Promise<{ success: boolean; message?: string }>;
+
+  /** Admin-only: manually create a business for an applicant reviewed
+   * outside the app (e.g. via CreateShopButton.tsx's Google Form), who
+   * already has a SproutSquad account. Generates a fresh Start-Up Key. */
+  createBusinessAsAdmin: (input: {
+    ownerEmail: string;
+    name: string;
+    handle: string;
+    university: CampusUniversity;
+    category: ProductCategory;
+    tagline?: string;
+    description?: string;
+    campusPickupSpots?: string[];
+    gcashNumber?: string;
+  }) => Promise<{ success: boolean; message?: string; businessId?: string; besKey?: string }>;
+  /** Admin-only: find a user by email, then grant/revoke their admin/ambassador role via setUserAdminRole. */
+  lookupUserByEmailAdmin: (email: string) => Promise<{ success: boolean; message?: string; user?: AdminLookedUpUser }>;
+  setUserAdminRole: (userId: string, isAdmin: boolean, isAmbassador: boolean) => Promise<{ success: boolean; message?: string }>;
 }
 
 interface SproutUpContextType {
@@ -217,8 +269,8 @@ interface CartContextType {
   cart: CartItem[];
   cartCount: number;
   cartTotal: number;
-  addToCart: (product: Product, quantity?: number) => void;
-  updateCartQuantity: (productId: string, quantity: number) => void;
+  addToCart: (product: Product, quantity?: number) => Promise<{ added: number; available: number }>;
+  updateCartQuantity: (productId: string, quantity: number) => Promise<{ applied: number; available: number }>;
   removeFromCart: (productId: string) => void;
   clearCart: () => void;
   placeOrder: (orderData: {
@@ -252,8 +304,14 @@ interface NotificationsContextType {
 }
 
 interface AcademyContextType {
+  modules: AcademyModule[];
   lessons: Lesson[];
   completedLessonIds: string[];
+  challenges: Challenge[];
+  completedChallengeIds: string[];
+  /** True once every lesson in the module (and, once attempted, its
+   * checkpoint) is done — the gate for unlocking the next module. */
+  isModuleUnlocked: (moduleId: string) => boolean;
   academyProfile: AcademyProfile;
   achievements: Achievement[];
   unlockedAchievementIds: string[];
@@ -271,7 +329,10 @@ interface AcademyContextType {
   clearPendingLevelUp: () => void;
   awardLearningActivity: (activityType: LearningActivityType, refId: string, xp: number, seeds: number) => Promise<RewardResult>;
   completeLessonWithQuiz: (lessonId: string, isFirstAttempt: boolean) => Promise<RewardResult>;
-  completeSimulation: (scenarioId: string, xp: number, seeds: number) => Promise<RewardResult>;
+  /** Unifies both Challenge modes (simulation and case study) — the caller
+   * already has a computed ChallengeResult (from a mode's own compute()/
+   * scoreToResult()), this just awards it and records completion. */
+  completeChallenge: (challengeId: string, result: ChallengeResult) => Promise<RewardResult>;
   purchaseGardenItem: (itemId: string) => Promise<{ success: boolean; message?: string }>;
   equipGardenItem: (itemId: string, equip: boolean) => Promise<void>;
   claimQuest: (questId: string, periodKey: string) => Promise<RewardResult>;
@@ -450,7 +511,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
     return saved ? JSON.parse(saved) : [];
   });
 
-  const [lessons] = useState<Lesson[]>(initialLessons);
+  const [modules] = useState<AcademyModule[]>(ACADEMY_MODULES);
+  const [lessons] = useState<Lesson[]>(ALL_LESSONS);
+  const [challenges] = useState<Challenge[]>(ALL_CHALLENGES);
 
   // Sprout Academy Gamification state. Catalogs (achievements/garden items/
   // quests) are static content mirrored from the DB seed data — same
@@ -489,6 +552,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
   const [onlineOwnedGardenItems, setOnlineOwnedGardenItems] = useState<UserGardenItem[]>([]);
   const [onlineQuestProgressMap, setOnlineQuestProgressMap] = useState<Record<string, QuestProgress>>({});
   const [onlineCompletedLessonIds, setOnlineCompletedLessonIds] = useState<string[]>([]);
+  const [onlineCompletedChallengeIds, setOnlineCompletedChallengeIds] = useState<string[]>([]);
   const [onlineActivityCounts, setOnlineActivityCounts] = useState<Record<string, number>>({});
   const [activeSquadChallenge, setActiveSquadChallenge] = useState<SquadChallenge | null>(null);
   const [squadChallengeProgress, setSquadChallengeProgress] = useState<SquadChallengeProgress | null>(null);
@@ -506,6 +570,19 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
           .filter((key) => key.startsWith('lesson_complete:'))
           .map((key) => key.slice('lesson_complete:'.length))
   ), [onlineCompletedLessonIds, offlineAcademy.claimedActivities]);
+  const completedChallengeIds = useMemo(() => (
+    isSupabaseConfigured
+      ? onlineCompletedChallengeIds
+      : Object.keys(offlineAcademy.claimedActivities)
+          .filter((key) => key.startsWith('challenge_complete:'))
+          .map((key) => key.slice('challenge_complete:'.length))
+  ), [onlineCompletedChallengeIds, offlineAcademy.claimedActivities]);
+  const isModuleUnlocked = useCallback((moduleId: string): boolean => {
+    const index = modules.findIndex((m) => m.id === moduleId);
+    if (index <= 0) return true; // module 1 (or an unknown id) is always open
+    const previous = modules[index - 1];
+    return completedChallengeIds.includes(previous.checkpointId);
+  }, [modules, completedChallengeIds]);
   const activityCounts = useMemo(() => (
     isSupabaseConfigured
       ? onlineActivityCounts
@@ -577,6 +654,19 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
   const [allFeaturedSprouts, setAllFeaturedSprouts] = useState<SproutUpFeaturedSprout[]>([]);
   const [isSproutUpAdminLoading, setIsSproutUpAdminLoading] = useState(false);
 
+  // Order issues ("Report an Issue") — Supabase-only, same posture as
+  // SproutUp above (offline/local-account mode has no cross-user disputes
+  // to flag, so this just stays empty there). Not preloaded on app load —
+  // fetched on demand once an order list actually renders.
+  const [orderIssuesByOrderId, setOrderIssuesByOrderId] = useState<Record<string, OrderIssue>>({});
+  const [openOrderIssues, setOpenOrderIssues] = useState<(OrderIssue & { order?: Order })[]>([]);
+  const [isOrderIssuesAdminLoading, setIsOrderIssuesAdminLoading] = useState(false);
+
+  // Review reports ("Report a review") — same posture as order issues above.
+  const [reviewReportsByOrderId, setReviewReportsByOrderId] = useState<Record<string, ReviewReport>>({});
+  const [openReviewReports, setOpenReviewReports] = useState<ReviewReport[]>([]);
+  const [isReviewReportsAdminLoading, setIsReviewReportsAdminLoading] = useState(false);
+
   const [currentUser, setCurrentUser] = useState<User>(() => ({
     ...initialUsers[0],
     university: defaultSchool,
@@ -627,6 +717,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
       if (updated.name !== undefined) profileUpdate.full_name = updated.name;
       if (updated.university !== undefined) profileUpdate.university = updated.university;
       if (updated.avatar !== undefined) profileUpdate.avatar = updated.avatar;
+      if (updated.contactNumber !== undefined) profileUpdate.contact_number = updated.contactNumber;
       if (Object.keys(profileUpdate).length > 0) {
         void supabase.from('profiles').update(profileUpdate).eq('id', authUser.id).then(({ error }) => {
           if (error) console.error('Failed to sync profile', error);
@@ -639,7 +730,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
     .filter((business) => business.sellerId === currentUser.id || unlockedBusinessIds.includes(business.id))
     .map((business) => business.id), [businesses, currentUser.id, unlockedBusinessIds]);
 
-  // Joins a business by BES key alone — the server resolves which business
+  // Joins a business by Start-Up Key (internally still "bes_key") alone —
+  // the server resolves which business
   // the key belongs to, so the client never needs to know/display a
   // business id (or browse a list of every business) to use it. Replaces
   // the older businessId+key check, which also depended on business.besKey
@@ -647,13 +739,13 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
   // broadly fetched (see migration_11_bes_key_privacy.sql).
   const unlockBusinessByKey = async (besKey: string): Promise<{ success: boolean; businessId?: string; businessName?: string; message?: string }> => {
     const trimmed = besKey.trim();
-    if (!trimmed) return { success: false, message: 'Enter a BES key.' };
+    if (!trimmed) return { success: false, message: 'Enter a Start-Up Key.' };
 
     if (supabase) {
       const { data, error } = await supabase.rpc('join_business_by_bes_key_only', { entered_bes_key: trimmed });
       if (error) return { success: false, message: error.message || 'Could not unlock that shop.' };
       const row: any = Array.isArray(data) ? data[0] : data;
-      if (!row?.business_id) return { success: false, message: 'That BES key is not valid.' };
+      if (!row?.business_id) return { success: false, message: 'That Start-Up Key is not valid.' };
       setUnlockedBusinessIds((previous) => (previous.includes(row.business_id) ? previous : [...previous, row.business_id]));
       setBusinesses((previous) => previous.map((b) => (b.id === row.business_id ? { ...b, besKey: trimmed } : b)));
       return { success: true, businessId: row.business_id, businessName: row.business_name };
@@ -661,7 +753,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
 
     // Offline/local-account fallback: search local demo businesses directly.
     const match = businesses.find((candidate) => candidate.besKey === trimmed);
-    if (!match) return { success: false, message: 'That BES key is not valid.' };
+    if (!match) return { success: false, message: 'That Start-Up Key is not valid.' };
     setUnlockedBusinessIds((previous) => (previous.includes(match.id) ? previous : [...previous, match.id]));
     return { success: true, businessId: match.id, businessName: match.name };
   };
@@ -901,12 +993,21 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
             name: profile.name || previous.name,
             university: profile.university || previous.university,
             avatar: profile.avatar || previous.avatar,
+            contactNumber: profile.contactNumber || previous.contactNumber,
             isAdmin: profile.isAdmin,
             isAmbassador: profile.isAmbassador,
           }));
         }
 
         setIsRemoteDataLoading(false);
+
+        // Catches up any scheduled product whose drop_date has now passed
+        // — see migration_29_drop_scheduler_hardening.sql. Idempotent per
+        // product (drop_notified_at guards it) and non-fatal: worst case,
+        // the next person to load the app catches it instead.
+        void supabase.rpc('notify_dropped_products').then(({ error }) => {
+          if (error) console.error('Failed to check for newly-dropped products (non-fatal)', error);
+        });
 
         // Logos/images are fetched separately from the light columns above
         // (to keep the initial payload small) — everything starts on a
@@ -1028,6 +1129,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
       else if (activityRes.data) {
         setOnlineCompletedLessonIds(
           activityRes.data.filter((row: any) => row.activity_type === 'lesson_complete').map((row: any) => row.ref_id)
+        );
+        setOnlineCompletedChallengeIds(
+          activityRes.data.filter((row: any) => row.activity_type === 'challenge_complete').map((row: any) => row.ref_id)
         );
         const counts: Record<string, number> = {};
         for (const row of activityRes.data) {
@@ -1603,6 +1707,285 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
       }));
   };
 
+  // Public follower count for a shop's profile — business_favorites' RLS
+  // select policy is already open to everyone (`using (true)`, same table
+  // toggleFavoriteBusiness writes to), so this is just a head-only count
+  // query, no policy change needed.
+  const fetchBusinessFollowerCount = async (businessId: string): Promise<number> => {
+    if (supabase) {
+      const { count, error } = await supabase
+        .from('business_favorites')
+        .select('*', { count: 'exact', head: true })
+        .eq('business_id', businessId);
+      if (error) {
+        console.error('Failed to load follower count', error);
+        return 0;
+      }
+      return count || 0;
+    }
+
+    // Offline/local-account fallback: only this device's own follow state exists.
+    return offlineFavoritedBusinessIds.includes(businessId) ? 1 : 0;
+  };
+
+  // "Report an Issue" — deliberately never touches the order's own status
+  // (see the comment on migration_27_order_issues.sql); it only flags the
+  // concern for the other party (via the on_order_issue_reported trigger)
+  // and for admins. Offline/local-account mode has no counterpart to
+  // notify, so this is Supabase-only, same posture as SproutUp above.
+  const reportOrderIssue = async (
+    orderId: string,
+    businessId: string,
+    reporterRole: OrderIssueReporterRole,
+    reason: string,
+    message?: string
+  ): Promise<{ success: boolean; message?: string }> => {
+    if (!supabase || !authUser) {
+      return { success: false, message: 'This feature needs an online account.' };
+    }
+    const { data, error } = await supabase
+      .from('order_issues')
+      .insert({
+        order_id: orderId,
+        business_id: businessId,
+        reporter_id: authUser.id,
+        reporter_role: reporterRole,
+        reason,
+        message: message?.trim() || null,
+      })
+      .select('*')
+      .single();
+    if (error || !data) {
+      console.error('Failed to report order issue', error);
+      return { success: false, message: 'Could not submit your report right now.' };
+    }
+    const issue = rowToOrderIssue(data);
+    setOrderIssuesByOrderId((prev) => ({ ...prev, [orderId]: issue }));
+    return { success: true };
+  };
+
+  // Lazily fetches existing reports for a batch of orders (e.g. one call
+  // for everything in an order list on mount) rather than one row's worth
+  // of network round-trip per order card.
+  const fetchOrderIssuesForOrders = async (orderIds: string[]): Promise<void> => {
+    if (!supabase || orderIds.length === 0) return;
+    const { data, error } = await supabase
+      .from('order_issues')
+      .select('*')
+      .in('order_id', orderIds)
+      .order('created_at', { ascending: false });
+    if (error) {
+      console.error('Failed to load order issues', error);
+      return;
+    }
+    setOrderIssuesByOrderId((prev) => {
+      const next = { ...prev };
+      for (const row of data || []) {
+        const issue = rowToOrderIssue(row);
+        // Newest first (already ordered above) — first write per orderId wins.
+        if (!next[issue.orderId]) next[issue.orderId] = issue;
+      }
+      return next;
+    });
+  };
+
+  // Admin-only queue — re-validated server-side by is_admin() on every
+  // read/write here (RLS), these client entry points are for UI convenience
+  // only, same posture as the SproutUp admin actions below.
+  const fetchOpenOrderIssues = async (): Promise<void> => {
+    if (!supabase) return;
+    setIsOrderIssuesAdminLoading(true);
+    const { data, error } = await supabase
+      .from('order_issues')
+      .select('*, orders(*)')
+      .eq('status', 'open')
+      .order('created_at', { ascending: false });
+    setIsOrderIssuesAdminLoading(false);
+    if (error) {
+      console.error('Failed to load open order issues', error);
+      return;
+    }
+    setOpenOrderIssues(
+      (data || []).map((row: any) => ({
+        ...rowToOrderIssue(row),
+        order: row.orders ? rowToOrder(row.orders) : undefined,
+      }))
+    );
+  };
+
+  const resolveOrderIssue = async (issueId: string): Promise<{ success: boolean; message?: string }> => {
+    if (!supabase) return { success: false, message: 'This feature needs an online account.' };
+    const { error } = await supabase.from('order_issues').update({ status: 'resolved' }).eq('id', issueId);
+    if (error) {
+      console.error('Failed to resolve order issue', error);
+      return { success: false, message: 'Could not resolve this issue right now.' };
+    }
+    setOpenOrderIssues((prev) => prev.filter((issue) => issue.id !== issueId));
+    return { success: true };
+  };
+
+  // "Report a review" (App Store Guideline 1.2 UGC moderation). Goes
+  // through report_review() rather than a raw insert — it needs to
+  // snapshot the reported review's own content server-side (so a reporter
+  // can't fabricate what a review said) and reject a second open report
+  // from the same person on the same review.
+  const reportReview = async (
+    orderId: string,
+    reason: string,
+    message?: string
+  ): Promise<{ success: boolean; message?: string }> => {
+    if (!supabase || !authUser) {
+      return { success: false, message: 'This feature needs an online account.' };
+    }
+    const { data: newId, error } = await supabase.rpc('report_review', {
+      p_order_id: orderId,
+      p_reason: reason,
+      p_message: message?.trim() || null,
+    });
+    if (error || !newId) {
+      return { success: false, message: error?.message || 'Could not submit your report right now.' };
+    }
+    const { data } = await supabase.from('review_reports').select('*').eq('id', newId).single();
+    if (data) {
+      setReviewReportsByOrderId((prev) => ({ ...prev, [orderId]: rowToReviewReport(data) }));
+    }
+    return { success: true };
+  };
+
+  // Lazily fetches existing reports for a batch of reviews (e.g. one call
+  // for everything in a business's review list on mount) rather than one
+  // row's worth of network round-trip per review card.
+  const fetchReviewReportsForOrders = async (orderIds: string[]): Promise<void> => {
+    if (!supabase || orderIds.length === 0) return;
+    const { data, error } = await supabase
+      .from('review_reports')
+      .select('*')
+      .in('order_id', orderIds)
+      .order('created_at', { ascending: false });
+    if (error) {
+      console.error('Failed to load review reports', error);
+      return;
+    }
+    setReviewReportsByOrderId((prev) => {
+      const next = { ...prev };
+      for (const row of data || []) {
+        const report = rowToReviewReport(row);
+        // Newest first (already ordered above) — first write per orderId wins.
+        if (!next[report.orderId]) next[report.orderId] = report;
+      }
+      return next;
+    });
+  };
+
+  // Admin-only queue — re-validated server-side by is_admin() on every
+  // read/write here (RLS), these client entry points are for UI convenience
+  // only, same posture as the SproutUp/order-issues admin actions above.
+  const fetchOpenReviewReports = async (): Promise<void> => {
+    if (!supabase) return;
+    setIsReviewReportsAdminLoading(true);
+    const { data, error } = await supabase
+      .from('review_reports')
+      .select('*')
+      .eq('status', 'open')
+      .order('created_at', { ascending: false });
+    setIsReviewReportsAdminLoading(false);
+    if (error) {
+      console.error('Failed to load open review reports', error);
+      return;
+    }
+    setOpenReviewReports((data || []).map(rowToReviewReport));
+  };
+
+  const moderateReviewReport = async (
+    reportId: string,
+    decision: ReviewReportDecision,
+    note?: string
+  ): Promise<{ success: boolean; message?: string }> => {
+    if (!supabase) return { success: false, message: 'This feature needs an online account.' };
+    const { error } = await supabase.rpc('moderate_review_report', {
+      p_id: reportId,
+      p_decision: decision,
+      p_note: note?.trim() || null,
+    });
+    if (error) return { success: false, message: error.message || 'Could not process this report right now.' };
+    // A "removed" decision resolves every open report tied to the same
+    // review, not just this one (see moderate_review_report) — re-fetch
+    // rather than guess which rows also cleared.
+    await fetchOpenReviewReports();
+    return { success: true };
+  };
+
+  // Admin-only "Create Business" — the applicant is reviewed outside the
+  // app (see CreateShopButton.tsx's Google Form) and must already have a
+  // SproutSquad account; admin_create_business() resolves that account by
+  // email and assigns it as seller_id directly (real ownership, no key
+  // needed on their end — the generated key is only for THEM to later
+  // invite teammates). Not added to local `businesses` state: the admin
+  // isn't the owner, so it wouldn't show up in "My Shops" for them anyway,
+  // and there's no owner-side id to fabricate client-side without another
+  // round trip.
+  const createBusinessAsAdmin = async (input: {
+    ownerEmail: string;
+    name: string;
+    handle: string;
+    university: CampusUniversity;
+    category: ProductCategory;
+    tagline?: string;
+    description?: string;
+    campusPickupSpots?: string[];
+    gcashNumber?: string;
+  }): Promise<{ success: boolean; message?: string; businessId?: string; besKey?: string }> => {
+    if (!supabase) return { success: false, message: 'This feature needs an online account.' };
+    const { data, error } = await supabase.rpc('admin_create_business', {
+      p_owner_email: input.ownerEmail,
+      p_name: input.name,
+      p_handle: input.handle,
+      p_university: input.university,
+      p_category: input.category,
+      p_tagline: input.tagline || '',
+      p_description: input.description || '',
+      p_campus_pickup_spots: input.campusPickupSpots || [],
+      p_gcash_number: input.gcashNumber || '',
+    });
+    if (error || !data || data.length === 0) {
+      return { success: false, message: error?.message || 'Could not create this business right now.' };
+    }
+    return { success: true, businessId: data[0].business_id, besKey: data[0].bes_key };
+  };
+
+  // Admin-only "User Roles" — profiles.email isn't otherwise queryable by
+  // non-admins, so this is the lookup step before granting/revoking a role
+  // via the existing admin_set_sproutup_role() (migration_23), which had
+  // an RPC but no UI anywhere in the app until now.
+  const lookupUserByEmailAdmin = async (email: string): Promise<{ success: boolean; message?: string; user?: AdminLookedUpUser }> => {
+    if (!supabase) return { success: false, message: 'This feature needs an online account.' };
+    const { data, error } = await supabase.rpc('admin_lookup_user_by_email', { p_email: email });
+    if (error) return { success: false, message: error.message || 'Could not look up that user right now.' };
+    if (!data || data.length === 0) return { success: false, message: 'No account found for that email.' };
+    const row = data[0];
+    return {
+      success: true,
+      user: {
+        id: row.user_id,
+        fullName: row.full_name || '',
+        email: row.email || '',
+        isAdmin: row.is_admin,
+        isAmbassador: row.is_ambassador,
+      },
+    };
+  };
+
+  const setUserAdminRole = async (userId: string, isAdmin: boolean, isAmbassador: boolean): Promise<{ success: boolean; message?: string }> => {
+    if (!supabase) return { success: false, message: 'This feature needs an online account.' };
+    const { error } = await supabase.rpc('admin_set_sproutup_role', {
+      p_user_id: userId,
+      p_is_admin: isAdmin,
+      p_is_ambassador: isAmbassador,
+    });
+    if (error) return { success: false, message: error.message || 'Could not update this user\'s role right now.' };
+    return { success: true };
+  };
+
   // SproutUp! — fetches this week's automated Hidden Gems / Rising Sprouts
   // picks. Not preloaded globally (see state comment above) — called when
   // the SproutUp tab opens. recompute_sproutup_features() is idempotent
@@ -1916,10 +2299,10 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
     let pathResult: RewardResult | null = null;
     const lesson = lessons.find((l) => l.id === lessonId);
     if (lesson && r1.xpAwarded > 0) {
-      const categoryLessonIds = lessons.filter((l) => l.category === lesson.category).map((l) => l.id);
+      const module = modules.find((m) => m.id === lesson.moduleId);
       const nowCompleted = new Set([...completedLessonIds, lessonId]);
-      if (categoryLessonIds.every((id) => nowCompleted.has(id))) {
-        pathResult = await awardLearningActivity('path_complete', lesson.category, PATH_COMPLETE_XP, PATH_COMPLETE_SEEDS);
+      if (module && module.lessonIds.every((id) => nowCompleted.has(id))) {
+        pathResult = await awardLearningActivity('path_complete', module.id, PATH_COMPLETE_XP, PATH_COMPLETE_SEEDS);
       }
     }
 
@@ -1936,14 +2319,15 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
     return combined;
   };
 
-  // "Business challenge" and "business simulation" are the same student
-  // action here — completing a BusinessSimulation scenario — tagged with
-  // two ledger entries so it satisfies both the simulation-focused and
+  // Unifies both Challenge modes (simulation and case study) — the caller
+  // already has a computed ChallengeResult (from that mode's own compute()/
+  // scoreToResult()); this just awards it and records completion. Tagged
+  // with two ledger entries so it satisfies both the simulation-focused and
   // challenge-focused quests/achievements/leaderboards without paying out
   // twice (the challenge_complete tag always carries zero reward).
-  const completeSimulation = async (scenarioId: string, xp: number, seeds: number): Promise<RewardResult> => {
-    const r1 = await awardLearningActivity('simulation_complete', scenarioId, xp, seeds);
-    const r2 = await awardLearningActivity('challenge_complete', scenarioId, 0, 0);
+  const completeChallenge = async (challengeId: string, result: ChallengeResult): Promise<RewardResult> => {
+    const r1 = await awardLearningActivity('simulation_complete', challengeId, result.xpAwarded, result.seedsAwarded);
+    const r2 = await awardLearningActivity('challenge_complete', challengeId, 0, 0);
     applyLevelUpIfAny(r1);
     applyLevelUpIfAny(r2);
     const combined: RewardResult = { xpAwarded: r1.xpAwarded + r2.xpAwarded, seedsAwarded: r1.seedsAwarded + r2.seedsAwarded };
@@ -2175,7 +2559,13 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
       if (biz) setActiveBusinessId(biz.id);
       setCurrentView('seller');
       setSellerTab(view === 'seller_order' ? 'orders' : 'products');
-      setPendingNavigation({ tab: 'seller' });
+      // 'seller_order' carries an orderId to highlight/scroll to (mirrors
+      // 'customer_order' below) — OrderManager.tsx consumes and clears it.
+      setPendingNavigation(
+        view === 'seller_order'
+          ? { tab: 'seller', orderId: (action as { orderId?: string }).orderId }
+          : { tab: 'seller' }
+      );
     } else if (view === 'business' || view === 'product') {
       setPendingNavigation({ tab: 'market', businessId: (action as { businessId?: string }).businessId });
     } else if (view === 'customer_order') {
@@ -2219,33 +2609,86 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
   }, [authUser?.id, activeBusiness.id]);
 
   // Cart actions
-  const addToCart = (product: Product, quantity = 1) => {
-    setCart((prev) => {
-      const existing = prev.find((item) => item.product.id === product.id);
-      if (existing) {
-        return prev.map((item) =>
-          item.product.id === product.id
-            ? { ...item, quantity: Math.min(product.inventoryCount, item.quantity + quantity) }
-            : item
-        );
-      }
-      return [...prev, { product, quantity: Math.min(product.inventoryCount, quantity) }];
-    });
+  // The cached `products`/cart-item stock counts are only ever refreshed by
+  // this user's own edits/orders (see AppContext.tsx's initial data load) —
+  // another buyer purchasing the same item, or the seller adjusting stock,
+  // never updates this tab. Without a live re-check here, a stale cap lets
+  // someone add more than actually exists and only find out at placeOrder's
+  // server-side check. This re-reads the real count at add/increase time so
+  // the cap (and any "only N left" feedback) is accurate right away.
+  const getLiveInventory = async (productId: string): Promise<number | null> => {
+    if (!supabase) return null;
+    const { data, error } = await supabase
+      .from('products')
+      .select('inventory_count')
+      .eq('id', productId)
+      .single();
+    if (error || !data) return null;
+    return Number(data.inventory_count);
   };
 
-  const updateCartQuantity = (productId: string, quantity: number) => {
+  const addToCart = async (product: Product, quantity = 1): Promise<{ added: number; available: number }> => {
+    const liveCount = await getLiveInventory(product.id);
+    const available = liveCount !== null ? liveCount : product.inventoryCount;
+    if (liveCount !== null && liveCount !== product.inventoryCount) {
+      setProducts((prev) => prev.map((p) => (p.id === product.id ? { ...p, inventoryCount: liveCount } : p)));
+    }
+
+    // Compute the result from `cart` directly rather than inside the
+    // `setCart` updater — a functional updater can run later (or, in dev
+    // StrictMode, twice) than the point where `setCart` is called, so a
+    // value only assigned inside it isn't safe to read immediately after.
+    const existing = cart.find((item) => item.product.id === product.id);
+    const currentQty = existing?.quantity || 0;
+    const newQty = Math.max(0, Math.min(available, currentQty + quantity));
+    const added = newQty - currentQty;
+
+    if (added !== 0) {
+      setCart((prev) => {
+        if (prev.some((item) => item.product.id === product.id)) {
+          return prev.map((item) =>
+            item.product.id === product.id
+              ? { ...item, quantity: newQty, product: { ...item.product, inventoryCount: available } }
+              : item
+          );
+        }
+        return [...prev, { product: { ...product, inventoryCount: available }, quantity: newQty }];
+      });
+    }
+
+    return { added, available };
+  };
+
+  const updateCartQuantity = async (productId: string, quantity: number): Promise<{ applied: number; available: number }> => {
     if (quantity <= 0) {
       removeFromCart(productId);
-      return;
+      return { applied: 0, available: 0 };
     }
+
+    const existing = cart.find((item) => item.product.id === productId);
+    let available = existing?.product.inventoryCount ?? 0;
+
+    // Only worth a live round-trip when actually raising the quantity past
+    // what we already trust — lowering it (or re-applying the same cap)
+    // never needs a fresh check.
+    if (existing && quantity > existing.quantity) {
+      const liveCount = await getLiveInventory(productId);
+      if (liveCount !== null) available = liveCount;
+    }
+
+    // Computed before calling setCart, not inside its updater — the updater
+    // can run after (or, in dev StrictMode, more than once around) this
+    // point, so a value only assigned inside it isn't safe to read here.
+    const applied = Math.min(available, quantity);
     setCart((prev) =>
-      prev.map((item) => {
-        if (item.product.id === productId) {
-          return { ...item, quantity: Math.min(item.product.inventoryCount, quantity) };
-        }
-        return item;
-      })
+      prev.map((item) =>
+        item.product.id === productId
+          ? { ...item, quantity: applied, product: { ...item.product, inventoryCount: available } }
+          : item
+      )
     );
+
+    return { applied, available };
   };
 
   const removeFromCart = (productId: string) => {
@@ -2518,6 +2961,18 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
     createBusiness,
     submitReview,
     fetchBusinessReviews,
+    fetchBusinessFollowerCount,
+    fetchOrderIssuesForOrders,
+    reportOrderIssue,
+    fetchOpenOrderIssues,
+    resolveOrderIssue,
+    fetchReviewReportsForOrders,
+    reportReview,
+    fetchOpenReviewReports,
+    moderateReviewReport,
+    createBusinessAsAdmin,
+    lookupUserByEmailAdmin,
+    setUserAdminRole,
   });
 
   const cartActions = useStableActions({
@@ -2542,7 +2997,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
     clearPendingLevelUp: () => setPendingLevelUp(null),
     awardLearningActivity,
     completeLessonWithQuiz,
-    completeSimulation,
+    completeChallenge,
     purchaseGardenItem,
     equipGardenItem,
     claimQuest,
@@ -2585,8 +3040,14 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
     sellerExpenses,
     sellerCoupons,
     myReviews,
+    orderIssuesByOrderId,
+    openOrderIssues,
+    isOrderIssuesAdminLoading,
+    reviewReportsByOrderId,
+    openReviewReports,
+    isReviewReportsAdminLoading,
     ...shopActions,
-  }), [businesses, products, orders, expenses, coupons, activeBusiness, accessibleBusinessIds, activeBusinessMetrics, sellerOrders, sellerProducts, sellerExpenses, sellerCoupons, myReviews, shopActions]);
+  }), [businesses, products, orders, expenses, coupons, activeBusiness, accessibleBusinessIds, activeBusinessMetrics, sellerOrders, sellerProducts, sellerExpenses, sellerCoupons, myReviews, orderIssuesByOrderId, openOrderIssues, isOrderIssuesAdminLoading, reviewReportsByOrderId, openReviewReports, isReviewReportsAdminLoading, shopActions]);
 
   const cartValue = useMemo<CartContextType>(() => ({
     cart,
@@ -2604,8 +3065,12 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
   }), [notifications, unreadNotificationCount, notificationPreferences, favoritedBusinessIds, notificationsActions]);
 
   const academyValue = useMemo<AcademyContextType>(() => ({
+    modules,
     lessons,
     completedLessonIds,
+    challenges,
+    completedChallengeIds,
+    isModuleUnlocked,
     academyProfile,
     achievements,
     unlockedAchievementIds,
@@ -2619,7 +3084,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
     lastReward,
     pendingLevelUp,
     ...academyActions,
-  }), [lessons, completedLessonIds, academyProfile, achievements, unlockedAchievementIds, activityCounts, gardenCatalog, ownedGardenItems, quests, questProgress, activeSquadChallenge, squadChallengeProgress, lastReward, pendingLevelUp, academyActions]);
+  }), [modules, lessons, completedLessonIds, challenges, completedChallengeIds, isModuleUnlocked, academyProfile, achievements, unlockedAchievementIds, activityCounts, gardenCatalog, ownedGardenItems, quests, questProgress, activeSquadChallenge, squadChallengeProgress, lastReward, pendingLevelUp, academyActions]);
 
   const subscriptionValue = useMemo<SubscriptionContextType>(() => ({
     subscription,

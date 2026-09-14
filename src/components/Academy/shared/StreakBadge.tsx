@@ -1,4 +1,5 @@
 import React from 'react';
+import { Icon } from '../../Icon';
 
 interface StreakBadgeProps {
   streakCount: number;
@@ -20,7 +21,7 @@ export const StreakBadge: React.FC<StreakBadgeProps> = ({ streakCount, lastActiv
   if (compact) {
     return (
       <div className="inline-flex items-center gap-1.5 rounded-2xl bg-[#FFF9E6] border border-[#EDE4D8] px-2.5 py-1 text-[11px] font-black text-[#7A341A]">
-        <span>🔥</span>
+        <Icon name="streak-warning" className="w-3.5 h-3.5" />
         <span>{streakCount}</span>
       </div>
     );
@@ -29,12 +30,12 @@ export const StreakBadge: React.FC<StreakBadgeProps> = ({ streakCount, lastActiv
   return (
     <div className="space-y-1">
       <div className="inline-flex items-center gap-1.5 rounded-2xl bg-[#FFF9E6] border border-[#EDE4D8] px-3.5 py-2 text-xs font-black text-[#7A341A]">
-        <span>🔥</span>
+        <Icon name="streak-warning" className="w-3.5 h-3.5" />
         <span>{streakCount} Day Growth Streak</span>
       </div>
       {isLapsing && (
-        <p className="text-[11px] text-[#8C7A6D] italic pl-1">
-          🥀 Your garden is a little thirsty! Do a quick lesson today to keep it growing.
+        <p className="text-[11px] text-[#8C7A6D] italic pl-1 flex items-center gap-1">
+          <Icon name="streak-warning" className="w-3 h-3 shrink-0" /> Your garden is a little thirsty! Do a quick lesson today to keep it growing.
         </p>
       )}
     </div>

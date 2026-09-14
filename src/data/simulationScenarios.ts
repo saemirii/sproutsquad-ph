@@ -1,4 +1,5 @@
-import { SimulationDecisionField, SimulationResult, SimulationScenario } from '../types';
+import { SimulationDecisionField, ChallengeResult, Challenge } from '../types';
+import { scoreToTierAndReward } from './academy/challengeHelpers';
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
@@ -13,15 +14,17 @@ interface ScenarioEconomics {
 }
 
 /**
- * One shared scoring engine behind every scenario — teaches the same
- * practical entrepreneurship math (revenue, COGS, margin, sell-through,
+ * One shared scoring engine behind every practice simulation — teaches the
+ * same practical entrepreneurship math (revenue, COGS, margin, sell-through,
  * cash risk from unsold inventory) regardless of the storefront theme.
+ * These are optional practice sandboxes, separate from the 8 module
+ * checkpoints — see src/data/academy/ for those.
  */
 const computeSimulationResult = (
   economics: ScenarioEconomics,
   decisions: Record<string, number | boolean>,
   startingCapital: number
-): SimulationResult => {
+): ChallengeResult => {
   const unitsToStock = Math.max(0, Number(decisions.unitsToStock) || 0);
   const pricePerUnit = Math.max(0, Number(decisions.pricePerUnit) || 0);
   const marketingBudget = Math.max(0, Number(decisions.marketingBudget) || 0);
@@ -46,20 +49,8 @@ const computeSimulationResult = (
   const reinvestment = reinvestProfit ? Math.max(0, profit) * 0.5 : 0;
   const remainingCash = startingCapital - expenses + revenue - reinvestment;
 
-  const healthScore = Math.round(clamp(50 + profitMargin * 1.2 + (sellThrough - 0.5) * 30, 0, 100));
-
-  let businessHealth: SimulationResult['businessHealth'];
-  if (profitMargin >= 25) businessHealth = 'Thriving';
-  else if (profitMargin >= 10) businessHealth = 'Stable';
-  else if (profitMargin >= 0) businessHealth = 'Struggling';
-  else businessHealth = 'At Risk';
-
-  let xpAwarded = 15;
-  let seedsAwarded = 10;
-  if (healthScore >= 80) { xpAwarded = 150; seedsAwarded = 100; }
-  else if (healthScore >= 60) { xpAwarded = 100; seedsAwarded = 70; }
-  else if (healthScore >= 40) { xpAwarded = 60; seedsAwarded = 40; }
-  else if (healthScore >= 20) { xpAwarded = 30; seedsAwarded = 20; }
+  const score = Math.round(clamp(50 + profitMargin * 1.2 + (sellThrough - 0.5) * 30, 0, 100));
+  const { tier, xpAwarded, seedsAwarded } = scoreToTierAndReward(score);
 
   const feedback: string[] = [];
   if (sellThrough < 0.6 && unitsToStock > 0) {
@@ -82,16 +73,18 @@ const computeSimulationResult = (
   }
 
   return {
-    revenue: Math.round(revenue),
-    expenses: Math.round(expenses),
-    profit: Math.round(profit),
-    profitMargin: Math.round(profitMargin * 10) / 10,
-    remainingCash: Math.round(remainingCash),
-    businessHealth,
-    healthScore,
+    score,
+    tier,
+    breakdown: [
+      { label: 'Revenue', value: `₱${Math.round(revenue).toLocaleString()}` },
+      { label: 'Expenses', value: `₱${Math.round(expenses).toLocaleString()}` },
+      { label: 'Profit', value: `₱${Math.round(profit).toLocaleString()}` },
+      { label: 'Profit Margin', value: `${Math.round(profitMargin * 10) / 10}%` },
+      { label: 'Remaining Cash', value: `₱${Math.round(remainingCash).toLocaleString()}` },
+    ],
+    feedback,
     xpAwarded,
     seedsAwarded,
-    feedback,
   };
 };
 
@@ -165,13 +158,17 @@ const standardDecisions = (opts: {
   },
 ];
 
-export const simulationScenarios: SimulationScenario[] = [
+/** Optional practice sandboxes (not gated, not tied to a module's
+ * checkpoint) — reuse the same pricing/stocking/marketing engine across
+ * three storefront themes. */
+export const practiceSimulations: Challenge[] = [
   {
     id: 'sim-cookie-shop',
+    moduleId: 'practice',
+    mode: 'simulation',
     title: 'Cookie Shop',
-    icon: '🍪',
+    icon: 'simulation-cookie-stand',
     tagline: 'Run one production cycle of a campus cookie business.',
-    category: 'Food Business',
     startingCapital: 2000,
     decisions: standardDecisions({
       unitLabel: 'boxes',
@@ -194,10 +191,11 @@ export const simulationScenarios: SimulationScenario[] = [
   },
   {
     id: 'sim-handmade-bracelets',
+    moduleId: 'practice',
+    mode: 'simulation',
     title: 'Handmade Bracelets',
-    icon: '📿',
+    icon: 'simulation-accessories',
     tagline: 'Price and stock a batch of handmade crafts for a campus fair.',
-    category: 'Handmade Products',
     startingCapital: 1500,
     decisions: standardDecisions({
       unitLabel: 'pieces',
@@ -220,10 +218,11 @@ export const simulationScenarios: SimulationScenario[] = [
   },
   {
     id: 'sim-campus-online-shop',
+    moduleId: 'practice',
+    mode: 'simulation',
     title: 'Campus Online Shop',
-    icon: '🛒',
+    icon: 'simulation-retail',
     tagline: 'Manage a stocking and pricing cycle for an online storefront.',
-    category: 'Online Shop',
     startingCapital: 3000,
     decisions: standardDecisions({
       unitLabel: 'units',

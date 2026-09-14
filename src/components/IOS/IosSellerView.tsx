@@ -11,6 +11,7 @@ import { BusinessSettings } from '../Seller/BusinessSettings';
 import { playIosTap } from '../../utils/haptics';
 import { KeyRound, LockKeyhole } from 'lucide-react';
 import { CreateShopButton } from '../CreateShopButton';
+import { Icon } from '../Icon';
 
 export const IosSellerView: React.FC = () => {
   const {
@@ -48,7 +49,7 @@ export const IosSellerView: React.FC = () => {
       setAccessError('');
       setBesKey('');
     } else {
-      setAccessError(result.message || 'That BES key is not valid.');
+      setAccessError(result.message || 'That Start-Up Key is not valid.');
     }
   };
 
@@ -100,7 +101,7 @@ export const IosSellerView: React.FC = () => {
 
           {/* Health Score Pill */}
           <div className="flex items-center gap-1 bg-[#B8E6D5] text-[#194E3B] px-3 py-1.5 rounded-2xl border border-[#9FD9C3]">
-            <span className="text-xs">🌱</span>
+            <Icon name="level-sprout" className="w-3.5 h-3.5" />
             <span className="font-black text-xs">
               {activeBusinessMetrics.healthScore} HP
             </span>
@@ -155,8 +156,8 @@ export const IosSellerView: React.FC = () => {
           </div>
         ) : !hasBusinessAccess ? (
           <div className="rounded-3xl border border-[#F8BA9E] bg-[#FFF0E8] p-5 space-y-4">
-            <div className="flex items-start gap-3"><LockKeyhole className="w-5 h-5 text-[#7A341A] shrink-0" /><div><h2 className="text-base font-black text-[#7A341A]">BES key required</h2><p className="mt-1 text-xs leading-5 text-[#7A341A]">This business is private. Ask the owner for its shared Business Entry &amp; Sharing key to manage it.</p></div></div>
-            <div className="flex gap-2"><input value={besKey} onChange={(event) => setBesKey(event.target.value)} placeholder="Enter BES key" className="min-w-0 flex-1 rounded-xl border border-[#F8BA9E] bg-white px-3 py-2.5 text-xs outline-none focus:ring-2 focus:ring-[#FFD3BA]" /><button onClick={() => void handleUnlockActiveBusiness()} disabled={isUnlocking} className="rounded-xl bg-[#7A341A] px-3 py-2 text-xs font-black text-white flex items-center gap-1.5 disabled:opacity-60"><KeyRound className="w-3.5 h-3.5" />{isUnlocking ? 'Checking...' : 'Unlock'}</button></div>
+            <div className="flex items-start gap-3"><LockKeyhole className="w-5 h-5 text-[#7A341A] shrink-0" /><div><h2 className="text-base font-black text-[#7A341A]">Start-Up Key required</h2><p className="mt-1 text-xs leading-5 text-[#7A341A]">This business is private. Ask the owner for its shared Start-Up Key to manage it.</p></div></div>
+            <div className="flex gap-2"><input value={besKey} onChange={(event) => setBesKey(event.target.value)} placeholder="Enter Start-Up Key" className="min-w-0 flex-1 rounded-xl border border-[#F8BA9E] bg-white px-3 py-2.5 text-xs outline-none focus:ring-2 focus:ring-[#FFD3BA]" /><button onClick={() => void handleUnlockActiveBusiness()} disabled={isUnlocking} className="rounded-xl bg-[#7A341A] px-3 py-2 text-xs font-black text-white flex items-center gap-1.5 disabled:opacity-60"><KeyRound className="w-3.5 h-3.5" />{isUnlocking ? 'Checking...' : 'Unlock'}</button></div>
             {accessError && <p className="text-[11px] font-bold text-[#991B1B]">{accessError}</p>}
             <p className="text-[10px] text-[#8C7A6D]">Signed in as {currentUser.email}</p>
           </div>
@@ -178,8 +179,8 @@ export const IosSellerView: React.FC = () => {
             
             <div className="flex items-center justify-between border-b border-[#EDE4D8] pb-3">
               <div>
-                <h3 className="font-extrabold text-sm text-[#3B2F27]">
-                  Switch Student Venture 🏪
+                <h3 className="font-extrabold text-sm text-[#3B2F27] flex items-center gap-1.5">
+                  Switch Student Venture <Icon name="store-switcher" className="w-4 h-4" />
                 </h3>
                 <p className="text-[11px] text-[#6B5B4F]">
                   Select the active student business profile

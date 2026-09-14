@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAcademy } from '../../context/AppContext';
 import { AchievementRequirementType } from '../../types';
+import { Icon } from '../Icon';
 
 const REQUIREMENT_NOUN: Record<AchievementRequirementType, string> = {
   lessons_completed: 'lessons',
@@ -35,7 +36,9 @@ export const AcademyAchievements: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="bg-white p-5 rounded-3xl border border-[#EDE4D8] shadow-xs space-y-1">
-        <h2 className="text-lg font-black text-[#3B2F27] font-['Nunito',sans-serif]">🏆 Achievements</h2>
+        <h2 className="text-lg font-black text-[#3B2F27] font-['Nunito',sans-serif] flex items-center gap-1.5">
+          <Icon name="achievements-header" className="w-5 h-5" /> Achievements
+        </h2>
         <p className="text-xs text-[#7A6B5F]">{unlocked.length} of {achievements.length} badges earned</p>
       </div>
 
@@ -45,7 +48,7 @@ export const AcademyAchievements: React.FC = () => {
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {unlocked.map((a) => (
               <div key={a.id} className="bg-white rounded-2xl border-2 border-[#B8E6D5] p-4 text-center space-y-1">
-                <span className="text-3xl block">{a.icon}</span>
+                <Icon name={a.icon} alt={a.name} className="w-9 h-9 mx-auto" />
                 <p className="text-xs font-bold text-[#3B2F27]">{a.name}</p>
                 <p className="text-[10px] font-black text-[#207559] uppercase tracking-wider">Unlocked</p>
               </div>
@@ -62,8 +65,8 @@ export const AcademyAchievements: React.FC = () => {
             const pct = Math.round((count / a.requirementValue) * 100);
             return (
               <div key={a.id} className="bg-white rounded-2xl border border-[#EDE4D8] p-4 flex items-center gap-3">
-                <span className="w-10 h-10 rounded-xl bg-[#FAF7F2] border border-[#E5DACD] flex items-center justify-center text-lg grayscale opacity-60 shrink-0">
-                  {a.icon}
+                <span className="w-10 h-10 rounded-xl bg-[#FAF7F2] border border-[#E5DACD] flex items-center justify-center grayscale opacity-60 shrink-0">
+                  <Icon name={a.icon} alt={a.name} className="w-6 h-6" />
                 </span>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-bold text-[#3B2F27]">{a.name}</p>

@@ -12,11 +12,13 @@ import {
   ArrowRight,
   TrendingUp,
   Package,
-  Heart
+  Heart,
+  X
 } from 'lucide-react';
 import { useShop, useCart, useSession } from '../../context/AppContext';
 import { Product, ProductCategory, CampusUniversity, Business } from '../../types';
 import { formatPHP } from '../../utils/analytics';
+import { Icon } from '../Icon';
 
 interface MarketplaceViewProps {
   onSelectProduct: (product: Product) => void;
@@ -108,7 +110,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
       <section className="relative overflow-hidden rounded-3xl bg-white border border-[#EDE4D8] p-6 sm:p-10 shadow-xs">
         <div className="relative z-10 max-w-2xl">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#FFF9E6] border border-[#EADBCE] text-[#7A341A] text-xs font-bold mb-4">
-            <span className="text-sm">✨</span>
+            <Icon name="celebration-burst" className="w-3.5 h-3.5" />
             <span>Support Student Makers Across Philippine Universities</span>
           </div>
 
@@ -122,16 +124,16 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
 
           {/* Quick Flow Visual Indicator */}
           <div className="mt-6 flex flex-wrap items-center gap-2 text-xs font-semibold text-[#6B5B4F]">
-            <span className="px-3 py-1.5 bg-[#FFF9E6] rounded-2xl border border-[#EDE4D8]">
-              🐰 1. Browse Student Drops
+            <span className="px-3 py-1.5 bg-[#FFF9E6] rounded-2xl border border-[#EDE4D8] inline-flex items-center gap-1.5">
+              <Icon name="mascot-bunny" className="w-3.5 h-3.5" /> 1. Browse Student Drops
             </span>
             <span className="text-[#A39284]">→</span>
-            <span className="px-3 py-1.5 bg-[#A8D8EA] text-[#1B4E6B] rounded-2xl border border-[#8EC7DC] font-bold">
-              🐥 2. Meetup at Campus Spot
+            <span className="px-3 py-1.5 bg-[#A8D8EA] text-[#1B4E6B] rounded-2xl border border-[#8EC7DC] font-bold inline-flex items-center gap-1.5">
+              <Icon name="mascot-chick" className="w-3.5 h-3.5" /> 2. Meetup at Campus Spot
             </span>
             <span className="text-[#A39284]">→</span>
-            <span className="px-3 py-1.5 bg-[#B8E6D5] text-[#194E3B] rounded-2xl border border-[#9FD9C3] font-bold">
-              🦉 3. Feeds Seller Health Score 📈
+            <span className="px-3 py-1.5 bg-[#B8E6D5] text-[#194E3B] rounded-2xl border border-[#9FD9C3] font-bold inline-flex items-center gap-1.5">
+              <Icon name="mascot-owl" className="w-3.5 h-3.5" /> 3. Feeds Seller Health Score <Icon name="level-grower" className="w-3.5 h-3.5" />
             </span>
           </div>
         </div>
@@ -140,8 +142,8 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
         <div className="hidden lg:block absolute right-8 top-1/2 -translate-y-1/2">
           <div className="bg-[#FFF9E6] p-4 rounded-3xl border border-[#EDE4D8] shadow-sm max-w-xs text-xs text-[#6B5B4F] space-y-2">
             <div className="flex items-center gap-2.5">
-              <div className="w-10 h-10 rounded-2xl bg-[#FFD3BA] border border-[#F8BA9E] flex items-center justify-center text-xl shadow-xs">
-                🐰
+              <div className="w-10 h-10 rounded-2xl bg-[#FFD3BA] border border-[#F8BA9E] flex items-center justify-center shadow-xs">
+                <Icon name="mascot-bunny" className="w-6 h-6" />
               </div>
               <div>
                 <p className="font-extrabold text-xs text-[#3B2F27] font-['Nunito',sans-serif]">
@@ -163,8 +165,8 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-bold text-[#3B2F27] font-['Nunito',sans-serif]">
-              Featured Student Shops 🌱
+            <h2 className="text-xl font-bold text-[#3B2F27] font-['Nunito',sans-serif] flex items-center gap-1.5">
+              Featured Student Shops <Icon name="level-sprout" className="w-4 h-4" />
             </h2>
             <p className="text-xs text-[#7A6B5F]">
               Verified student-run ventures with active campus meetup spots
@@ -263,7 +265,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
                 onClick={() => setSearchQuery('')}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#9C8C7E] hover:text-[#4A3D35]"
               >
-                ✕
+                <X className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
@@ -312,8 +314,8 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
 
         {filteredProducts.length === 0 ? (
           <div className="bg-white rounded-3xl border border-[#EDE4D8] p-12 text-center space-y-3">
-            <div className="w-14 h-14 bg-[#FFF0E6] text-[#E07A5F] rounded-2xl mx-auto flex items-center justify-center text-2xl">
-              🌱
+            <div className="w-14 h-14 bg-[#FFF0E6] text-[#E07A5F] rounded-2xl mx-auto flex items-center justify-center">
+              <Icon name="level-sprout" className="w-8 h-8" />
             </div>
             <h3 className="font-bold text-base text-[#3B2F27]">No products found matching filters</h3>
             <p className="text-xs text-[#7A6B5F] max-w-sm mx-auto">
@@ -372,8 +374,8 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
 
                       {/* University Tag */}
                       <div className="absolute bottom-2.5 left-2.5">
-                        <span className="px-2.5 py-1 rounded-xl text-[10px] font-bold bg-white/95 text-[#3B2F27] shadow-xs">
-                          📍 {product.university}
+                        <span className="px-2.5 py-1 rounded-xl text-[10px] font-bold bg-white/95 text-[#3B2F27] shadow-xs flex items-center gap-1 w-fit">
+                          <Icon name="campus-pin" className="w-2.5 h-2.5" /> {product.university}
                         </span>
                       </div>
                     </div>
@@ -426,7 +428,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
                         }`}
                       >
                         <ShoppingBag className="w-3.5 h-3.5" />
-                        <span>{quickAddedId === product.id ? 'Added! ✨' : 'Add to Bag'}</span>
+                        <span className="inline-flex items-center gap-1">{quickAddedId === product.id ? <>Added! <Icon name="celebration-burst" className="w-3 h-3" /></> : 'Add to Bag'}</span>
                       </button>
                     </div>
                   </div>

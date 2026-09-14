@@ -1,4 +1,5 @@
 import React from 'react';
+import { Icon } from '../../Icon';
 
 interface SeedBalanceProps {
   seeds: number;
@@ -11,7 +12,7 @@ export const SeedBalance: React.FC<SeedBalanceProps> = ({ seeds, size = 'md' }) 
       size === 'sm' ? 'px-2.5 py-1 text-[11px]' : 'px-3.5 py-2 text-xs'
     }`}
   >
-    <span>🌰</span>
+    <Icon name="level-sprout" className="w-4 h-4" />
     <span>{seeds.toLocaleString()}</span>
   </div>
 );

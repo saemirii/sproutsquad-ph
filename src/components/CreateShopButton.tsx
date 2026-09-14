@@ -4,6 +4,7 @@ import { useSession, useShop } from '../context/AppContext';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { makeDefaultShopDraft } from '../utils/shop';
 import { openExternalUrl } from '../lib/platformLinks';
+import { Icon } from './Icon';
 
 const SHOP_APPLICATION_FORM_URL = 'https://forms.gle/781mZpv46ToztEUYA';
 
@@ -19,7 +20,7 @@ interface CreateShopButtonProps {
 /**
  * The one "Create Shop" action, reused everywhere it appears. Real accounts
  * no longer get an instant self-service shop (a human reviews the Google
- * Form response and emails a BES key) — clicking opens the application
+ * Form response and emails a Start-Up Key) — clicking opens the application
  * form and shows a small in-app confirmation flow. Offline/local-account
  * demo mode has no backend to review anything, so it keeps the old
  * instant-create behavior.
@@ -76,11 +77,11 @@ export const CreateShopButton: React.FC<CreateShopButtonProps> = ({ className, c
                   <Mail className="w-5 h-5" />
                 </span>
                 <div>
-                  <h3 className="text-base font-black text-[#3B2F27] font-['Nunito',sans-serif]">
-                    Thanks for applying! 🌱
+                  <h3 className="text-base font-black text-[#3B2F27] font-['Nunito',sans-serif] flex items-center justify-center gap-1.5">
+                    Thanks for applying! <Icon name="level-sprout" className="w-4 h-4" />
                   </h3>
                   <p className="mt-1.5 text-xs leading-5 text-[#7A6B5F]">
-                    We'll review your application and email your BES key soon — check your inbox (and spam folder) over the next few days.
+                    We'll review your application and email your Start-Up Key soon — check your inbox (and spam folder) over the next few days.
                   </p>
                 </div>
                 <button

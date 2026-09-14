@@ -8,6 +8,7 @@ import { ProfileSheet } from '../ProfileSheet';
 import { SubscriptionPage } from '../SubscriptionPage';
 import { useSubscription } from '../../context/AppContext';
 import { isNativeApp } from '../../utils/platform';
+import { Icon } from '../Icon';
 
 interface IPhoneFrameProps {
   children: React.ReactNode;
@@ -32,7 +33,7 @@ export const IPhoneFrame: React.FC<IPhoneFrameProps> = ({
   // width — it's a real app, not a browser-window simulation of one. Web
   // keeps its desktop-preview "framed" default.
   const [isFramed, setIsFramed] = useState(!isNativeApp);
-  const [finish, setFinish] = useState<DeviceFinish>('gold');
+  const finish: DeviceFinish = 'gold';
   const [soundOn, setSoundOn] = useState(isSoundEnabled());
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const { isSubscriptionPageOpen, openSubscriptionPage, closeSubscriptionPage } = useSubscription();
@@ -83,7 +84,7 @@ export const IPhoneFrame: React.FC<IPhoneFrameProps> = ({
       {!isNativeApp && (
         <div className="hidden sm:flex items-center justify-between gap-4 w-full max-w-lg mb-3 px-4 py-2 bg-white/80 backdrop-blur-md rounded-2xl border border-[#EDE4D8] shadow-xs text-xs">
           <div className="flex items-center gap-2">
-            <span className="text-base">🌱</span>
+            <Icon name="level-sprout" className="w-4 h-4" />
             <span className="font-extrabold text-[#3B2F27] font-['Nunito',sans-serif]">
               SproutSquad iOS
             </span>
@@ -93,24 +94,6 @@ export const IPhoneFrame: React.FC<IPhoneFrameProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Finish Switcher */}
-            <div className="flex items-center gap-1 bg-[#FAF3DE] p-1 rounded-xl border border-[#EDE4D8]">
-              {(['gold', 'mint', 'pink', 'black'] as DeviceFinish[]).map((f) => (
-                <button
-                  key={f}
-                  title={finishStyles[f].label}
-                  onClick={() => {
-                    playIosTap();
-                    setFinish(f);
-                  }}
-                  className={`w-4 h-4 rounded-full transition-transform ${
-                    finish === f ? 'scale-125 ring-2 ring-[#194E3B]' : 'hover:scale-110'
-                  }`}
-                  style={{ backgroundColor: finishStyles[f].accent }}
-                />
-              ))}
-            </div>
-
             {/* Audio Tap Toggle */}
             <button
               onClick={toggleSound}
@@ -129,7 +112,7 @@ export const IPhoneFrame: React.FC<IPhoneFrameProps> = ({
               className="flex items-center gap-1 px-2 py-1 rounded-xl bg-[#FAF3DE] hover:bg-[#EDE4D8] text-[10px] font-bold text-[#3B2F27] transition-colors"
             >
               {isFramed ? <Maximize2 className="w-3 h-3" /> : <Minimize2 className="w-3 h-3" />}
-              <span>{isFramed ? 'Full Screen' : 'Frame View'}</span>
+              <span>{isFramed ? 'Web/Desktop View' : 'Mobile View'}</span>
             </button>
           </div>
         </div>
@@ -187,8 +170,8 @@ export const IPhoneFrame: React.FC<IPhoneFrameProps> = ({
 
       {/* Bottom context notice — web only; would be a misleading claim inside the actual native app. */}
       {!isNativeApp && (
-        <p className="hidden sm:block text-[11px] text-[#8C7A6D] mt-3 text-center">
-          💡 SproutSquad iOS runs natively on mobile Safari & Chrome with offline support & campus notifications.
+        <p className="hidden sm:block text-[11px] text-[#8C7A6D] mt-3 text-center flex items-center justify-center gap-1">
+          <Icon name="lesson-tip-insight" className="w-3 h-3" /> SproutSquad iOS runs natively on mobile Safari & Chrome with offline support & campus notifications.
         </p>
       )}
     </div>

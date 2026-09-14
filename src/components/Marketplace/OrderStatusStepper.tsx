@@ -1,27 +1,29 @@
 import React from 'react';
 import { CheckCircle2 } from 'lucide-react';
 import { FulfillmentType, OrderStatus } from '../../types';
+import { Icon } from '../Icon';
 
 interface Step {
   status: OrderStatus;
   label: string;
+  /** Key into src/assets/icons/, not a raw emoji. */
   icon: string;
 }
 
 const stepsFor = (fulfillmentType: FulfillmentType): Step[] => {
   const middleStep: Step =
     fulfillmentType === 'Dorm Delivery'
-      ? { status: 'Out for Delivery', label: 'Out for Delivery', icon: '🚚' }
-      : { status: 'Ready for Pickup', label: 'Ready', icon: '📍' };
+      ? { status: 'Out for Delivery', label: 'Out for Delivery', icon: 'order-out-for-delivery' }
+      : { status: 'Ready for Pickup', label: 'Ready', icon: 'campus-pin' };
 
   return [
-    { status: 'Pending', label: 'Placed', icon: '🌱' },
-    { status: 'Preparing', label: 'Preparing', icon: '🥣' },
+    { status: 'Pending', label: 'Placed', icon: 'level-sprout' },
+    { status: 'Preparing', label: 'Preparing', icon: 'order-preparing' },
     middleStep,
-    // Deliberately not a checkmark — that's reserved for isDone below, via
-    // the lucide CheckCircle2. Reusing ✅ here would make the last step
-    // look "already complete" even when it hasn't been reached yet.
-    { status: 'Completed', label: 'Done', icon: '🏁' },
+    // The lucide CheckCircle2 (via isDone below) is what actually marks a
+    // reached step as done — this icon is just the step's own artwork,
+    // shown before that step is reached.
+    { status: 'Completed', label: 'Done', icon: 'order-completed' },
   ];
 };
 
@@ -34,7 +36,7 @@ export const OrderStatusStepper: React.FC<OrderStatusStepperProps> = ({ status, 
   if (status === 'Cancelled') {
     return (
       <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#991B1B] bg-[#FEE2E2] border border-[#EF4444]/30 rounded-xl px-2.5 py-1.5">
-        <span>🥀</span>
+        <Icon name="streak-warning" className="w-3.5 h-3.5" />
         <span>Order cancelled</span>
       </div>
     );
@@ -65,7 +67,7 @@ export const OrderStatusStepper: React.FC<OrderStatusStepperProps> = ({ status, 
                       : 'bg-white border-[#EDE4D8] text-[#C9BCAE]'
                 }`}
               >
-                {isDone ? <CheckCircle2 className="w-3.5 h-3.5" /> : step.icon}
+                {isDone ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Icon name={step.icon} className="w-3.5 h-3.5" />}
               </span>
               <span className={`text-[9px] font-bold text-center leading-tight ${isCurrent ? 'text-[#194E3B]' : isDone ? 'text-[#207559]' : 'text-[#A39284]'}`}>
                 {step.label}

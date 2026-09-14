@@ -18,6 +18,7 @@ import { CouponManager } from './CouponManager';
 import { BundleBuilder } from './BundleBuilder';
 import { InventoryTracker } from './InventoryTracker';
 import { CreateShopButton } from '../CreateShopButton';
+import { Icon } from '../Icon';
 import {
   RefreshCw,
   CalendarClock,
@@ -38,6 +39,7 @@ export const BusinessSettings: React.FC = () => {
   const [logo, setLogo] = useState(activeBusiness.logo);
   const [banner, setBanner] = useState(activeBusiness.banner);
   const [gcashNumber, setGcashNumber] = useState(activeBusiness.gcashNumber);
+  const [mayaNumber, setMayaNumber] = useState(activeBusiness.mayaNumber || '');
   const [instagramHandle, setInstagramHandle] = useState(activeBusiness.instagramHandle || '');
   const [spots, setSpots] = useState<string[]>(activeBusiness.campusPickupSpots || []);
   const [newSpot, setNewSpot] = useState('');
@@ -52,6 +54,7 @@ export const BusinessSettings: React.FC = () => {
     setLogo(activeBusiness.logo);
     setBanner(activeBusiness.banner);
     setGcashNumber(activeBusiness.gcashNumber);
+    setMayaNumber(activeBusiness.mayaNumber || '');
     setInstagramHandle(activeBusiness.instagramHandle || '');
     setSpots(activeBusiness.campusPickupSpots || []);
   }, [activeBusiness]);
@@ -111,6 +114,7 @@ export const BusinessSettings: React.FC = () => {
       logo,
       banner,
       gcashNumber,
+      mayaNumber: mayaNumber.trim(),
       instagramHandle,
       campusPickupSpots: spots,
     });
@@ -268,6 +272,19 @@ export const BusinessSettings: React.FC = () => {
 
             <div>
               <label className="block text-[11px] font-bold text-[#54453C] mb-1">
+                Maya Registered Number
+              </label>
+              <input
+                type="text"
+                value={mayaNumber}
+                onChange={(e) => setMayaNumber(e.target.value)}
+                placeholder="0917-XXX-XXXX (optional)"
+                className="w-full px-3 py-2 bg-[#FAF7F2] border border-[#E5DACD] rounded-xl text-xs text-[#3B2F27] focus:outline-none focus:ring-2 focus:ring-[#B8E6D5]"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-[#54453C] mb-1">
                 Instagram / TikTok Handle
               </label>
               <input
@@ -334,7 +351,7 @@ export const BusinessSettings: React.FC = () => {
             className="px-6 py-2.5 bg-[#B8E6D5] hover:bg-[#A3DEC9] text-[#194E3B] font-black text-xs rounded-2xl shadow-xs transition-colors flex items-center gap-2 cursor-pointer btn-bouncy"
           >
             <Save className="w-4 h-4" />
-            <span>Save Storefront Settings ✨</span>
+            <span className="inline-flex items-center gap-1">Save Storefront Settings <Icon name="celebration-burst" className="w-3.5 h-3.5" /></span>
           </button>
         </div>
       </form>

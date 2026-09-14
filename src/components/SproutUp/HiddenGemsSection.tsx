@@ -16,14 +16,14 @@ export const HiddenGemsSection: React.FC<HiddenGemsSectionProps> = ({ onSelectBu
   return (
     <section className="space-y-3">
       <SproutUpSectionHeader
-        icon="👀"
+        icon="sproutup-hidden-gem"
         iconBg="bg-[#B8E6D5]"
         title="Hidden Gems"
         subtitle="A growing business worth discovering."
       />
 
       {sproutUpHiddenGems.length === 0 ? (
-        <SproutUpEmptyState icon="👀" text="We're looking for the next Hidden Gem. Check back soon!" />
+        <SproutUpEmptyState icon="sproutup-hidden-gem" text="We're looking for the next Hidden Gem. Check back soon!" />
       ) : (
         <div className="space-y-2.5">
           {sproutUpHiddenGems.map((business) => (

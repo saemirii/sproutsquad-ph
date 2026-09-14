@@ -19,6 +19,7 @@ import { Product, ProductCategory } from '../../types';
 import { formatPHP } from '../../utils/analytics';
 import { InfoTip } from '../InfoTip';
 import { CalendarClock, Lock, Rocket } from 'lucide-react';
+import { Icon } from '../Icon';
 
 export const ProductManager: React.FC = () => {
   const {
@@ -32,6 +33,18 @@ export const ProductManager: React.FC = () => {
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+
+  // Quick restock — adding stock shouldn't require reopening the full edit
+  // form and manually recomputing the new total inventory count.
+  const [restockingId, setRestockingId] = useState<string | null>(null);
+  const [restockAmount, setRestockAmount] = useState<number>(10);
+
+  const handleRestock = (product: Product) => {
+    if (restockAmount <= 0) return;
+    updateProduct({ ...product, inventoryCount: product.inventoryCount + restockAmount });
+    setRestockingId(null);
+    setRestockAmount(10);
+  };
 
   // Form State
   const [name, setName] = useState('');
@@ -260,7 +273,7 @@ export const ProductManager: React.FC = () => {
                         />
                         <div className="min-w-0">
                           <p className="min-w-0 flex items-center gap-1.5">
-                            <span className="font-bold text-[#3B2F27] truncate">{p.name}</span>
+                            <span className="flex-1 min-w-0 font-bold text-[#3B2F27] truncate">{p.name}</span>
                             {p.bundledProductIds && p.bundledProductIds.length > 0 && (
                               <span className="shrink-0 text-[9px] font-black uppercase text-[#194E3B] bg-[#B8E6D5] rounded-full px-1.5 py-0.5">Bundle</span>
                             )}
@@ -282,7 +295,7 @@ export const ProductManager: React.FC = () => {
                     </td>
 
                     <td className="py-3 px-4">
-                      <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-[#FAF4ED] text-[#6E5D52] border border-[#EADBCE]">
+                      <span className="inline-block whitespace-nowrap px-2 py-0.5 rounded-md text-[10px] font-semibold bg-[#FAF4ED] text-[#6E5D52] border border-[#EADBCE]">
                         {p.category}
                       </span>
                     </td>
@@ -321,6 +334,42 @@ export const ProductManager: React.FC = () => {
                           </span>
                         )}
                       </div>
+                      {restockingId === p.id ? (
+                        <div className="mt-1.5 flex items-center gap-1">
+                          <input
+                            type="number"
+                            min={1}
+                            value={restockAmount}
+                            onChange={(e) => setRestockAmount(Number(e.target.value))}
+                            onFocus={(e) => e.target.select()}
+                            onKeyDown={(e) => { if (e.key === 'Enter') handleRestock(p); }}
+                            autoFocus
+                            className="w-14 px-1.5 py-1 bg-white border border-[#E5DACD] rounded-lg text-[11px] text-[#3B2F27] focus:outline-none focus:ring-2 focus:ring-[#B8E6D5]"
+                          />
+                          <button
+                            onClick={() => handleRestock(p)}
+                            title="Confirm restock"
+                            className="p-1 rounded-lg bg-[#B8E6D5] text-[#194E3B] hover:bg-[#A3DEC9] cursor-pointer"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => setRestockingId(null)}
+                            title="Cancel"
+                            className="p-1 rounded-lg text-[#A39284] hover:bg-[#FAF4ED] cursor-pointer"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => { setRestockingId(p.id); setRestockAmount(10); }}
+                          className="mt-1 flex items-center gap-1 text-[10px] font-bold text-[#207559] hover:text-[#194E3B] cursor-pointer"
+                        >
+                          <Package className="w-3 h-3" />
+                          Add stock
+                        </button>
+                      )}
                     </td>
 
                     <td className="py-3 px-4 font-medium text-[#7A6B5F]">
@@ -365,7 +414,7 @@ export const ProductManager: React.FC = () => {
             <div className="p-5 border-b border-[#F0E9DF] flex items-center justify-between sticky top-0 bg-white/95 backdrop-blur-xs z-10">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-[#B8E6D5] text-[#194E3B] flex items-center justify-center font-bold">
-                  🌱
+                  <Icon name="level-sprout" className="w-5 h-5" />
                 </div>
                 <h3 className="font-extrabold text-base text-[#3B2F27] font-['Nunito',sans-serif]">
                   {editingProduct ? 'Edit Product & COGS' : 'Add New Student Product'}
@@ -488,8 +537,8 @@ export const ProductManager: React.FC = () => {
                   </div>
                   <div>
                     <label className="flex items-center gap-1 text-[10px] font-semibold text-[#6E5D52] mb-0.5">
-                      Box & Stickers / Unit (₱)
-                      <InfoTip text="Packaging cost per unit — boxes, stickers, tags, thank-you notes, etc." />
+                      Packaging Cost / Unit (₱)
+                      <InfoTip text="Boxes, stickers, tabs, thank-you notes, etc." />
                     </label>
                     <input
                       type="number"

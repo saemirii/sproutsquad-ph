@@ -20,6 +20,7 @@ import { useShop, useSession } from '../../context/AppContext';
 import { formatPHP } from '../../utils/analytics';
 import { HealthInsight } from '../../types';
 import { InfoTip } from '../InfoTip';
+import { Icon } from '../Icon';
 
 export const SellerOverview: React.FC = () => {
   const {
@@ -74,8 +75,8 @@ export const SellerOverview: React.FC = () => {
               <h2 className="text-xl font-extrabold text-[#3B2F27] font-['Nunito',sans-serif]">
                 {activeBusiness.name}
               </h2>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#FFF9E6] text-[#194E3B] border border-[#EDE4D8]">
-                📍 {activeBusiness.university}
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#FFF9E6] text-[#194E3B] border border-[#EDE4D8] inline-flex items-center gap-1">
+                <Icon name="campus-pin" className="w-3 h-3" /> {activeBusiness.university}
               </span>
             </div>
             <p className="text-xs text-[#6B5B4F] mt-0.5">
@@ -109,8 +110,8 @@ export const SellerOverview: React.FC = () => {
         <div className="bg-white p-5 rounded-3xl border border-[#EDE4D8] shadow-xs space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-[#8C7A6D]">Total Expenses</span>
-            <div className="w-8 h-8 rounded-xl bg-[#FFF0E6] text-[#E07A5F] flex items-center justify-center text-xs font-black">
-              📉
+            <div className="w-8 h-8 rounded-xl bg-[#FFF0E6] text-[#E07A5F] flex items-center justify-center">
+              <Icon name="sellerOS-expenses" className="w-4 h-4" />
             </div>
           </div>
           <div className="text-2xl font-black text-[#8C3A27] font-['Nunito',sans-serif]">
@@ -129,10 +130,10 @@ export const SellerOverview: React.FC = () => {
               Net Profit
               <InfoTip text="What you actually keep after paying all expenses. Formula: Total Revenue − Total Expenses." />
             </span>
-            <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black ${
+            <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
               isProfitPositive ? 'bg-[#B8E6D5] text-[#194E3B]' : 'bg-[#FEE2E2] text-[#991B1B]'
             }`}>
-              {isProfitPositive ? '💰' : '⚠️'}
+              <Icon name={isProfitPositive ? 'sellerOS-profit' : 'sellerOS-margin-warning'} className="w-4 h-4" />
             </div>
           </div>
           <div className={`text-2xl font-black font-['Nunito',sans-serif] ${
@@ -169,8 +170,9 @@ export const SellerOverview: React.FC = () => {
           </div>
           <div className="flex items-center justify-between text-[11px] text-[#7A6B5F]">
             <span>Campus Target: 35%+</span>
-            <span className="font-semibold text-[#207559]">
-              {profitMargin >= 35 ? '✅ On Target' : '⚠️ Below 35%'}
+            <span className="font-semibold text-[#207559] inline-flex items-center gap-1">
+              <Icon name={profitMargin >= 35 ? 'decision-confirmed' : 'sellerOS-margin-warning'} className="w-3 h-3" />
+              {profitMargin >= 35 ? 'On Target' : 'Below 35%'}
             </span>
           </div>
         </div>
@@ -184,7 +186,7 @@ export const SellerOverview: React.FC = () => {
           <div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="text-xl">🌱</span>
+                <Icon name="level-sprout" className="w-5 h-5" />
                 <div>
                   <h3 className="font-extrabold text-base text-[#3B2F27] font-['Nunito',sans-serif] flex items-center gap-1.5">
                     Business Health Score
@@ -302,8 +304,8 @@ export const SellerOverview: React.FC = () => {
           <div className="bg-white rounded-3xl border border-[#EDE4D8] p-6 shadow-xs space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-[#FFD3BA] text-[#7A2E1E] flex items-center justify-center text-base">
-                  🦉
+                <div className="w-8 h-8 rounded-xl bg-[#FFD3BA] text-[#7A2E1E] flex items-center justify-center">
+                  <Icon name="mascot-owl" className="w-5 h-5" />
                 </div>
                 <div>
                   <h3 className="font-extrabold text-base text-[#3B2F27] font-['Nunito',sans-serif]">
@@ -359,8 +361,8 @@ export const SellerOverview: React.FC = () => {
                             {ins.description}
                           </p>
                           {ins.metricImpact && (
-                            <p className="text-[11px] font-bold text-[#EA580C]">
-                              💡 Impact: {ins.metricImpact}
+                            <p className="text-[11px] font-bold text-[#EA580C] flex items-center gap-1">
+                              <Icon name="lesson-tip-insight" className="w-3 h-3" /> Impact: {ins.metricImpact}
                             </p>
                           )}
                         </div>

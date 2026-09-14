@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useCart } from '../../context/AppContext';
 import { formatPHP } from '../../utils/analytics';
+import { Icon } from '../Icon';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -67,8 +68,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
           <div className="flex-1 overflow-y-auto p-5 space-y-4">
             {cart.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-3">
-                <div className="w-16 h-16 rounded-full bg-[#FAF4ED] flex items-center justify-center text-3xl">
-                  🛒
+                <div className="w-16 h-16 rounded-full bg-[#FAF4ED] flex items-center justify-center">
+                  <Icon name="tab-my-bag" className="w-9 h-9" />
                 </div>
                 <h3 className="font-bold text-sm text-[#3B2F27]">Your cart is empty</h3>
                 <p className="text-xs text-[#8C7A6D] max-w-xs">
@@ -161,8 +162,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                     {formatPHP(cartTotal)}
                   </span>
                 </div>
-                <p className="text-[11px] text-[#8C7A6D] italic">
-                  💡 Zero platform markup. 100% goes directly to student creators.
+                <p className="text-[11px] text-[#8C7A6D] italic flex items-center gap-1">
+                  <Icon name="lesson-tip-insight" className="w-3 h-3" /> Zero platform markup. 100% goes directly to student creators.
                 </p>
               </div>
 

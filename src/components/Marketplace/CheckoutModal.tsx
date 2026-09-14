@@ -15,6 +15,7 @@ import { useCart, useShop } from '../../context/AppContext';
 import { CampusUniversity, PaymentMethod, FulfillmentType, DeliveryMethod } from '../../types';
 import { formatPHP } from '../../utils/analytics';
 import { triggerConfetti } from '../../utils/confetti';
+import { Icon } from '../Icon';
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -96,7 +97,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         <div className="sticky top-0 bg-white/95 backdrop-blur-xs p-5 border-b border-[#F0E9DF] flex items-center justify-between z-10">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-xl bg-[#B8E6D5] text-[#1B523E] flex items-center justify-center font-bold">
-              🛍️
+              <Icon name="tab-my-bag" className="w-5 h-5" />
             </div>
             <div>
               <h2 className="font-extrabold text-base text-[#3B2F27] font-['Nunito',sans-serif]">
@@ -139,8 +140,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
           {/* Student Buyer Details */}
           <div className="space-y-3">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-[#8A796D] flex items-center gap-1.5">
-              <span>👤</span>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-[#8A796D]">
               <span>Student Buyer Details</span>
             </h3>
 
@@ -190,7 +190,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           {/* Delivery Method */}
           <div className="space-y-3">
             <h3 className="text-xs font-bold uppercase tracking-wider text-[#8A796D] flex items-center gap-1.5">
-              <span>🚚</span>
+              <Icon name="order-out-for-delivery" className="w-3.5 h-3.5" />
               <span>Delivery Option</span>
             </h3>
 
@@ -206,7 +206,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       : 'bg-[#FAF7F2] border-[#E5DACD] text-[#54453C] hover:bg-[#F2EAE0]'
                   }`}
                 >
-                  <div className="text-lg mb-1">{method === 'Lalamove' ? '🚚' : method === 'J&T Express' ? '📦' : '💵'}</div>
+                  <div className="mb-1 flex justify-center">
+                    <Icon name={method === 'Lalamove' ? 'order-out-for-delivery' : method === 'J&T Express' ? 'order-preparing' : 'payment-cash'} className="w-5 h-5" />
+                  </div>
                   <div className="text-[10px] font-bold leading-tight">{method}</div>
                 </button>
               ))}
@@ -228,7 +230,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
           <div className="space-y-3">
             <h3 className="text-xs font-bold uppercase tracking-wider text-[#8A796D] flex items-center gap-1.5">
-              <span>📍</span>
+              <Icon name="campus-pin" className="w-3.5 h-3.5" />
               <span>{deliveryMethod === 'Cash on Delivery' ? 'Delivery Address / Drop Point' : 'Campus Meetup / Drop Point'}</span>
             </h3>
 
@@ -283,7 +285,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           {/* Payment Method */}
           <div className="space-y-3">
             <h3 className="text-xs font-bold uppercase tracking-wider text-[#8A796D] flex items-center gap-1.5">
-              <span>💳</span>
+              <Icon name="payment-gcash" className="w-3.5 h-3.5" />
               <span>Payment Option (Simulated)</span>
             </h3>
 
@@ -297,7 +299,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     : 'bg-[#FAF7F2] border-[#E5DACD] text-[#54453C] hover:bg-[#F2EAE0]'
                 }`}
               >
-                <div className="text-lg mb-1">📱</div>
+                <div className="mb-1 flex justify-center"><Icon name="payment-gcash" className="w-5 h-5" /></div>
                 <div className="text-xs font-bold">GCash</div>
                 <div className="text-[10px] text-[#6B7280]">Scan/Direct</div>
               </button>
@@ -311,7 +313,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     : 'bg-[#FAF7F2] border-[#E5DACD] text-[#54453C] hover:bg-[#F2EAE0]'
                 }`}
               >
-                <div className="text-lg mb-1">💚</div>
+                <div className="mb-1 flex justify-center"><Icon name="payment-maya" className="w-5 h-5" /></div>
                 <div className="text-xs font-bold">Maya</div>
                 <div className="text-[10px] text-[#6B7280]">Wallet QR</div>
               </button>
@@ -325,7 +327,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     : 'bg-[#FAF7F2] border-[#E5DACD] text-[#54453C] hover:bg-[#F2EAE0]'
                 }`}
               >
-                <div className="text-lg mb-1">💵</div>
+                <div className="mb-1 flex justify-center"><Icon name="payment-cash" className="w-5 h-5" /></div>
                 <div className="text-xs font-bold">Cash</div>
                 <div className="text-[10px] text-[#6B7280]">On Meetup</div>
               </button>
@@ -367,8 +369,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 {isSubmitting ? 'Placing Order...' : `Confirm Order • ${formatPHP(cartTotal)}`}
               </span>
             </button>
-            <p className="text-[10px] text-center text-[#8C7A6D] mt-2">
-              🌱 This order will immediately appear in the student seller's Operating System dashboard.
+            <p className="text-[10px] text-center text-[#8C7A6D] mt-2 flex items-center justify-center gap-1">
+              <Icon name="level-sprout" className="w-3 h-3" /> This order will immediately appear in the student seller's Operating System dashboard.
             </p>
           </div>
         </form>

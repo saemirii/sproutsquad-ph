@@ -3,13 +3,14 @@ import { useAcademy } from '../../context/AppContext';
 import { SeedBalance } from './shared/SeedBalance';
 import { GardenItemCategory } from '../../types';
 import { isSeasonalItemFeatured } from '../../data/gardenItems';
+import { Icon } from '../Icon';
 
-const CATEGORY_LABELS: Record<GardenItemCategory, string> = {
-  plants: '🌷 Plants',
-  decorations: '🦋 Decorations',
-  structures: '🏡 Structures',
-  profile: '🖼️ Profile',
-  seasonal: '🎉 Seasonal',
+const CATEGORY_LABELS: Record<GardenItemCategory, { icon: string; label: string }> = {
+  plants: { icon: 'shop-plant-sunflower', label: 'Plants' },
+  decorations: { icon: 'shop-deco-butterfly', label: 'Decorations' },
+  structures: { icon: 'shop-struct-garden-house', label: 'Structures' },
+  profile: { icon: 'shop-frame-mint', label: 'Profile' },
+  seasonal: { icon: 'seasonal-header', label: 'Seasonal' },
 };
 
 const CATEGORY_ORDER: GardenItemCategory[] = ['seasonal', 'plants', 'decorations', 'structures', 'profile'];
@@ -51,7 +52,9 @@ export const SeedShop: React.FC = () => {
     <div className="space-y-5">
       <div className="bg-white p-5 rounded-3xl border border-[#EDE4D8] shadow-xs flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-black text-[#3B2F27] font-['Nunito',sans-serif]">🛍️ Seed Shop</h2>
+          <h2 className="text-lg font-black text-[#3B2F27] font-['Nunito',sans-serif] flex items-center gap-1.5">
+            <Icon name="shop-frame-mint" className="w-5 h-5" /> Seed Shop
+          </h2>
           <p className="text-xs text-[#7A6B5F]">Spend Seeds on garden decorations — purely cosmetic, never a shortcut.</p>
         </div>
         <SeedBalance seeds={academyProfile.seeds} />
@@ -62,11 +65,11 @@ export const SeedShop: React.FC = () => {
           <button
             key={cat}
             onClick={() => setActiveCategory(cat)}
-            className={`btn-bouncy shrink-0 px-3.5 py-2 rounded-2xl text-xs font-bold cursor-pointer border ${
+            className={`btn-bouncy shrink-0 px-3.5 py-2 rounded-2xl text-xs font-bold cursor-pointer border flex items-center gap-1.5 ${
               activeCategory === cat ? 'bg-[#B8E6D5] border-[#71C7A5] text-[#194E3B]' : 'bg-white border-[#EDE4D8] text-[#8C7A6D]'
             }`}
           >
-            {CATEGORY_LABELS[cat]}
+            <Icon name={CATEGORY_LABELS[cat].icon} className="w-4 h-4" /> {CATEGORY_LABELS[cat].label}
           </button>
         ))}
       </div>
@@ -79,7 +82,7 @@ export const SeedShop: React.FC = () => {
 
       {items.length === 0 && (
         <div className="bg-white rounded-2xl border border-[#EDE4D8] p-6 text-center space-y-1">
-          <span className="text-2xl block">🗓️</span>
+          <Icon name="seasonal-header" className="w-8 h-8 mx-auto" />
           <p className="text-xs font-bold text-[#3B2F27]">No seasonal items are featured right now</p>
           <p className="text-[11px] text-[#8C7A6D]">Check back closer to the next campus event or holiday!</p>
         </div>
@@ -91,7 +94,7 @@ export const SeedShop: React.FC = () => {
           const isBusy = busyItemId === item.id;
           return (
             <div key={item.id} className={`bg-white rounded-2xl border-2 ${rarityBorder[item.rarity]} p-4 space-y-2 text-center`}>
-              <span className="text-3xl block">{item.emoji}</span>
+              <Icon name={item.icon} alt={item.name} className="w-10 h-10 mx-auto" />
               <p className="text-xs font-bold text-[#3B2F27] truncate">{item.name}</p>
               <p className="text-[10px] uppercase tracking-wider font-bold text-[#A39284]">{item.rarity}</p>
 
@@ -101,7 +104,7 @@ export const SeedShop: React.FC = () => {
                   disabled={isBusy || academyProfile.seeds < item.priceSeeds}
                   className="btn-bouncy w-full py-2 rounded-xl bg-[#207559] hover:bg-[#194E3B] disabled:opacity-40 text-white text-[11px] font-black cursor-pointer flex items-center justify-center gap-1"
                 >
-                  🌰 {item.priceSeeds}
+                  <Icon name="level-sprout" className="w-3.5 h-3.5" /> {item.priceSeeds}
                 </button>
               ) : (
                 <button

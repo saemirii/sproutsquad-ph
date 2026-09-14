@@ -1,13 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ShoppingBag, Trash2, Plus, Minus, MapPin, CheckCircle2, ArrowRight, Clock, Store, Tag, X, Instagram, PackageCheck, Star, ImagePlus, Loader2, QrCode, AlertTriangle } from 'lucide-react';
+import { ShoppingBag, Trash2, Plus, Minus, MapPin, CheckCircle2, ArrowRight, Clock, Store, Tag, X, Instagram, PackageCheck, Star, ImagePlus, Loader2, QrCode, AlertTriangle, Flag } from 'lucide-react';
 import { useCart, useShop, useSession } from '../../context/AppContext';
 import { formatPHP } from '../../utils/analytics';
 import { formatRelativeTime } from '../../utils/formatRelativeTime';
-import { CampusUniversity, PaymentMethod, FulfillmentType, Order } from '../../types';
+import { CampusUniversity, PaymentMethod, FulfillmentType, Order, ORDER_ISSUE_REASONS } from '../../types';
 import { playIosTap, playIosSuccess } from '../../utils/haptics';
 import { OrderStatusStepper } from '../Marketplace/OrderStatusStepper';
 import { openExternalUrl } from '../../lib/platformLinks';
 import { isNativeApp } from '../../utils/platform';
+import { Icon } from '../Icon';
 
 interface IosBagViewProps {
   onOpenCheckoutModal?: () => void;
@@ -36,6 +37,9 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
     confirmOrderReceived,
     myReviews,
     submitReview,
+    orderIssuesByOrderId,
+    fetchOrderIssuesForOrders,
+    reportOrderIssue,
   } = useShop();
   const {
     currentUser,
@@ -45,7 +49,7 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
 
   const [activeSegment, setActiveSegment] = useState<'bag' | 'orders'>('bag');
   const [customerName, setCustomerName] = useState(currentUser.name);
-  const [customerContact, setCustomerContact] = useState('0917-888-2345');
+  const [customerContact, setCustomerContact] = useState(currentUser.contactNumber || '');
   const [customerUniversity, setCustomerUniversity] = useState<CampusUniversity>(currentUser.university);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('GCash');
   const [fulfillmentType, setFulfillmentType] = useState<FulfillmentType>('Campus Meetup');
@@ -59,6 +63,23 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
   // payment is attached per shop, not once for the whole bag.
   const [proofOfPaymentByBusiness, setProofOfPaymentByBusiness] = useState<Record<string, string>>({});
   const [proofUploadError, setProofUploadError] = useState<Record<string, string>>({});
+  // Keyed by productId — a brief "only N available" note when the stepper's
+  // "+" gets capped by a live stock re-check (the cached quantity shown
+  // here can be stale if stock changed elsewhere since this item was added).
+  const [stockNotices, setStockNotices] = useState<Record<string, string>>({});
+
+  const handleIncrementQuantity = async (productId: string, nextQuantity: number) => {
+    playIosTap();
+    const { applied, available } = await updateCartQuantity(productId, nextQuantity);
+    if (applied >= nextQuantity) return;
+    setStockNotices((prev) => ({ ...prev, [productId]: `Only ${available} available` }));
+    setTimeout(() => {
+      setStockNotices((prev) => {
+        const { [productId]: _removed, ...rest } = prev;
+        return rest;
+      });
+    }, 2500);
+  };
 
   const handleProofUpload = (businessId: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -139,7 +160,11 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
     return cartByBusiness.filter((group) => !proofOfPaymentByBusiness[group.businessId]);
   }, [cartByBusiness, paymentMethod, proofOfPaymentByBusiness]);
 
-  const campusPickupSpots: Record<CampusUniversity, string[]> = {
+  // Generic fallback only — used when none of the shops actually in this
+  // cart have configured their own campus_pickup_spots, so the dropdown is
+  // never empty. The real per-shop spots a seller sets in Business Settings
+  // (business.campusPickupSpots) always take priority below.
+  const fallbackCampusPickupSpots: Record<CampusUniversity, string[]> = {
     'MGC New Life Christian Academy': ['Main Gate', 'Student Center', 'Covered Court', 'Library Entrance'],
     'UP Diliman': ['Sunken Garden Bleachers', 'Vinzons Hall', 'AS Steps / Palma Hall', 'Area 2 Food Stalls'],
     'Ateneo de Manila': ['Gonzaga Hall Walkway', 'SEC Foyer', 'Kostka Extension', 'Xavier Hall steps'],
@@ -152,7 +177,28 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
     'All Campuses': ['Campus Main Gate Security', 'Central Cafeteria entrance', 'Student Union Building'],
   };
 
-  const currentSpots = campusPickupSpots[customerUniversity] || campusPickupSpots['All Campuses'];
+  // Every shop actually in the cart may configure its own pickup spots
+  // (Business Settings → Designated Campus Meetup Locations) — union them
+  // together since one meetup location is picked for the whole order, not
+  // per shop. Only falls back to the generic per-university list above if
+  // no shop in the cart has configured any spots of its own.
+  const currentSpots = useMemo(() => {
+    const configured = Array.from(new Set(
+      cartByBusiness.flatMap((group) => group.business?.campusPickupSpots || [])
+    ));
+    return configured.length > 0
+      ? configured
+      : fallbackCampusPickupSpots[customerUniversity] || fallbackCampusPickupSpots['All Campuses'];
+  }, [cartByBusiness, customerUniversity]);
+
+  // If the cart's composition changes such that the previously-picked spot
+  // no longer belongs to the current spot list, fall back to the first
+  // valid option instead of silently submitting a stale/mismatched value.
+  useEffect(() => {
+    if (currentSpots.length > 0 && !currentSpots.includes(meetupLocation)) {
+      setMeetupLocation(currentSpots[0]);
+    }
+  }, [currentSpots]);
 
   const [orderError, setOrderError] = useState('');
   const [highlightedOrderId, setHighlightedOrderId] = useState<string | null>(null);
@@ -182,6 +228,11 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
   }, [pendingNavigation]);
 
   const handleConfirmReceived = async (orderId: string) => {
+    // This also settles payment_status server-side and can't be undone from
+    // here — a mis-tap shouldn't be able to mark an order received before it
+    // actually arrives, so it gets the same confirm() guard the seller's own
+    // "Complete Order" action has (OrderManager.tsx).
+    if (!confirm("Confirm you've received this order? This can't be undone.")) return;
     setConfirmingOrderId(orderId);
     setConfirmError(null);
     playIosSuccess();
@@ -275,6 +326,40 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
+  // Existing "Report an Issue" flags for this buyer's own orders, so an
+  // already-reported order shows that instead of the button (one batched
+  // fetch, not one round trip per order card).
+  useEffect(() => {
+    const orderIds = myOrders.map((o) => o.id);
+    if (orderIds.length > 0) void fetchOrderIssuesForOrders(orderIds);
+  }, [myOrders.map((o) => o.id).join(',')]);
+
+  // "Report an Issue" — which order's inline form is open, plus its draft.
+  const [reportingOrderId, setReportingOrderId] = useState<string | null>(null);
+  const [reportReason, setReportReason] = useState<string>(ORDER_ISSUE_REASONS[0]);
+  const [reportMessage, setReportMessage] = useState('');
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+  const [reportError, setReportError] = useState('');
+
+  const openReportForm = (orderId: string) => {
+    setReportingOrderId(orderId);
+    setReportReason(ORDER_ISSUE_REASONS[0]);
+    setReportMessage('');
+    setReportError('');
+  };
+
+  const handleSubmitReport = async (orderId: string, businessId: string) => {
+    setIsSubmittingReport(true);
+    setReportError('');
+    const result = await reportOrderIssue(orderId, businessId, 'buyer', reportReason, reportMessage);
+    setIsSubmittingReport(false);
+    if (!result.success) {
+      setReportError(result.message || 'Could not submit your report right now.');
+      return;
+    }
+    setReportingOrderId(null);
+  };
+
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (cart.length === 0 || isSubmitting) return;
@@ -347,7 +432,7 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
                 : 'text-[#6B5B4F] hover:text-[#3B2F27]'
             }`}
           >
-            🛍️ Active Bag ({cartCount})
+            <Icon name="tab-my-bag" className="inline w-3.5 h-3.5 -mt-0.5" /> Active Bag ({cartCount})
           </button>
           <button
             onClick={() => {
@@ -360,7 +445,7 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
                 : 'text-[#6B5B4F] hover:text-[#3B2F27]'
             }`}
           >
-            📋 Orders History ({myOrders.length})
+            <Icon name="orders-history" className="inline w-3.5 h-3.5 -mt-0.5" /> Orders History ({myOrders.length})
           </button>
         </div>
       </div>
@@ -371,8 +456,8 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
           cart.length === 0 ? (
             /* Empty State */
             <div className="bg-white rounded-3xl border border-[#EDE4D8] p-8 text-center space-y-3 mt-4">
-              <div className="w-16 h-16 bg-[#FFF0E6] rounded-2xl mx-auto flex items-center justify-center text-3xl">
-                🐰
+              <div className="w-16 h-16 bg-[#FFF0E6] rounded-2xl mx-auto flex items-center justify-center">
+                <Icon name="mascot-bunny" className="w-10 h-10" />
               </div>
               <h2 className="font-extrabold text-base text-[#3B2F27] font-['Nunito',sans-serif]">
                 Your bag is empty!
@@ -441,46 +526,50 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
 
                       <div className="p-3 space-y-2.5">
                         {group.items.map((item) => (
-                          <div key={item.product.id} className="flex items-center gap-3">
-                            <img
-                              src={item.product.imageUrl}
-                              alt={item.product.name}
-                              className="w-14 h-14 rounded-xl object-cover border border-[#EDE4D8]"
-                            />
+                          <div key={item.product.id} className="space-y-1">
+                            <div className="flex items-center gap-3">
+                              <img
+                                src={item.product.imageUrl}
+                                alt={item.product.name}
+                                className="w-14 h-14 rounded-xl object-cover border border-[#EDE4D8]"
+                              />
 
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-extrabold text-xs text-[#3B2F27] truncate font-['Nunito',sans-serif]">
-                                {item.product.name}
-                              </h4>
-                              <p className="text-xs font-black text-[#194E3B] mt-0.5">
-                                {formatPHP(item.product.price)}
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-extrabold text-xs text-[#3B2F27] truncate font-['Nunito',sans-serif]">
+                                  {item.product.name}
+                                </h4>
+                                <p className="text-xs font-black text-[#194E3B] mt-0.5">
+                                  {formatPHP(item.product.price)}
+                                </p>
+                              </div>
+
+                              {/* Stepper Controls */}
+                              <div className="flex items-center gap-1.5 bg-[#FAF3DE] px-2 py-1 rounded-xl border border-[#EDE4D8]">
+                                <button
+                                  onClick={() => {
+                                    playIosTap();
+                                    void updateCartQuantity(item.product.id, item.quantity - 1);
+                                  }}
+                                  className="w-6 h-6 rounded-lg bg-white text-[#6B5B4F] flex items-center justify-center text-xs font-bold active:scale-90"
+                                >
+                                  <Minus className="w-3 h-3" />
+                                </button>
+                                <span className="text-xs font-black text-[#3B2F27] w-5 text-center">
+                                  {item.quantity}
+                                </span>
+                                <button
+                                  onClick={() => void handleIncrementQuantity(item.product.id, item.quantity + 1)}
+                                  className="w-6 h-6 rounded-lg bg-white text-[#6B5B4F] flex items-center justify-center text-xs font-bold active:scale-90"
+                                >
+                                  <Plus className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </div>
+                            {stockNotices[item.product.id] && (
+                              <p className="text-[10px] font-bold text-[#7A341A] text-right">
+                                {stockNotices[item.product.id]}
                               </p>
-                            </div>
-
-                            {/* Stepper Controls */}
-                            <div className="flex items-center gap-1.5 bg-[#FAF3DE] px-2 py-1 rounded-xl border border-[#EDE4D8]">
-                              <button
-                                onClick={() => {
-                                  playIosTap();
-                                  updateCartQuantity(item.product.id, item.quantity - 1);
-                                }}
-                                className="w-6 h-6 rounded-lg bg-white text-[#6B5B4F] flex items-center justify-center text-xs font-bold active:scale-90"
-                              >
-                                <Minus className="w-3 h-3" />
-                              </button>
-                              <span className="text-xs font-black text-[#3B2F27] w-5 text-center">
-                                {item.quantity}
-                              </span>
-                              <button
-                                onClick={() => {
-                                  playIosTap();
-                                  updateCartQuantity(item.product.id, item.quantity + 1);
-                                }}
-                                className="w-6 h-6 rounded-lg bg-white text-[#6B5B4F] flex items-center justify-center text-xs font-bold active:scale-90"
-                              >
-                                <Plus className="w-3 h-3" />
-                              </button>
-                            </div>
+                            )}
                           </div>
                         ))}
 
@@ -569,7 +658,7 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
               {/* Campus Meetup Logistics */}
               <div className="bg-white rounded-3xl border border-[#EDE4D8] p-4 space-y-3.5 shadow-xs">
                 <div className="flex items-center gap-2 border-b border-[#EDE4D8] pb-2">
-                  <span className="text-base">📍</span>
+                  <Icon name="campus-pin" className="w-4 h-4" />
                   <h3 className="font-extrabold text-xs text-[#3B2F27] font-['Nunito',sans-serif]">
                     Campus Hand-off Location
                   </h3>
@@ -606,15 +695,15 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
                           playIosTap();
                           setPaymentMethod(method);
                         }}
-                        className={`p-2 rounded-xl text-[10px] font-black border transition-all text-center ${
+                        className={`p-2 rounded-xl text-[10px] font-black border transition-all text-center flex items-center justify-center gap-1 ${
                           paymentMethod === method
                             ? 'bg-[#B8E6D5] text-[#194E3B] border-[#9FD9C3] shadow-xs'
                             : 'bg-[#FAF3DE] text-[#6B5B4F] border-[#EDE4D8]'
                         }`}
                       >
-                        {method === 'GCash' && '📱 GCash'}
-                        {method === 'Maya' && '💳 Maya'}
-                        {method === 'Cash on Campus Meetup' && '💵 Cash'}
+                        {method === 'GCash' && <><Icon name="payment-gcash" className="w-3.5 h-3.5" /> GCash</>}
+                        {method === 'Maya' && <><Icon name="payment-maya" className="w-3.5 h-3.5" /> Maya</>}
+                        {method === 'Cash on Campus Meetup' && <><Icon name="payment-cash" className="w-3.5 h-3.5" /> Cash</>}
                       </button>
                     ))}
                   </div>
@@ -721,7 +810,7 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
                   <span>
                     {isSubmitting
                       ? 'Placing order...'
-                      : `Place ${cartByBusiness.length} Order${cartByBusiness.length > 1 ? 's' : ''} (${formatPHP(finalTotal)}) ✨`}
+                      : <>Place {cartByBusiness.length} Order{cartByBusiness.length > 1 ? 's' : ''} ({formatPHP(finalTotal)}) <Icon name="celebration-burst" className="inline w-3.5 h-3.5" /></>}
                   </span>
                 </button>
               </div>
@@ -839,6 +928,64 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
                         {confirmError?.orderId === order.id && (
                           <p className="text-[10px] font-bold text-[#991B1B] text-center">{confirmError.message}</p>
                         )}
+                      </div>
+                    )}
+
+                    {order.orderStatus !== 'Pending' && (
+                      orderIssuesByOrderId[order.id] ? (
+                        <div className="flex items-center gap-1.5 px-2.5 py-2 bg-[#FFF7E6] border border-[#FDE1A8] text-[#92400E] font-semibold text-[11px] rounded-xl">
+                          <Flag className="w-3.5 h-3.5 shrink-0" />
+                          Issue reported: {orderIssuesByOrderId[order.id].reason}
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => openReportForm(order.id)}
+                          className="w-full flex items-center justify-center gap-1.5 py-2 text-[#8C7A6D] hover:text-[#3B2F27] font-semibold text-[11px] rounded-xl cursor-pointer"
+                        >
+                          <Flag className="w-3.5 h-3.5" />
+                          Report an issue with this order
+                        </button>
+                      )
+                    )}
+
+                    {reportingOrderId === order.id && (
+                      <div className="rounded-2xl border border-[#EADBCE] bg-[#FAF7F2] p-3.5 space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-bold text-[#3B2F27]">Report an issue with this order</p>
+                          <button
+                            onClick={() => setReportingOrderId(null)}
+                            className="p-1 rounded-lg text-[#8C7A6D] hover:bg-white cursor-pointer"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        <select
+                          value={reportReason}
+                          onChange={(e) => setReportReason(e.target.value)}
+                          className="w-full px-2.5 py-2 bg-white border border-[#E5DACD] rounded-xl text-xs text-[#3B2F27] focus:outline-none focus:ring-2 focus:ring-[#B8E6D5]"
+                        >
+                          {ORDER_ISSUE_REASONS.map((reason) => (
+                            <option key={reason} value={reason}>{reason}</option>
+                          ))}
+                        </select>
+                        <textarea
+                          value={reportMessage}
+                          onChange={(e) => setReportMessage(e.target.value)}
+                          placeholder="Add any details (optional)"
+                          rows={2}
+                          className="w-full px-2.5 py-2 bg-white border border-[#E5DACD] rounded-xl text-xs text-[#3B2F27] focus:outline-none focus:ring-2 focus:ring-[#B8E6D5] resize-none"
+                        />
+                        {reportError && <p className="text-[11px] font-bold text-[#991B1B]">{reportError}</p>}
+                        <p className="text-[10px] text-[#8C7A6D]">
+                          This notifies the shop — it doesn't change the order's status on its own.
+                        </p>
+                        <button
+                          onClick={() => void handleSubmitReport(order.id, order.businessId)}
+                          disabled={isSubmittingReport}
+                          className="w-full py-2 bg-[#7A341A] hover:brightness-110 disabled:opacity-50 text-white font-bold text-xs rounded-xl cursor-pointer"
+                        >
+                          {isSubmittingReport ? 'Submitting...' : 'Submit Report'}
+                        </button>
                       </div>
                     )}
 

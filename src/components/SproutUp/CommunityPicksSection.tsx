@@ -7,6 +7,7 @@ import { NominationForm } from './NominationForm';
 import { formatRelativeTime } from '../../utils/formatRelativeTime';
 import { SproutUpSectionHeader } from './shared/SproutUpSectionHeader';
 import { SproutUpEmptyState } from './shared/SproutUpEmptyState';
+import { Icon } from '../Icon';
 
 interface CommunityPicksSectionProps {
   onSelectBusiness: (business: Business) => void;
@@ -19,7 +20,7 @@ export const CommunityPicksSection: React.FC<CommunityPicksSectionProps> = ({ on
   return (
     <section className="space-y-3">
       <SproutUpSectionHeader
-        icon="💌"
+        icon="celebration-burst"
         iconBg="bg-[#F7D6E0]"
         title="Community Picks"
         subtitle="Know a business that deserves a little more love?"
@@ -34,7 +35,7 @@ export const CommunityPicksSection: React.FC<CommunityPicksSectionProps> = ({ on
       />
 
       {sproutUpNominations.length === 0 ? (
-        <SproutUpEmptyState icon="💌" text="Know a business worth discovering? Nominate them!" />
+        <SproutUpEmptyState icon="celebration-burst" text="Know a business worth discovering? Nominate them!" />
       ) : (
         <div className="space-y-2.5">
           {sproutUpNominations.map((nomination) => (
@@ -49,7 +50,9 @@ export const CommunityPicksSection: React.FC<CommunityPicksSectionProps> = ({ on
                   <img src={nomination.business.logo} alt={nomination.business.name} className="w-11 h-11 rounded-xl object-cover border-2 border-[#F7D6E0]" />
                 )}
                 <div className="min-w-0">
-                  <p className="text-[10px] font-black text-[#9D3A63]">💌 Community Pick</p>
+                  <p className="text-[10px] font-black text-[#9D3A63] flex items-center gap-1">
+                    <Icon name="celebration-burst" className="w-3 h-3" /> Community Pick
+                  </p>
                   <h3 className="font-extrabold text-xs text-[#3B2F27] truncate">{nomination.business?.name || 'A student shop'}</h3>
                 </div>
               </div>

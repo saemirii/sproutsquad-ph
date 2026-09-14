@@ -5,6 +5,7 @@ import { Product, ProductCategory, CampusUniversity, Business } from '../../type
 import { formatPHP } from '../../utils/analytics';
 import { CampusStories } from './CampusStories';
 import { playIosTap, playIosSuccess } from '../../utils/haptics';
+import { Icon } from '../Icon';
 
 interface IosMarketplaceViewProps {
   onSelectProduct: (product: Product) => void;
@@ -67,17 +68,23 @@ export const IosMarketplaceView: React.FC<IosMarketplaceViewProps> = ({
     });
   }, [products, searchQuery, selectedCategory, selectedCampusFilter]);
 
-  const handleQuickAdd = (e: React.MouseEvent, product: Product) => {
+  const handleQuickAdd = async (e: React.MouseEvent, product: Product) => {
     e.stopPropagation();
     if (product.inventoryCount <= 0) return;
     playIosSuccess();
-    addToCart(product, 1);
+    const { added, available } = await addToCart(product, 1);
+
+    if (added <= 0) {
+      onShowAlert?.(
+        'badge-low-stock',
+        available <= 0 ? `${product.name} just sold out` : `${product.name} is already in your bag`,
+        available <= 0 ? 'Sorry — someone else got the last one.' : `Only ${available} available — you already have them all.`
+      );
+      return;
+    }
     setQuickAddedId(product.id);
     setTimeout(() => setQuickAddedId(null), 1000);
-
-    if (onShowAlert) {
-      onShowAlert('🛍️', `Added ${product.name}`, `${formatPHP(product.price)} • In your bag`);
-    }
+    onShowAlert?.('tab-my-bag', `Added ${product.name}`, `${formatPHP(product.price)} • In your bag`);
   };
 
   return (
@@ -87,7 +94,7 @@ export const IosMarketplaceView: React.FC<IosMarketplaceViewProps> = ({
       <div className="px-4 pt-2 flex items-center justify-between">
         <div>
           <div className="flex items-center gap-1.5">
-            <span className="text-lg">🌱</span>
+            <Icon name="level-sprout" className="w-4 h-4" />
             <h1 className="font-black text-xl tracking-tight text-[#3B2F27] font-['Nunito',sans-serif]">
               Sprout<span className="text-[#194E3B]">Squad</span>
             </h1>
@@ -128,9 +135,9 @@ export const IosMarketplaceView: React.FC<IosMarketplaceViewProps> = ({
                 playIosTap();
                 setSearchQuery('');
               }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-[#EDE4D8] text-[#6B5B4F] flex items-center justify-center text-[10px]"
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-[#EDE4D8] text-[#6B5B4F] flex items-center justify-center"
             >
-              ✕
+              <X className="w-2.5 h-2.5" />
             </button>
           )}
         </div>
@@ -176,7 +183,7 @@ export const IosMarketplaceView: React.FC<IosMarketplaceViewProps> = ({
 
         {filteredProducts.length === 0 ? (
           <div className="bg-white rounded-3xl border border-[#EDE4D8] p-8 text-center space-y-2">
-            <span className="text-3xl">🌱</span>
+            <Icon name="level-sprout" className="w-8 h-8 mx-auto" />
             <p className="font-bold text-xs text-[#3B2F27]">No creations found</p>
             <p className="text-[11px] text-[#6B5B4F]">Try adjusting your search or campus filter.</p>
             <button
@@ -222,13 +229,13 @@ export const IosMarketplaceView: React.FC<IosMarketplaceViewProps> = ({
 
                       {/* Bundle / Pre-Order Chip */}
                       {product.bundledProductIds && product.bundledProductIds.length > 0 && (
-                        <span className="absolute top-2 right-2 px-2 py-0.5 rounded-lg text-[9px] font-black bg-[#B8E6D5] text-[#194E3B] shadow-xs">
-                          🎁 Bundle
+                        <span className="absolute top-2 right-2 px-2 py-0.5 rounded-lg text-[9px] font-black bg-[#B8E6D5] text-[#194E3B] shadow-xs flex items-center gap-1">
+                          <Icon name="bundle-badge" className="w-2.5 h-2.5" /> Bundle
                         </span>
                       )}
                       {product.isPreOrder && (
-                        <span className="absolute top-2 right-2 px-2 py-0.5 rounded-lg text-[9px] font-black bg-[#FFD3BA] text-[#7A341A] shadow-xs">
-                          📅 Pre-Order
+                        <span className="absolute top-2 right-2 px-2 py-0.5 rounded-lg text-[9px] font-black bg-[#FFD3BA] text-[#7A341A] shadow-xs flex items-center gap-1">
+                          <Icon name="pre-order-badge" className="w-2.5 h-2.5" /> Pre-Order
                         </span>
                       )}
 
@@ -260,8 +267,8 @@ export const IosMarketplaceView: React.FC<IosMarketplaceViewProps> = ({
                       <h3 className="font-extrabold text-xs text-[#3B2F27] line-clamp-1 font-['Nunito',sans-serif]">
                         {product.name}
                       </h3>
-                      <p className="text-[10px] text-[#194E3B] font-bold">
-                        📍 {product.university.split(' ')[0]}
+                      <p className="text-[10px] text-[#194E3B] font-bold flex items-center gap-1">
+                        <Icon name="campus-pin" className="w-2.5 h-2.5" /> {product.university.split(' ')[0]}
                       </p>
                     </div>
                   </div>
@@ -304,8 +311,8 @@ export const IosMarketplaceView: React.FC<IosMarketplaceViewProps> = ({
             <div className="w-10 h-1 bg-[#D4C8B8] rounded-full mx-auto" />
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-extrabold text-sm text-[#3B2F27]">
-                  Select Campus 🏫
+                <h3 className="font-extrabold text-sm text-[#3B2F27] flex items-center gap-1.5">
+                  Select Campus <Icon name="select-campus" className="w-4 h-4" />
                 </h3>
                 <p className="text-[11px] text-[#6B5B4F]">Filter student goods by university</p>
               </div>

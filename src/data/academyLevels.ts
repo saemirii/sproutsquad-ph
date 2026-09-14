@@ -7,17 +7,21 @@ import { AcademyLevel } from '../types';
  * value stored server-side; level/title are always derived from it here
  * so client and server can never drift out of sync.
  */
+// `icon` is a key into src/assets/icons/ (rendered via <Icon name={...} />),
+// not a raw emoji character. A couple of adjacent levels intentionally
+// reuse the same illustration — the hand-drawn set only has 8 distinct
+// growth stages for this 10-level progression.
 export const ACADEMY_LEVELS: AcademyLevel[] = [
-  { level: 1, title: 'Seed', icon: '🌰', xpRequired: 0, seedReward: 0 },
-  { level: 2, title: 'Seedling', icon: '🌱', xpRequired: 300, seedReward: 75 },
-  { level: 3, title: 'Sprout', icon: '🌿', xpRequired: 800, seedReward: 100 },
-  { level: 4, title: 'Grower', icon: '🪴', xpRequired: 1500, seedReward: 125 },
-  { level: 5, title: 'Budding Entrepreneur', icon: '🌷', xpRequired: 2450, seedReward: 150 },
-  { level: 6, title: 'Blooming Entrepreneur', icon: '🌸', xpRequired: 3800, seedReward: 175 },
-  { level: 7, title: 'Business Builder', icon: '🌳', xpRequired: 5600, seedReward: 200 },
-  { level: 8, title: 'Rooted Founder', icon: '🌲', xpRequired: 8000, seedReward: 225 },
-  { level: 9, title: 'Cultivator', icon: '🌾', xpRequired: 11000, seedReward: 250 },
-  { level: 10, title: 'SproutSquad Mentor', icon: '🌳', xpRequired: 15000, seedReward: 275 },
+  { level: 1, title: 'Seed', icon: 'level-sprout', xpRequired: 0, seedReward: 0 },
+  { level: 2, title: 'Seedling', icon: 'tab-academy', xpRequired: 300, seedReward: 75 },
+  { level: 3, title: 'Sprout', icon: 'level-sprout', xpRequired: 800, seedReward: 100 },
+  { level: 4, title: 'Grower', icon: 'level-grower', xpRequired: 1500, seedReward: 125 },
+  { level: 5, title: 'Budding Entrepreneur', icon: 'level-bud', xpRequired: 2450, seedReward: 150 },
+  { level: 6, title: 'Blooming Entrepreneur', icon: 'level-bloom', xpRequired: 3800, seedReward: 175 },
+  { level: 7, title: 'Business Builder', icon: 'level-rooted-founder', xpRequired: 5600, seedReward: 200 },
+  { level: 8, title: 'Rooted Founder', icon: 'level-grove', xpRequired: 8000, seedReward: 225 },
+  { level: 9, title: 'Cultivator', icon: 'level-cultivator', xpRequired: 11000, seedReward: 250 },
+  { level: 10, title: 'SproutSquad Mentor', icon: 'level-grove', xpRequired: 15000, seedReward: 275 },
 ];
 
 export const getLevelForXp = (xp: number): AcademyLevel => {

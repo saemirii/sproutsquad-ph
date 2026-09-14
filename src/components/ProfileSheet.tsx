@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { AlertTriangle, Bell, Check, KeyRound, LogOut, Save, Sparkles, Trash2, Upload, UserRound, X } from 'lucide-react';
-import { useSession, useShop, useNotifications } from '../context/AppContext';
+import { useSession, useShop, useNotifications, useSubscription } from '../context/AppContext';
 import { CampusUniversity, NotificationPreferenceCategory } from '../types';
 import { EnterBesKeyModal } from './EnterBesKeyModal';
-import { SproutUpAdminScreen } from './SproutUp/Admin/SproutUpAdminScreen';
+import { AdminPanel } from './AdminPanel';
 import { ShieldCheck } from 'lucide-react';
 
 const NOTIFICATION_CATEGORIES: { key: NotificationPreferenceCategory; label: string }[] = [
@@ -32,12 +32,14 @@ export const ProfileSheet: React.FC<ProfileSheetProps> = ({ onClose, onOpenSubsc
     businesses, activeBusiness, setActiveBusiness, accessibleBusinessIds,
   } = useShop();
   const { notificationPreferences, updateNotificationPreference } = useNotifications();
+  const { hasSproutPlus } = useSubscription();
   const [name, setName] = useState(currentUser.name);
   const [school, setSchool] = useState<CampusUniversity>(currentUser.university);
   const [avatar, setAvatar] = useState(currentUser.avatar);
+  const [contactNumber, setContactNumber] = useState(currentUser.contactNumber || '');
   const [saved, setSaved] = useState(false);
   const [isBesKeyModalOpen, setIsBesKeyModalOpen] = useState(false);
-  const [isAdminScreenOpen, setIsAdminScreenOpen] = useState(false);
+  const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
@@ -56,7 +58,12 @@ export const ProfileSheet: React.FC<ProfileSheetProps> = ({ onClose, onOpenSubsc
   const myBusinesses = businesses.filter((business) => accessibleBusinessIds.includes(business.id));
 
   const saveProfile = () => {
-    updateCurrentUser({ name: name.trim() || currentUser.name, university: school, avatar: avatar || currentUser.avatar });
+    updateCurrentUser({
+      name: name.trim() || currentUser.name,
+      university: school,
+      avatar: avatar || currentUser.avatar,
+      contactNumber: contactNumber.trim(),
+    });
     setSaved(true);
     setTimeout(() => setSaved(false), 1800);
   };
@@ -84,7 +91,7 @@ export const ProfileSheet: React.FC<ProfileSheetProps> = ({ onClose, onOpenSubsc
         <div className="flex items-center justify-between">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#207559]">Your account</p>
-            <h2 className="text-xl font-black text-[#3B2F27] font-['Nunito',sans-serif]">Profile & ventures</h2>
+            <h2 className="text-xl font-black text-[#3B2F27] font-['Nunito',sans-serif]">Profile</h2>
           </div>
           <button onClick={onClose} className="p-2 rounded-xl text-[#8C7A6D] hover:bg-[#F2EAE0]" title="Close profile"><X className="w-4 h-4" /></button>
         </div>
@@ -110,20 +117,27 @@ export const ProfileSheet: React.FC<ProfileSheetProps> = ({ onClose, onOpenSubsc
             <Sparkles className="w-4.5 h-4.5" />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block text-xs font-black text-white">Upgrade to Sprout+ or Bloom+</span>
-            <span className="block text-[10px] text-[#B8E6D5]">Unlock coupons, scheduling, mentoring & more</span>
+            <span className="block text-xs font-black text-white">
+              {hasSproutPlus ? "You're a Sprout+ member" : 'Upgrade to Sprout+ or Bloom+'}
+            </span>
+            <span className="block text-[10px] text-[#B8E6D5]">
+              {hasSproutPlus ? 'Manage your plan or billing' : 'Unlock coupons, scheduling, bundles & more'}
+            </span>
           </span>
-          <span className="shrink-0 text-[10px] font-black text-[#194E3B] bg-[#B8E6D5] rounded-full px-2.5 py-1">View</span>
+          <span className="shrink-0 text-[10px] font-black text-[#194E3B] bg-[#B8E6D5] rounded-full px-2.5 py-1">
+            {hasSproutPlus ? 'Manage' : 'View'}
+          </span>
         </button>
 
         <div className="space-y-3">
           <label className="block text-[11px] font-bold text-[#54453C]">Name<input value={name} onChange={(event) => setName(event.target.value)} className="mt-1 w-full rounded-xl border border-[#E5DACD] bg-white px-3 py-2.5 text-xs outline-none focus:ring-2 focus:ring-[#B8E6D5]" /></label>
+          <label className="block text-[11px] font-bold text-[#54453C]">Contact number<input value={contactNumber} onChange={(event) => setContactNumber(event.target.value)} placeholder="0917-XXX-XXXX" className="mt-1 w-full rounded-xl border border-[#E5DACD] bg-white px-3 py-2.5 text-xs outline-none focus:ring-2 focus:ring-[#B8E6D5]" /></label>
           <label className="block text-[11px] font-bold text-[#54453C]">School<select value={school} onChange={(event) => setSchool(event.target.value as CampusUniversity)} className="mt-1 w-full rounded-xl border border-[#E5DACD] bg-white px-3 py-2.5 text-xs outline-none focus:ring-2 focus:ring-[#B8E6D5]">{campuses.map((campus) => <option key={campus}>{campus}</option>)}</select></label>
           <button onClick={saveProfile} className="w-full rounded-xl bg-[#207559] py-2.5 text-xs font-black text-white flex items-center justify-center gap-2 hover:bg-[#194E3B]"><Save className="w-3.5 h-3.5" />{saved ? 'Profile saved' : 'Save profile'}</button>
         </div>
 
         <div className="border-t border-[#EDE4D8] pt-4 space-y-3">
-          <div><p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#207559]">Business access</p><p className="mt-1 text-[11px] leading-5 text-[#7A6B5F]">Your own shops are open automatically. Use a BES key to join another shop as a manager.</p></div>
+          <div><p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#207559]">Business access</p><p className="mt-1 text-[11px] leading-5 text-[#7A6B5F]">Your own shops are open automatically. Use a Start-Up Key to join another shop as a manager.</p></div>
 
           {myBusinesses.length > 0 && (
             <div className="space-y-2">
@@ -131,7 +145,7 @@ export const ProfileSheet: React.FC<ProfileSheetProps> = ({ onClose, onOpenSubsc
                 const isCurrent = activeBusiness.id === business.id;
                 return <div key={business.id} className={`rounded-2xl border p-3 ${isCurrent ? 'border-[#9FD9C3] bg-[#F2FBF7]' : 'border-[#EDE4D8] bg-white'}`}>
                   <div className="flex items-center gap-2"><img src={business.logo} alt={business.name} className="w-8 h-8 rounded-xl object-cover" /><div className="min-w-0 flex-1"><p className="text-xs font-black text-[#3B2F27] truncate">{business.name}</p><p className="text-[10px] text-[#7A6B5F]">Management access</p></div><Check className="w-4 h-4 text-[#207559]" /></div>
-                  <div className="mt-2 flex items-center justify-between gap-2"><button onClick={() => setActiveBusiness(business)} className="text-[11px] font-black text-[#207559]">{isCurrent ? 'Currently selected' : 'Manage this business'}</button>{business.besKey && <span className="text-[10px] font-bold text-[#8C7A6D]">Key: {business.besKey}</span>}</div>
+                  <div className="mt-2 flex items-center justify-between gap-2"><button onClick={() => setActiveBusiness(business)} className="text-[11px] font-black text-[#207559]">{isCurrent ? 'Currently selected' : 'Manage this business'}</button>{business.besKey && <span className="text-[10px] font-bold text-[#8C7A6D]">Start-Up Key: {business.besKey}</span>}</div>
                 </div>;
               })}
             </div>
@@ -142,11 +156,11 @@ export const ProfileSheet: React.FC<ProfileSheetProps> = ({ onClose, onOpenSubsc
             className="btn-bouncy w-full flex items-center justify-center gap-2 rounded-xl border border-[#E5DACD] bg-white py-2.5 text-xs font-black text-[#3B2F27] hover:bg-[#FAF4EA] cursor-pointer"
           >
             <KeyRound className="w-3.5 h-3.5" />
-            Enter BES Key
+            Enter Start-Up Key
           </button>
         </div>
 
-        <div className="flex items-center gap-2 rounded-xl bg-[#FFF0E8] border border-[#F8BA9E] px-3 py-2 text-[10px] leading-4 text-[#7A341A]"><UserRound className="w-4 h-4 shrink-0" />BES access is shared by the business, so teammates can use the same key from their own accounts.</div>
+        <div className="flex items-center gap-2 rounded-xl bg-[#FFF0E8] border border-[#F8BA9E] px-3 py-2 text-[10px] leading-4 text-[#7A341A]"><UserRound className="w-4 h-4 shrink-0" />Start-Up Key access is shared by the business, so teammates can use the same key from their own accounts.</div>
 
         {isBesKeyModalOpen && <EnterBesKeyModal onClose={() => setIsBesKeyModalOpen(false)} />}
 
@@ -175,15 +189,15 @@ export const ProfileSheet: React.FC<ProfileSheetProps> = ({ onClose, onOpenSubsc
 
         {currentUser.isAdmin && (
           <button
-            onClick={() => setIsAdminScreenOpen(true)}
+            onClick={() => setIsAdminPanelOpen(true)}
             className="btn-bouncy w-full flex items-center justify-center gap-2 rounded-xl border border-[#9FD9C3] bg-[#F2FBF7] py-2.5 text-xs font-black text-[#194E3B] hover:bg-[#E5F6ED] cursor-pointer"
           >
             <ShieldCheck className="w-3.5 h-3.5" />
-            SproutUp! Admin Tools
+            Admin Panel
           </button>
         )}
 
-        {isAdminScreenOpen && <SproutUpAdminScreen onClose={() => setIsAdminScreenOpen(false)} />}
+        {isAdminPanelOpen && <AdminPanel onClose={() => setIsAdminPanelOpen(false)} />}
 
         <button
           onClick={() => { onClose(); signOut(); }}

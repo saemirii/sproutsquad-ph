@@ -1,6 +1,7 @@
 import React from 'react';
 import { Lock } from 'lucide-react';
 import { useSubscription } from '../context/AppContext';
+import { Icon } from './Icon';
 
 interface SproutPlusGateProps {
   /** Plain-English name of the gated feature, e.g. "Bundle Builder". */
@@ -25,8 +26,8 @@ export const SproutPlusGate: React.FC<SproutPlusGateProps> = ({ featureName, chi
       <span className="inline-flex w-9 h-9 rounded-xl bg-[#F2EAE0] text-[#8C7A6D] items-center justify-center">
         <Lock className="w-4 h-4" />
       </span>
-      <p className="text-xs font-black text-[#3B2F27]">
-        🌱 {featureName} is part of Sprout+
+      <p className="text-xs font-black text-[#3B2F27] flex items-center justify-center gap-1.5">
+        <Icon name="level-sprout" className="w-3.5 h-3.5" /> {featureName} is part of Sprout+
       </p>
       <p className="text-[11px] text-[#7A6B5F] leading-4 max-w-xs mx-auto">
         Upgrade to unlock {featureName.toLowerCase()} and other tools for growing student shops.

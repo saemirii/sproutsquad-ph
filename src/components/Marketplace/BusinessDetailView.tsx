@@ -14,12 +14,34 @@ import {
   Heart,
   MessageSquareText,
   Loader2,
+  Flag,
+  X,
 } from 'lucide-react';
-import { Business, Product, BusinessReview } from '../../types';
+import { Business, Product, BusinessReview, REVIEW_REPORT_REASONS } from '../../types';
 import { useShop, useCart, useSession, useNotifications } from '../../context/AppContext';
 import { formatPHP } from '../../utils/analytics';
 import { formatRelativeTime } from '../../utils/formatRelativeTime';
 import { SproutedUpBadge } from '../SproutUp/SproutedUpBadge';
+import { Icon } from '../Icon';
+
+// `Business.badges` stores each badge as a display string with a trailing
+// emoji (e.g. "New Sprout 🌱") rather than a separate icon field — this
+// strips that emoji for display and looks up the matching illustrated icon
+// by the remaining label text instead.
+const BADGE_ICON: Record<string, string> = {
+  'New Sprout': 'level-sprout',
+  'Campus Verified': 'decision-confirmed',
+  'Top Rated': 'medal-1st',
+  'Eco Packaging': 'badge-eco-certified',
+  'Eco Certified': 'badge-eco-certified',
+  'Handmade Master': 'achievements-header',
+  'Bestseller': 'celebration-burst',
+};
+
+const parseBadge = (raw: string): { label: string; icon?: string } => {
+  const label = raw.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}]/gu, '').trim();
+  return { label, icon: BADGE_ICON[label] };
+};
 
 interface BusinessDetailViewProps {
   business: Business;
@@ -32,17 +54,48 @@ export const BusinessDetailView: React.FC<BusinessDetailViewProps> = ({
   onBack,
   onSelectProduct,
 }) => {
-  const { products, setActiveBusiness, fetchBusinessReviews } = useShop();
+  const {
+    products, setActiveBusiness, fetchBusinessReviews, fetchBusinessFollowerCount,
+    reviewReportsByOrderId, fetchReviewReportsForOrders, reportReview,
+  } = useShop();
   const { addToCart } = useCart();
   const { setCurrentView, setSellerTab, currentUser } = useSession();
   const { favoritedBusinessIds, toggleFavoriteBusiness } = useNotifications();
   const isFavorited = favoritedBusinessIds.includes(business.id);
   const isOwnBusiness = business.sellerId === currentUser.id;
 
-  const bizProducts = products.filter((p) => p.businessId === business.id);
+  // A product scheduled for a future drop should stay invisible to buyers
+  // until that moment passes (same rule IosMarketplaceView's grid already
+  // applies) — this shop-profile grid had no such check at all, so a
+  // scheduled product was visible here immediately, just not in the main
+  // marketplace grid. The owner can still preview their own upcoming drop
+  // on their own shop page.
+  const bizProducts = products.filter((p) => {
+    if (p.businessId !== business.id) return false;
+    if (isOwnBusiness) return true;
+    return !p.dropDate || new Date(p.dropDate).getTime() <= Date.now();
+  });
 
   const [reviews, setReviews] = useState<BusinessReview[]>([]);
   const [isLoadingReviews, setIsLoadingReviews] = useState(true);
+  const [followerCount, setFollowerCount] = useState<number | null>(null);
+  // Transient per-product label shown on the quick-add button itself — this
+  // grid has no toast mechanism, so a capped/sold-out add is surfaced right
+  // on the button instead (addToCart re-checks live stock; the cached
+  // `inventoryCount` here can be stale by the time it's clicked).
+  const [quickAddFeedback, setQuickAddFeedback] = useState<Record<string, string>>({});
+
+  const handleQuickAdd = async (product: Product) => {
+    const { added, available } = await addToCart(product, 1);
+    const message = added > 0 ? 'Added!' : available <= 0 ? 'Sold out' : `Only ${available} left`;
+    setQuickAddFeedback((prev) => ({ ...prev, [product.id]: message }));
+    setTimeout(() => {
+      setQuickAddFeedback((prev) => {
+        const { [product.id]: _removed, ...rest } = prev;
+        return rest;
+      });
+    }, 1500);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -51,10 +104,47 @@ export const BusinessDetailView: React.FC<BusinessDetailViewProps> = ({
       if (!cancelled) {
         setReviews(data);
         setIsLoadingReviews(false);
+        void fetchReviewReportsForOrders(data.map((r) => r.orderId));
       }
     });
     return () => { cancelled = true; };
   }, [business.id]);
+
+  // "Report a review" — which review's inline form is open, plus its draft.
+  const [reportingReviewOrderId, setReportingReviewOrderId] = useState<string | null>(null);
+  const [reportReason, setReportReason] = useState<string>(REVIEW_REPORT_REASONS[0]);
+  const [reportMessage, setReportMessage] = useState('');
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+  const [reportError, setReportError] = useState('');
+
+  const openReviewReportForm = (orderId: string) => {
+    setReportingReviewOrderId(orderId);
+    setReportReason(REVIEW_REPORT_REASONS[0]);
+    setReportMessage('');
+    setReportError('');
+  };
+
+  const handleSubmitReviewReport = async (orderId: string) => {
+    setIsSubmittingReport(true);
+    setReportError('');
+    const result = await reportReview(orderId, reportReason, reportMessage);
+    setIsSubmittingReport(false);
+    if (!result.success) {
+      setReportError(result.message || 'Could not submit your report right now.');
+      return;
+    }
+    setReportingReviewOrderId(null);
+  };
+
+  // Refetches when this viewer's own follow state changes too, so the count
+  // reflects their own follow/unfollow immediately without a full reload.
+  useEffect(() => {
+    let cancelled = false;
+    fetchBusinessFollowerCount(business.id).then((count) => {
+      if (!cancelled) setFollowerCount(count);
+    });
+    return () => { cancelled = true; };
+  }, [business.id, isFavorited]);
 
   return (
     <div className="space-y-8 pb-16">
@@ -98,14 +188,17 @@ export const BusinessDetailView: React.FC<BusinessDetailViewProps> = ({
                 <h1 className="text-2xl sm:text-3xl font-extrabold text-[#3B2F27] font-['Nunito',sans-serif]">
                   {business.name}
                 </h1>
-                {business.badges.map((b) => (
-                  <span
-                    key={b}
-                    className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#B8E6D5] text-[#194E3B]"
-                  >
-                    {b}
-                  </span>
-                ))}
+                {business.badges.map((b) => {
+                  const { label, icon } = parseBadge(b);
+                  return (
+                    <span
+                      key={b}
+                      className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#B8E6D5] text-[#194E3B] inline-flex items-center gap-1"
+                    >
+                      {icon && <Icon name={icon} className="w-3 h-3" />} {label}
+                    </span>
+                  );
+                })}
                 <SproutedUpBadge businessId={business.id} />
               </div>
               <div className="flex items-center gap-3 text-xs text-[#6B5B4F] flex-wrap">
@@ -118,6 +211,15 @@ export const BusinessDetailView: React.FC<BusinessDetailViewProps> = ({
                   <Star className="w-3.5 h-3.5 fill-[#FFD3BA] text-[#7A341A]" />
                   {business.rating} ({business.reviewCount} campus orders)
                 </span>
+                {followerCount !== null && (
+                  <>
+                    <span>•</span>
+                    <span className="flex items-center gap-1 font-semibold text-[#194E3B]">
+                      <Heart className="w-3.5 h-3.5" />
+                      {followerCount} {followerCount === 1 ? 'follower' : 'followers'}
+                    </span>
+                  </>
+                )}
               </div>
             </div>
 
@@ -178,11 +280,16 @@ export const BusinessDetailView: React.FC<BusinessDetailViewProps> = ({
             <div className="p-4 bg-[#FAF7F2] rounded-2xl border border-[#EDE4D8] space-y-2">
               <h3 className="text-xs font-bold text-[#4A3D35] flex items-center gap-1.5">
                 <QrCode className="w-4 h-4 text-[#207559]" />
-                <span>Direct GCash & Contact:</span>
+                <span>Direct Payment & Contact:</span>
               </h3>
               <p className="text-xs text-[#6E5D52]">
                 <strong className="text-[#3B2F27]">GCash:</strong> {business.gcashNumber}
               </p>
+              {business.mayaNumber && (
+                <p className="text-xs text-[#6E5D52]">
+                  <strong className="text-[#3B2F27]">Maya:</strong> {business.mayaNumber}
+                </p>
+              )}
               {business.instagramHandle && (
                 <p className="text-xs text-[#6E5D52]">
                   <strong className="text-[#3B2F27]">Instagram:</strong> {business.instagramHandle}
@@ -237,6 +344,59 @@ export const BusinessDetailView: React.FC<BusinessDetailViewProps> = ({
                         className="w-16 h-16 rounded-xl object-cover border border-[#EDE4D8]"
                       />
                     ))}
+                  </div>
+                )}
+
+                {reviewReportsByOrderId[review.orderId] ? (
+                  <span className="inline-flex items-center gap-1.5 pt-1 text-[10px] font-bold text-[#92400E]">
+                    <Flag className="w-3 h-3" />
+                    Reported — pending review
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => openReviewReportForm(review.orderId)}
+                    className="inline-flex items-center gap-1.5 pt-1 text-[10px] font-bold text-[#8C7A6D] hover:text-[#3B2F27] cursor-pointer"
+                  >
+                    <Flag className="w-3 h-3" />
+                    Report this review
+                  </button>
+                )}
+
+                {reportingReviewOrderId === review.orderId && (
+                  <div className="rounded-2xl border border-[#EADBCE] bg-[#FAF7F2] p-3.5 space-y-2.5 mt-1">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-bold text-[#3B2F27]">Report this review</p>
+                      <button
+                        onClick={() => setReportingReviewOrderId(null)}
+                        className="p-1 rounded-lg text-[#8C7A6D] hover:bg-white cursor-pointer"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <select
+                      value={reportReason}
+                      onChange={(e) => setReportReason(e.target.value)}
+                      className="w-full px-2.5 py-2 bg-white border border-[#E5DACD] rounded-xl text-xs text-[#3B2F27] focus:outline-none focus:ring-2 focus:ring-[#B8E6D5]"
+                    >
+                      {REVIEW_REPORT_REASONS.map((reason) => (
+                        <option key={reason} value={reason}>{reason}</option>
+                      ))}
+                    </select>
+                    <textarea
+                      value={reportMessage}
+                      onChange={(e) => setReportMessage(e.target.value)}
+                      placeholder="Add any details (optional)"
+                      rows={2}
+                      className="w-full px-2.5 py-2 bg-white border border-[#E5DACD] rounded-xl text-xs text-[#3B2F27] focus:outline-none focus:ring-2 focus:ring-[#B8E6D5] resize-none"
+                    />
+                    {reportError && <p className="text-[11px] font-bold text-[#991B1B]">{reportError}</p>}
+                    <button
+                      onClick={() => void handleSubmitReviewReport(review.orderId)}
+                      disabled={isSubmittingReport}
+                      className="w-full py-2 bg-[#7A341A] hover:brightness-110 disabled:opacity-50 text-white font-bold text-xs rounded-xl cursor-pointer"
+                    >
+                      {isSubmittingReport ? 'Submitting...' : 'Submit Report'}
+                    </button>
                   </div>
                 )}
               </div>
@@ -299,14 +459,15 @@ export const BusinessDetailView: React.FC<BusinessDetailViewProps> = ({
                   </div>
 
                   <button
+                    disabled={product.inventoryCount <= 0}
                     onClick={(e) => {
                       e.stopPropagation();
-                      addToCart(product, 1);
+                      void handleQuickAdd(product);
                     }}
-                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-[#B8E6D5] hover:bg-[#A3DEC9] text-[#194E3B] shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-[#B8E6D5] hover:bg-[#A3DEC9] text-[#194E3B] shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <ShoppingBag className="w-3.5 h-3.5" />
-                    <span>Add</span>
+                    <span>{quickAddFeedback[product.id] || (product.inventoryCount <= 0 ? 'Sold out' : 'Add')}</span>
                   </button>
                 </div>
               </div>

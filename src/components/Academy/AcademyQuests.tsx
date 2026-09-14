@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAcademy } from '../../context/AppContext';
 import { getPeriodKey } from '../../data/academyQuests';
+import { Icon } from '../Icon';
 
 const QuestCard: React.FC<{
   icon: string;
@@ -15,7 +16,7 @@ const QuestCard: React.FC<{
 }> = ({ icon, name, rewardXp, rewardSeeds, progress, requirementValue, completed, claimed, onClaim }) => (
   <div className={`p-4 rounded-2xl border flex items-center gap-3 ${claimed ? 'bg-[#FAF7F2] border-[#EDE4D8] opacity-60' : 'bg-white border-[#EDE4D8]'}`}>
     <span className={`w-9 h-9 rounded-xl flex items-center justify-center text-base shrink-0 ${completed ? 'bg-[#B8E6D5] text-[#194E3B]' : 'bg-[#FAF7F2] border border-[#E5DACD]'}`}>
-      {completed ? '✓' : icon}
+      {completed ? '✓' : <Icon name={icon} className="w-5 h-5" />}
     </span>
     <div className="flex-1 min-w-0">
       <p className="text-xs font-bold text-[#3B2F27] truncate">{name}</p>
@@ -28,8 +29,8 @@ const QuestCard: React.FC<{
         </div>
         <span className="text-[10px] font-bold text-[#8C7A6D] whitespace-nowrap">{Math.min(progress, requirementValue)}/{requirementValue}</span>
       </div>
-      <p className="text-[10px] text-[#207559] font-bold mt-1">
-        {rewardXp > 0 ? `+${rewardXp} XP • ` : ''}+{rewardSeeds} 🌰
+      <p className="text-[10px] text-[#207559] font-bold mt-1 flex items-center gap-1">
+        {rewardXp > 0 ? `+${rewardXp} XP • ` : ''}+{rewardSeeds} <Icon name="level-sprout" className="w-3 h-3" />
       </p>
     </div>
     {completed && !claimed && (
@@ -85,7 +86,9 @@ export const AcademyQuests: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="bg-white p-5 rounded-3xl border border-[#EDE4D8] shadow-xs space-y-1">
-        <h2 className="text-lg font-black text-[#3B2F27] font-['Nunito',sans-serif]">🎯 Today's Growth</h2>
+        <h2 className="text-lg font-black text-[#3B2F27] font-['Nunito',sans-serif] flex items-center gap-1.5">
+          <Icon name="quests-header" className="w-5 h-5" /> Today's Growth
+        </h2>
         <p className="text-xs text-[#7A6B5F]">Small daily and weekly goals that keep your streak alive and your garden growing.</p>
       </div>
       {renderSection('Daily Quests', daily, dailyDone)}

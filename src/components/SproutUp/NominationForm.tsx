@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useShop, useSproutUp } from '../../context/AppContext';
 import { playIosTap } from '../../utils/haptics';
+import { Icon } from '../Icon';
 
 interface NominationFormProps {
   onClose: () => void;
@@ -38,7 +39,9 @@ export const NominationForm: React.FC<NominationFormProps> = ({ onClose }) => {
 
         <div className="flex items-center justify-between border-b border-[#EDE4D8] pb-3">
           <div>
-            <h3 className="font-extrabold text-sm text-[#3B2F27]">💌 Nominate a Shop</h3>
+            <h3 className="font-extrabold text-sm text-[#3B2F27] flex items-center gap-1.5">
+              <Icon name="celebration-burst" className="w-4 h-4" /> Nominate a Shop
+            </h3>
             <p className="text-[11px] text-[#6B5B4F]">Know a business that deserves a little more love?</p>
           </div>
           <button onClick={onClose} className="text-xs font-bold text-[#8C7A6D]">Cancel</button>
@@ -46,7 +49,7 @@ export const NominationForm: React.FC<NominationFormProps> = ({ onClose }) => {
 
         {success ? (
           <div className="py-6 text-center space-y-1.5">
-            <span className="text-3xl block">🎉</span>
+            <Icon name="celebration-burst" className="w-9 h-9 mx-auto" />
             <p className="text-xs font-bold text-[#194E3B]">Nomination submitted!</p>
             <p className="text-[11px] text-[#8C7A6D]">Our team will take a look soon.</p>
           </div>

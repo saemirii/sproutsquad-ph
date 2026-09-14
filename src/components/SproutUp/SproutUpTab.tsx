@@ -7,6 +7,7 @@ import { AmbassadorPicksSection } from './AmbassadorPicksSection';
 import { FeaturedSproutsSection } from './FeaturedSproutsSection';
 import { CommunityPicksSection } from './CommunityPicksSection';
 import { Loader2 } from 'lucide-react';
+import { Icon } from '../Icon';
 
 interface SproutUpTabProps {
   onSelectBusiness: (business: Business) => void;
@@ -36,7 +37,7 @@ export const SproutUpTab: React.FC<SproutUpTabProps> = ({ onSelectBusiness }) =>
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#194E3B] to-[#0E2B25] px-5 py-5 shadow-md">
         <div className="absolute -right-6 -top-8 w-28 h-28 rounded-full bg-[#B8E6D5]/10" />
         <div className="absolute right-4 top-14 w-14 h-14 rounded-full bg-[#B8E6D5]/10" />
-        <span className="relative text-3xl block animate-float-gentle w-fit">🚀</span>
+        <Icon name="tab-sproutup" className="relative w-10 h-10 block animate-float-gentle" />
         <h1 className="relative mt-2 text-lg font-extrabold text-white font-['Nunito',sans-serif]">SproutUp!</h1>
         <p className="relative text-xs text-[#B8E6D5] mt-0.5">Give a growing business a boost.</p>
       </div>

@@ -6,6 +6,7 @@ import { playIosTap } from '../../utils/haptics';
 import { AmbassadorPickForm } from './AmbassadorPickForm';
 import { SproutUpSectionHeader } from './shared/SproutUpSectionHeader';
 import { SproutUpEmptyState } from './shared/SproutUpEmptyState';
+import { Icon } from '../Icon';
 
 interface AmbassadorPicksSectionProps {
   onSelectBusiness: (business: Business) => void;
@@ -19,7 +20,7 @@ export const AmbassadorPicksSection: React.FC<AmbassadorPicksSectionProps> = ({ 
   return (
     <section className="space-y-3">
       <SproutUpSectionHeader
-        icon="🌟"
+        icon="sproutup-ambassador-pick"
         iconBg="bg-[#FFE9A8]"
         title="Ambassador Picks"
         subtitle="Recommended by trusted Sprout Ambassadors."
@@ -34,7 +35,7 @@ export const AmbassadorPicksSection: React.FC<AmbassadorPicksSectionProps> = ({ 
       />
 
       {sproutUpAmbassadorPicks.length === 0 ? (
-        <SproutUpEmptyState icon="🌟" text="Our ambassadors are scouting for their next pick!" />
+        <SproutUpEmptyState icon="sproutup-ambassador-pick" text="Our ambassadors are scouting for their next pick!" />
       ) : (
         <div className="space-y-2.5">
           {sproutUpAmbassadorPicks.map((pick) => (
@@ -49,7 +50,9 @@ export const AmbassadorPicksSection: React.FC<AmbassadorPicksSectionProps> = ({ 
                   <img src={pick.business.logo} alt={pick.business.name} className="w-11 h-11 rounded-xl object-cover border-2 border-[#FFE9A8]" />
                 )}
                 <div className="min-w-0">
-                  <p className="text-[10px] font-black text-[#7A5B0E]">🌟 Ambassador Pick</p>
+                  <p className="text-[10px] font-black text-[#7A5B0E] flex items-center gap-1">
+                    <Icon name="sproutup-ambassador-pick" className="w-3 h-3" /> Ambassador Pick
+                  </p>
                   <h3 className="font-extrabold text-xs text-[#3B2F27] truncate">{pick.headline}</h3>
                 </div>
               </div>

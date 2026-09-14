@@ -3,9 +3,11 @@ import { ShoppingBag, Sparkles, CheckCircle2, ChevronUp, ChevronDown, Store } fr
 import { useCart, useShop } from '../../context/AppContext';
 import { playIosTap } from '../../utils/haptics';
 import { isNativeApp } from '../../utils/platform';
+import { Icon } from '../Icon';
 
 export interface DynamicIslandAlert {
   id: string;
+  /** Key into src/assets/icons/, not a raw emoji. */
   icon: string;
   title: string;
   subtitle?: string;
@@ -52,7 +54,7 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
       <div className="flex items-center text-[#3B2F27]">
         {activeAlert ? (
           <div className="flex items-center gap-1.5 max-w-[220px] px-2.5 py-1 rounded-full bg-[#FAF3DE] border border-[#EDE4D8]">
-            <span className="text-sm shrink-0">{activeAlert.icon}</span>
+            <Icon name={activeAlert.icon} className="w-3.5 h-3.5 shrink-0" />
             <div className="truncate text-left">
               <p className="text-[11px] font-bold leading-tight truncate">{activeAlert.title}</p>
               {activeAlert.subtitle && (
@@ -96,14 +98,14 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-[#B8E6D5] text-[#194E3B] flex items-center justify-center font-bold text-sm">
-                  🌱
+                  <Icon name="level-sprout" className="w-4 h-4" />
                 </div>
                 <div>
                   <p className="text-[11px] font-bold text-white/90 truncate max-w-[150px]">
                     {activeBusiness.name}
                   </p>
-                  <p className="text-[10px] text-white/60 truncate">
-                    📍 {activeBusiness.university}
+                  <p className="text-[10px] text-white/60 truncate flex items-center gap-1">
+                    <Icon name="campus-pin" className="w-2.5 h-2.5" /> {activeBusiness.university}
                   </p>
                 </div>
               </div>
@@ -142,7 +144,7 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
           /* Live Alert Banner in Island */
           <div className="flex items-center justify-between w-full gap-2 text-xs">
             <div className="flex items-center gap-2 truncate">
-              <span className="text-sm">{activeAlert.icon}</span>
+              <Icon name={activeAlert.icon} className="w-3.5 h-3.5 shrink-0" />
               <div className="truncate text-left">
                 <p className="text-[11px] font-bold text-white truncate leading-tight">
                   {activeAlert.title}
@@ -166,7 +168,7 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
 
             {/* Subtle sprout or bag counter indicator */}
             <div className="flex items-center gap-1">
-              <span className="text-[10px]">🌱</span>
+              <Icon name="level-sprout" className="w-2.5 h-2.5" />
               {cartCount > 0 && (
                 <span className="w-1.5 h-1.5 rounded-full bg-[#FFD3BA]" />
               )}

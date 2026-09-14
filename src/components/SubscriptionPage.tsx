@@ -9,14 +9,7 @@ import {
   Boxes,
   FileSpreadsheet,
   Rocket,
-  Users,
-  GraduationCap,
-  Handshake,
-  Store,
-  ClipboardList,
-  TrendingUp,
   ShoppingBag,
-  Bot,
   BookOpen,
   Gauge,
   Wallet,
@@ -31,6 +24,7 @@ import { triggerConfetti } from '../utils/confetti';
 import { isRevenueCatConfigured, SPROUT_PLUS_PRODUCTS, getPackagePriceString, type Package } from '../lib/revenuecat';
 import { openExternalUrl, openNativeSubscriptionManagement } from '../lib/platformLinks';
 import { isNativeApp, API_BASE_URL } from '../utils/platform';
+import { Icon } from './Icon';
 
 interface SubscriptionPageProps {
   onClose: () => void;
@@ -45,11 +39,11 @@ interface PlanFeature {
 const freeFeatures: PlanFeature[] = [
   { icon: <ShoppingBag className="w-4 h-4" />, title: 'Campus Marketplace', description: 'Browse & buy from student businesses across your campus.' },
   { icon: <Gauge className="w-4 h-4" />, title: 'Shop OS', description: 'Manage your products, orders, delivery & expenses in one place.' },
-  { icon: <Bot className="w-4 h-4" />, title: 'AI Co-Pilot', description: 'Get instant business coaching from Peanut the Owl.' },
+  { icon: <Rocket className="w-4 h-4" />, title: 'SproutUp!', description: 'Get discovered through Hidden Gems, Rising Sprouts & curated picks.' },
   { icon: <BookOpen className="w-4 h-4" />, title: 'Sprout Academy', description: 'Learn practical business skills through bite-sized lessons.' },
   { icon: <PackageCheck className="w-4 h-4" />, title: 'Business Health Score', description: "Track your shop's financial performance at a glance." },
   { icon: <Wallet className="w-4 h-4" />, title: 'GCash & Maya Payments', description: 'Accept the payment methods your customers already use.' },
-  { icon: <KeyRound className="w-4 h-4" />, title: 'BES Key Team Access', description: 'Invite teammates to help manage your shop.' },
+  { icon: <KeyRound className="w-4 h-4" />, title: 'Start-Up Key Team Access', description: 'Invite teammates to help manage your shop.' },
 ];
 
 const sproutFeatures: PlanFeature[] = [
@@ -59,15 +53,6 @@ const sproutFeatures: PlanFeature[] = [
   { icon: <Boxes className="w-4 h-4" />, title: 'Bundle Builder', description: 'Combine products into special bundles with their own pricing and inventory.' },
   { icon: <FileSpreadsheet className="w-4 h-4" />, title: 'Order Export', description: 'Export your orders for easy record-keeping, accounting, and management.' },
   { icon: <Rocket className="w-4 h-4" />, title: 'Product Drop Scheduler', description: 'Schedule products and collections to launch automatically at a set date and time.' },
-];
-
-const bloomFeatures: PlanFeature[] = [
-  { icon: <Users className="w-4 h-4" />, title: '1-on-1 Mentoring', description: 'Get personalized business guidance from an experienced mentor.' },
-  { icon: <GraduationCap className="w-4 h-4" />, title: 'Business Masterclasses', description: 'Learn practical skills through exclusive workshops and lessons.' },
-  { icon: <Handshake className="w-4 h-4" />, title: 'Merchant Collaboration Matching', description: 'Connect with other student businesses for potential collaborations and partnerships.' },
-  { icon: <Store className="w-4 h-4" />, title: 'Pop-Up & Market Access', description: 'Get access to SproutSquad-organized markets, pop-ups, and selling opportunities.' },
-  { icon: <ClipboardList className="w-4 h-4" />, title: 'Opportunity Board', description: 'Discover curated competitions, grants, internships, suppliers, and business opportunities.' },
-  { icon: <TrendingUp className="w-4 h-4" />, title: 'Business Growth Review', description: 'Review your performance and get guidance on where to improve and grow.' },
 ];
 
 const planLabelForProduct = (productId: string | null): string => {
@@ -115,7 +100,7 @@ export const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ onClose }) =
 
     if (result.success) {
       triggerConfetti();
-      setBanner({ type: 'success', text: `🎉 Welcome to ${label}! Your Sprout+ features are unlocked.` });
+      setBanner({ type: 'success', text: `Welcome to ${label}! Your Sprout+ features are unlocked.` });
     } else if (result.cancelled) {
       // User closed the checkout themselves — not an error, just return to normal.
     } else {
@@ -164,8 +149,8 @@ export const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ onClose }) =
         </button>
 
         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#B8E6D5]">SproutSquad Membership</p>
-        <h1 className="mt-2 text-2xl font-black text-white font-['Nunito',sans-serif] leading-tight">
-          Grow your shop further 🌱 → 🌸
+        <h1 className="mt-2 text-2xl font-black text-white font-['Nunito',sans-serif] leading-tight flex items-center justify-center gap-1.5">
+          Grow your shop further <Icon name="level-sprout" className="w-5 h-5" /><span aria-hidden="true">→</span><Icon name="level-bloom" className="w-5 h-5" />
         </h1>
         <p className="mt-2 text-xs text-[#CFE9DD] max-w-xs mx-auto leading-5">
           Unlock the tools, mentorship, and opportunities serious student sellers use to level up their business.
@@ -370,7 +355,7 @@ export const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ onClose }) =
             <div className="flex items-center justify-between pr-2">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#207559]">Monthly</p>
-                <h2 className="text-lg font-black text-[#194E3B] font-['Nunito',sans-serif]">🌱 Sprout+</h2>
+                <h2 className="text-lg font-black text-[#194E3B] font-['Nunito',sans-serif] flex items-center gap-1.5"><Icon name="level-sprout" className="w-4 h-4" /> Sprout+</h2>
               </div>
               <div className="text-right">
                 <p className="text-xl font-black text-[#194E3B]">{getPackagePriceString(monthlyPkg)}</p>
@@ -406,7 +391,9 @@ export const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ onClose }) =
                 ) : (
                   <Sparkles className="w-3.5 h-3.5" />
                 )}
-                {purchasingPackageId === monthlyPkg.identifier ? 'Processing your subscription...' : 'Upgrade to Sprout+'}
+                {purchasingPackageId === monthlyPkg.identifier
+                  ? 'Processing your subscription...'
+                  : hasSproutPlus ? 'Switch to monthly billing' : 'Upgrade to Sprout+'}
               </button>
             )}
           </section>
@@ -421,27 +408,14 @@ export const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ onClose }) =
             <div className="flex items-center justify-between pr-2">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#B4501C]">Yearly</p>
-                <h2 className="text-lg font-black text-[#3B2F27] font-['Nunito',sans-serif]">🌿 Bloom+</h2>
+                <h2 className="text-lg font-black text-[#3B2F27] font-['Nunito',sans-serif] flex items-center gap-1.5"><Icon name="level-bloom" className="w-4 h-4" /> Bloom+</h2>
               </div>
               <div className="text-right">
                 <p className="text-xl font-black text-[#3B2F27]">{getPackagePriceString(yearlyPkg)}</p>
                 <p className="text-[10px] font-bold text-[#B4501C]">per year</p>
               </div>
             </div>
-            <p className="mt-2 text-[11px] font-bold text-[#B4501C]">Everything in Sprout+, plus:</p>
-            <ul className="mt-3 space-y-2.5">
-              {bloomFeatures.map((feature) => (
-                <li key={feature.title} className="flex items-start gap-2.5">
-                  <span className="mt-0.5 shrink-0 w-6 h-6 rounded-lg bg-[#FFD3BA] text-[#7A341A] flex items-center justify-center">
-                    {feature.icon}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-xs font-black text-[#3B2F27]">{feature.title}</p>
-                    <p className="text-[11px] leading-4 text-[#7A6B5F]">{feature.description}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <p className="mt-2 text-[11px] font-bold text-[#B4501C]">The same Sprout+ features — just billed annually and priced to save you money over paying monthly.</p>
             {subscription.productIdentifier === SPROUT_PLUS_PRODUCTS.yearly && hasSproutPlus ? (
               <div className="mt-4 w-full rounded-xl bg-white/70 border border-[#F7C948] py-2.5 text-center text-xs font-black text-[#7A341A]">
                 Your current plan
@@ -457,7 +431,9 @@ export const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ onClose }) =
                 ) : (
                   <Crown className="w-3.5 h-3.5" />
                 )}
-                {purchasingPackageId === yearlyPkg.identifier ? 'Processing your subscription...' : 'Go Bloom+ and save'}
+                {purchasingPackageId === yearlyPkg.identifier
+                  ? 'Processing your subscription...'
+                  : hasSproutPlus ? 'Switch to yearly billing' : 'Go Bloom+ and save'}
               </button>
             )}
           </section>

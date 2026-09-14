@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useShop, useSproutUp } from '../../context/AppContext';
 import { playIosTap } from '../../utils/haptics';
+import { Icon } from '../Icon';
 
 interface AmbassadorPickFormProps {
   onClose: () => void;
@@ -39,7 +40,9 @@ export const AmbassadorPickForm: React.FC<AmbassadorPickFormProps> = ({ onClose 
 
         <div className="flex items-center justify-between border-b border-[#EDE4D8] pb-3">
           <div>
-            <h3 className="font-extrabold text-sm text-[#3B2F27]">🌟 Submit an Ambassador Pick</h3>
+            <h3 className="font-extrabold text-sm text-[#3B2F27] flex items-center gap-1.5">
+              <Icon name="sproutup-ambassador-pick" className="w-4 h-4" /> Submit an Ambassador Pick
+            </h3>
             <p className="text-[11px] text-[#6B5B4F]">Recommend a shop you genuinely believe deserves exposure.</p>
           </div>
           <button onClick={onClose} className="text-xs font-bold text-[#8C7A6D]">Cancel</button>
@@ -47,7 +50,7 @@ export const AmbassadorPickForm: React.FC<AmbassadorPickFormProps> = ({ onClose 
 
         {success ? (
           <div className="py-6 text-center space-y-1.5">
-            <span className="text-3xl block">🌟</span>
+            <Icon name="sproutup-ambassador-pick" className="w-9 h-9 mx-auto" />
             <p className="text-xs font-bold text-[#194E3B]">Pick submitted!</p>
             <p className="text-[11px] text-[#8C7A6D]">An admin will review it soon.</p>
           </div>

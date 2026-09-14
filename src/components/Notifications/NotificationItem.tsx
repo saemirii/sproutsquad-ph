@@ -2,6 +2,7 @@ import React from 'react';
 import { useNotifications } from '../../context/AppContext';
 import { AppNotification } from '../../types';
 import { NOTIFICATION_ICON, formatRelativeTime } from './notificationIcons';
+import { Icon } from '../Icon';
 
 interface NotificationItemProps {
   notification: AppNotification;
@@ -26,8 +27,8 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({ notification
         notification.isRead ? 'bg-white' : 'bg-[#F2FBF7]'
       }`}
     >
-      <span className="w-9 h-9 rounded-xl bg-[#FAF7F2] border border-[#E5DACD] flex items-center justify-center text-base shrink-0">
-        {NOTIFICATION_ICON[notification.type] || '🔔'}
+      <span className="w-9 h-9 rounded-xl bg-[#FAF7F2] border border-[#E5DACD] flex items-center justify-center shrink-0">
+        <Icon name={NOTIFICATION_ICON[notification.type] || 'notification-generic'} className="w-5 h-5" />
       </span>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   X,
   MapPin,
@@ -16,6 +16,7 @@ import {
 import { Product, Business } from '../../types';
 import { useShop, useCart } from '../../context/AppContext';
 import { formatPHP } from '../../utils/analytics';
+import { Icon } from '../Icon';
 
 interface ProductDetailModalProps {
   product: Product | null;
@@ -32,6 +33,17 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const { addToCart } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [isAdded, setIsAdded] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
+  const [stockMessage, setStockMessage] = useState<string | null>(null);
+
+  // This modal instance persists across different products (no `key` in
+  // App.tsx) — reset the per-product quantity/error state so a message or
+  // stepper value from the last product viewed never leaks into the next.
+  useEffect(() => {
+    setQuantity(1);
+    setStockMessage(null);
+    setIsAdded(false);
+  }, [product?.id]);
 
   if (!product) return null;
 
@@ -40,8 +52,30 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     ? product.bundledProductIds.map((id) => products.find((p) => p.id === id)).filter((p): p is Product => Boolean(p))
     : [];
 
-  const handleAddToCart = () => {
-    addToCart(product, quantity);
+  // The cart's cap only reflects this tab's cached stock, which can go
+  // stale (another buyer, or the seller, changing inventory elsewhere) —
+  // addToCart re-checks the live count, so what actually lands in the bag
+  // can be less than `quantity` even though the stepper above allowed it.
+  const handleAddToCart = async () => {
+    setIsAdding(true);
+    setStockMessage(null);
+    const { added, available } = await addToCart(product, quantity);
+    setIsAdding(false);
+
+    if (added <= 0) {
+      setStockMessage(
+        available <= 0
+          ? 'Sorry — this just sold out.'
+          : `Only ${available} available — you already have them all in your bag.`
+      );
+      return;
+    }
+    if (added < quantity) {
+      setStockMessage(`Only ${available} available — added ${added} to your bag.`);
+      setQuantity(added);
+      return;
+    }
+
     setIsAdded(true);
     setTimeout(() => {
       setIsAdded(false);
@@ -73,8 +107,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               alt={product.name}
               className="w-full h-full object-cover"
             />
-            <div className="absolute bottom-3 left-3 bg-[#3B2F27]/80 backdrop-blur-xs text-white text-[11px] font-semibold px-2.5 py-1 rounded-xl">
-              📍 {product.university}
+            <div className="absolute bottom-3 left-3 bg-[#3B2F27]/80 backdrop-blur-xs text-white text-[11px] font-semibold px-2.5 py-1 rounded-xl flex items-center gap-1">
+              <Icon name="campus-pin" className="w-3 h-3" /> {product.university}
             </div>
           </div>
 
@@ -203,27 +237,34 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
               <button
                 id="modal-add-to-cart-btn"
-                disabled={product.inventoryCount <= 0}
-                onClick={handleAddToCart}
-                className={`w-full py-3.5 rounded-2xl font-black text-xs transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer active:scale-95 ${
+                disabled={product.inventoryCount <= 0 || isAdding}
+                onClick={() => void handleAddToCart()}
+                className={`w-full py-3.5 rounded-2xl font-black text-xs transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer active:scale-95 disabled:cursor-not-allowed ${
                   product.inventoryCount <= 0
-                    ? 'bg-[#FAF3DE] text-[#A39284] cursor-not-allowed'
+                    ? 'bg-[#FAF3DE] text-[#A39284]'
                     : isAdded
                     ? 'bg-[#194E3B] text-white'
-                    : 'bg-[#B8E6D5] hover:bg-[#A3DEC9] text-[#194E3B]'
+                    : 'bg-[#B8E6D5] hover:bg-[#A3DEC9] text-[#194E3B] disabled:opacity-60'
                 }`}
               >
                 {product.isPreOrder ? <CalendarClock className="w-4 h-4" /> : <ShoppingBag className="w-4 h-4" />}
-                <span>
+                <span className="inline-flex items-center gap-1">
                   {product.inventoryCount <= 0
                     ? 'Out of Stock'
+                    : isAdding
+                    ? 'Checking stock...'
                     : isAdded
-                    ? 'Added to Bag! ✨'
+                    ? <>Added to Bag! <Icon name="celebration-burst" className="w-3 h-3" /></>
                     : product.isPreOrder
                     ? `Pre-Order ${quantity} • ${formatPHP(product.price * quantity)}`
                     : `Add ${quantity} to Bag • ${formatPHP(product.price * quantity)}`}
                 </span>
               </button>
+              {stockMessage && (
+                <p className="text-[11px] font-bold text-[#7A341A] bg-[#FFF3E8] border border-[#F8BA9E] rounded-xl px-3 py-2 text-center">
+                  {stockMessage}
+                </p>
+              )}
             </div>
           </div>
         </div>

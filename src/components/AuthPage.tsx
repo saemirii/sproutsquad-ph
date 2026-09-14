@@ -2,6 +2,7 @@ import React, { FormEvent, useState } from 'react';
 import { ArrowRight, LockKeyhole, Mail, Store, UserRound } from 'lucide-react';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { safeSetItem } from '../utils/safeStorage';
+import { Icon } from './Icon';
 
 interface AuthPageProps {
   onLocalAuth?: (user: { id: string; email: string; user_metadata: { full_name: string } }) => void;
@@ -83,7 +84,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLocalAuth }) => {
             Create your own student storefront, discover small businesses around you, and keep every order in one gentle little operating system.
           </p>
           <div className="mt-10 flex items-center gap-3 text-sm text-[#B8E6D5]">
-            <span className="w-10 h-10 rounded-2xl bg-[#B8E6D5] text-[#143D35] flex items-center justify-center text-lg">🌱</span>
+            <span className="w-10 h-10 rounded-2xl bg-[#B8E6D5] text-[#143D35] flex items-center justify-center"><Icon name="level-sprout" className="w-5 h-5" /></span>
             Made for student entrepreneurs
           </div>
         </section>

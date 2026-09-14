@@ -12,6 +12,7 @@ import {
 import { useSession, useShop } from '../../context/AppContext';
 import { Order } from '../../types';
 import { formatPHP } from '../../utils/analytics';
+import { Icon } from '../Icon';
 
 interface OrderSuccessModalProps {
   orders: Order[] | null;
@@ -50,11 +51,11 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({
 
         {/* Mascot & Success Icon */}
         <div className="relative inline-block">
-          <div className="w-18 h-18 bg-[#B8E6D5] text-[#194E3B] rounded-3xl mx-auto flex items-center justify-center text-3xl shadow-xs">
-            🎉
+          <div className="w-18 h-18 bg-[#B8E6D5] text-[#194E3B] rounded-3xl mx-auto flex items-center justify-center shadow-xs">
+            <Icon name="celebration-burst" className="w-9 h-9" />
           </div>
-          <span className="absolute -bottom-1 -right-1 bg-white p-1 rounded-full border border-[#B8E6D5] text-xs">
-            ✨
+          <span className="absolute -bottom-1 -right-1 bg-white p-1 rounded-full border border-[#B8E6D5]">
+            <Icon name="achievements-header" className="w-3.5 h-3.5" />
           </span>
         </div>
 

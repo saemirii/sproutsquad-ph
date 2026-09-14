@@ -60,10 +60,11 @@ const MainAppContent: React.FC = () => {
   // Deep-link bridge: a notification's action can request switching the
   // active iOS tab (and optionally focusing a business or order), which
   // lives here rather than in AppContext — applied once, then cleared.
-  // The 'bag' + orderId case is deliberately NOT cleared here — IosBagView
-  // itself reads pendingNavigation to highlight/scroll to that order, and
-  // clears it once it has (clearing it here first would race it out from
-  // under that component before it ever mounts/reads it).
+  // The 'bag' + orderId and 'seller' + orderId cases are deliberately NOT
+  // cleared here — IosBagView/OrderManager themselves read pendingNavigation
+  // to highlight/scroll to that order, and clear it once they have
+  // (clearing it here first would race it out from under those components
+  // before they ever mount/read it).
   useEffect(() => {
     if (!pendingNavigation) return;
     setActiveTab(pendingNavigation.tab);
@@ -73,6 +74,7 @@ const MainAppContent: React.FC = () => {
       setPendingNavigation(null);
     } else if (
       (pendingNavigation.tab !== 'bag' || !pendingNavigation.orderId) &&
+      (pendingNavigation.tab !== 'seller' || !pendingNavigation.orderId) &&
       (pendingNavigation.tab !== 'sproutup' || !pendingNavigation.businessId)
     ) {
       setPendingNavigation(null);
@@ -81,7 +83,7 @@ const MainAppContent: React.FC = () => {
 
   const handleOrderSuccess = (createdOrders: Order[]) => {
     setSuccessfulOrders(createdOrders);
-    showAlert('🎉', 'Campus Order Placed!', `${createdOrders.length} drop scheduled`);
+    showAlert('celebration-burst', 'Campus Order Placed!', `${createdOrders.length} drop scheduled`);
   };
 
   if (isRemoteDataLoading) {

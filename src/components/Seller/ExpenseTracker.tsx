@@ -14,6 +14,7 @@ import {
 import { useShop } from '../../context/AppContext';
 import { Expense, ExpenseCategory } from '../../types';
 import { formatPHP } from '../../utils/analytics';
+import { Icon } from '../Icon';
 
 export const ExpenseTracker: React.FC = () => {
   const { sellerExpenses, addExpense, deleteExpense, activeBusinessMetrics } = useShop();
@@ -73,10 +74,10 @@ export const ExpenseTracker: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-[#3B2F27] font-['Nunito',sans-serif]">
-            Expense & Cashflow Logger
+            Expense Logger/Tracker
           </h2>
           <p className="text-xs text-[#7A6B5F]">
-            Record packaging, ingredients, fare, and stalls to keep profit calculations accurate
+            Record packaging, ingredients, and transportation expenses to keep profit calculations accurate
           </p>
         </div>
 
@@ -119,8 +120,9 @@ export const ExpenseTracker: React.FC = () => {
 
         <div className="bg-white p-5 rounded-3xl border border-[#EDE4D8] shadow-xs flex flex-col justify-between">
           <span className="text-[11px] font-bold text-[#8C7A6D]">Packaging Cost Rule</span>
-          <p className="text-xs text-[#6E5D52] leading-relaxed">
-            💡 Buying kraft boxes in bulk at Divisoria or using a rubber logo stamp can save up to 60% on unboxing costs!
+          <p className="text-xs text-[#6E5D52] leading-relaxed flex items-start gap-1">
+            <Icon name="lesson-tip-insight" className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+            Buying kraft boxes in bulk at Divisoria or using a rubber logo stamp can save up to 60% on unboxing costs!
           </p>
         </div>
       </div>
@@ -209,7 +211,7 @@ export const ExpenseTracker: React.FC = () => {
             <div className="flex items-center justify-between border-b border-[#F0E9DF] pb-3">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-[#FFD3BA] text-[#7A2E1E] flex items-center justify-center font-bold">
-                  🧾
+                  <Icon name="sellerOS-expenses" className="w-5 h-5" />
                 </div>
                 <h3 className="font-extrabold text-base text-[#3B2F27] font-['Nunito',sans-serif]">
                   Log Business Expense

@@ -7,9 +7,10 @@ interface EnterBesKeyModalProps {
 }
 
 /**
- * A single, standalone way to join a business by BES key — deliberately
- * does not show or require picking from a list of every business (see
- * ProfileSheet.tsx, which used to list all of them just for this).
+ * A single, standalone way to join a business by Start-Up Key (internally
+ * still "bes_key") — deliberately does not show or require picking from a
+ * list of every business (see ProfileSheet.tsx, which used to list all of
+ * them just for this).
  */
 export const EnterBesKeyModal: React.FC<EnterBesKeyModalProps> = ({ onClose }) => {
   const { unlockBusinessByKey, setActiveBusiness, businesses } = useShop();
@@ -26,7 +27,7 @@ export const EnterBesKeyModal: React.FC<EnterBesKeyModalProps> = ({ onClose }) =
     setIsSubmitting(false);
 
     if (!result.success) {
-      setError(result.message || 'That BES key is not valid.');
+      setError(result.message || 'That Start-Up Key is not valid.');
       return;
     }
 
@@ -39,7 +40,7 @@ export const EnterBesKeyModal: React.FC<EnterBesKeyModalProps> = ({ onClose }) =
     <div className="fixed inset-0 z-[80] bg-black/40 backdrop-blur-sm flex items-center justify-center p-6">
       <div className="w-full max-w-sm bg-[#FFF9E6] rounded-3xl border border-[#EDE4D8] shadow-2xl p-6 space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-base font-black text-[#3B2F27] font-['Nunito',sans-serif]">Enter BES Key</h3>
+          <h3 className="text-base font-black text-[#3B2F27] font-['Nunito',sans-serif]">Enter Start-Up Key</h3>
           <button onClick={onClose} className="p-1.5 rounded-xl text-[#8C7A6D] hover:bg-[#F2EAE0]" title="Close">
             <X className="w-4 h-4" />
           </button>
@@ -63,7 +64,7 @@ export const EnterBesKeyModal: React.FC<EnterBesKeyModalProps> = ({ onClose }) =
         ) : (
           <>
             <p className="text-xs leading-5 text-[#7A6B5F]">
-              Enter the Business Entry &amp; Sharing key you received by email to get manager access to that shop.
+              Enter the Start-Up Key you received by email to get manager access to that shop.
             </p>
             <input
               value={key}

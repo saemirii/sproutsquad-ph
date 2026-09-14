@@ -16,14 +16,14 @@ export const RisingSproutsSection: React.FC<RisingSproutsSectionProps> = ({ onSe
   return (
     <section className="space-y-3">
       <SproutUpSectionHeader
-        icon="📈"
+        icon="level-grower"
         iconBg="bg-[#A8D8EA]"
         title="Rising Sprouts"
         subtitle="This business is growing fast!"
       />
 
       {sproutUpRisingSprouts.length === 0 ? (
-        <SproutUpEmptyState icon="📈" text="We're watching for the next big mover. Check back soon!" />
+        <SproutUpEmptyState icon="level-grower" text="We're watching for the next big mover. Check back soon!" />
       ) : (
         <div className="space-y-2.5">
           {sproutUpRisingSprouts.map((business) => (

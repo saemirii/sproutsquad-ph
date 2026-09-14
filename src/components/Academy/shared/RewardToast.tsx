@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { useAcademy } from '../../../context/AppContext';
+import { Icon } from '../../Icon';
 
 /** Small floating "+XP / +Seeds" feedback (section 14) — mount once near the top of the Academy tab. */
 export const RewardToast: React.FC = () => {
@@ -18,7 +19,9 @@ export const RewardToast: React.FC = () => {
       <div className="flex items-center gap-2 bg-[#194E3B] text-white text-xs font-black px-4 py-2.5 rounded-2xl shadow-lg">
         {lastReward.xpAwarded > 0 && <span>+{lastReward.xpAwarded} XP</span>}
         {lastReward.xpAwarded > 0 && lastReward.seedsAwarded > 0 && <span className="opacity-50">•</span>}
-        {lastReward.seedsAwarded > 0 && <span>+{lastReward.seedsAwarded} 🌰 Seeds</span>}
+        {lastReward.seedsAwarded > 0 && (
+          <span className="inline-flex items-center gap-1">+{lastReward.seedsAwarded} <Icon name="level-sprout" className="w-3 h-3" /> Seeds</span>
+        )}
       </div>
     </div>
   );

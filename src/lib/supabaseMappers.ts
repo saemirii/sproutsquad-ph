@@ -1,4 +1,4 @@
-import { Business, Product, Order, Expense, Coupon, CampusUniversity, ProductCategory, OrderStatus, DeliveryMethod, FulfillmentType, ExpenseCategory, DiscountType, BusinessReview } from '../types';
+import { Business, Product, Order, Expense, Coupon, CampusUniversity, ProductCategory, OrderStatus, DeliveryMethod, FulfillmentType, ExpenseCategory, DiscountType, BusinessReview, OrderIssue, OrderIssueReporterRole, OrderIssueStatus, ReviewReport, ReviewReportStatus, ReviewReportDecision } from '../types';
 
 export const businessToRow = (b: Business) => ({
   id: b.id,
@@ -199,6 +199,7 @@ export const rowToProfile = (row: any) => ({
   email: row.email || undefined,
   university: (row.university || undefined) as CampusUniversity | undefined,
   avatar: row.avatar || undefined,
+  contactNumber: row.contact_number || undefined,
   isAdmin: Boolean(row.is_admin),
   isAmbassador: Boolean(row.is_ambassador),
 });
@@ -210,5 +211,34 @@ export const rowToBusinessReview = (row: any): BusinessReview => ({
   stars: Number(row.stars),
   comment: row.comment || null,
   images: row.images || [],
+  createdAt: row.created_at,
+});
+
+export const rowToOrderIssue = (row: any): OrderIssue => ({
+  id: row.id,
+  orderId: row.order_id,
+  businessId: row.business_id,
+  reporterId: row.reporter_id,
+  reporterRole: row.reporter_role as OrderIssueReporterRole,
+  reason: row.reason,
+  message: row.message || undefined,
+  status: row.status as OrderIssueStatus,
+  createdAt: row.created_at,
+});
+
+export const rowToReviewReport = (row: any): ReviewReport => ({
+  id: row.id,
+  orderId: row.order_id,
+  businessId: row.business_id,
+  businessName: row.business_name || '',
+  reporterId: row.reporter_id,
+  reason: row.reason,
+  message: row.message || undefined,
+  reviewCustomerName: row.review_customer_name || '',
+  reviewStars: row.review_stars === null || row.review_stars === undefined ? null : Number(row.review_stars),
+  reviewComment: row.review_comment || null,
+  status: row.status as ReviewReportStatus,
+  moderatorDecision: (row.moderator_decision as ReviewReportDecision) || undefined,
+  moderatorNote: row.moderator_note || undefined,
   createdAt: row.created_at,
 });

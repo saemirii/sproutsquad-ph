@@ -3,6 +3,7 @@ import { Business } from '../../types';
 import { useSproutUp } from '../../context/AppContext';
 import { playIosTap } from '../../utils/haptics';
 import { SproutUpSectionHeader } from './shared/SproutUpSectionHeader';
+import { Icon } from '../Icon';
 
 interface FeaturedSproutsSectionProps {
   onSelectBusiness: (business: Business) => void;
@@ -18,7 +19,7 @@ export const FeaturedSproutsSection: React.FC<FeaturedSproutsSectionProps> = ({ 
   return (
     <section className="space-y-3">
       <SproutUpSectionHeader
-        icon="✨"
+        icon="sproutup-featured-sprout"
         iconBg="bg-[#FFD3BA]"
         title="Featured Sprouts"
         subtitle="Meet one of the student businesses we're loving this week."
@@ -38,8 +39,8 @@ export const FeaturedSproutsSection: React.FC<FeaturedSproutsSectionProps> = ({ 
                 className="w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-              <span className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-lg text-[9px] font-black bg-[#FFD3BA] text-[#7A2E1E] shadow-xs">
-                ✨ Featured This Week
+              <span className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-lg text-[9px] font-black bg-[#FFD3BA] text-[#7A2E1E] shadow-xs flex items-center gap-1">
+                <Icon name="sproutup-featured-sprout" className="w-2.5 h-2.5" /> Featured This Week
               </span>
               <div className="absolute bottom-2.5 left-3 right-3">
                 <h3 className="font-extrabold text-sm text-white truncate font-['Nunito',sans-serif] drop-shadow-sm">{feature.title}</h3>

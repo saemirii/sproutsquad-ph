@@ -126,6 +126,32 @@ export interface Order {
   proofOfPaymentUrl?: string;
 }
 
+export type OrderIssueReporterRole = 'buyer' | 'seller';
+export type OrderIssueStatus = 'open' | 'resolved';
+
+/** A lightweight flag-and-notify report — deliberately never changes the
+ * order's own status (see supabase/migration_27_order_issues.sql). */
+export interface OrderIssue {
+  id: string;
+  orderId: string;
+  businessId: string;
+  reporterId: string;
+  reporterRole: OrderIssueReporterRole;
+  reason: string;
+  message?: string;
+  status: OrderIssueStatus;
+  createdAt: string;
+}
+
+/** Shared between the buyer and seller "Report an Issue" forms. */
+export const ORDER_ISSUE_REASONS = [
+  'Marked complete by mistake',
+  'Item not received',
+  'Item not as described',
+  'Payment issue',
+  'Other',
+] as const;
+
 export type DiscountType = 'percentage' | 'fixed';
 
 export interface Coupon {
@@ -198,40 +224,58 @@ export interface BusinessMetrics {
 
 export interface QuizQuestion {
   id: string;
-  question: string;
-  options: string[];
-  correctIndex: number;
+  format: 'multiple_choice' | 'short_answer';
+  /** Scenario + question combined — case-style, not pure recall. */
+  prompt: string;
+  /** multiple_choice only. */
+  options?: string[];
+  correctIndex?: number;
+  /** short_answer only — shown after submit as a self-check, never auto-graded. */
+  modelAnswer?: string;
   explanation: string;
 }
 
-export interface LessonSection {
-  heading: string;
-  body: string;
-  keyTakeaway?: string;
-  practicalFormula?: {
-    title: string;
-    formula: string;
-    example: string;
-  };
+export type AcademyStage = 'Sprout' | 'Seedling' | 'Sapling' | 'Bloom';
+
+/** One of the 8 curriculum modules — the first-class grouping lessons/checkpoints
+ * belong to (replaces the old ad-hoc `Lesson.category` string). */
+export interface AcademyModule {
+  id: string;
+  number: number;
+  stage: AcademyStage;
+  /** Key into src/assets/icons/. */
+  icon: string;
+  title: string;
+  tagline: string;
+  intro: string;
+  lessonIds: string[];
+  checkpointId: string;
+}
+
+export interface LessonSource {
+  title: string;
+  url: string;
 }
 
 export interface Lesson {
   id: string;
+  moduleId: string;
+  /** Display/ordering number within the module, e.g. "1.1". */
+  number: string;
   title: string;
-  tagline: string;
-  category: 'Pricing & Profit' | 'Campus Marketing' | 'Cashflow & Allowances' | 'Sourcing & COGS' | 'Customer Retention';
-  level: 'Beginner' | 'Intermediate';
   estimatedMinutes: number;
-  mascot: 'owl' | 'bunny' | 'fox' | 'sprout';
-  icon: string;
-  summary: string;
-  sections: LessonSection[];
+  /** The opening story/quote that frames the lesson. */
+  hook: string;
+  simplifiedExplanation: string;
+  concept: { body: string; sources: LessonSource[] };
+  activity: { title: string; prompt: string };
+  /** The PDF's embedded "SIMULATION" block — a short reflection prompt on one
+   * of the recurring fictional businesses. Not machine-scored (unlike a
+   * module Challenge) — self-check only. */
+  inLessonScenario?: { title: string; prompt: string };
+  shopOsTieIn?: { note: string; deepLink?: { sellerTab: SellerTab } };
+  jurisdictionNote?: string;
   quiz: QuizQuestion[];
-  badgeReward: {
-    name: string;
-    icon: string;
-    color: string;
-  };
 }
 
 export type SellerTab = 'overview' | 'products' | 'orders' | 'delivery' | 'expenses' | 'academy' | 'settings';
@@ -294,7 +338,8 @@ export interface GardenItem {
   id: string;
   name: string;
   category: GardenItemCategory;
-  emoji: string;
+  /** Key into src/assets/icons/ (rendered via <Icon name={...} />), not a raw emoji. */
+  icon: string;
   priceSeeds: number;
   rarity: GardenItemRarity;
   seasonalTag?: string;
@@ -377,18 +422,61 @@ export interface SimulationDecisionField {
   helpText?: string;
 }
 
-export interface SimulationResult {
-  revenue: number;
-  expenses: number;
-  profit: number;
-  profitMargin: number;
-  remainingCash: number;
-  businessHealth: 'Thriving' | 'Stable' | 'Struggling' | 'At Risk';
-  healthScore: number; // 0-100
+/** Shared outcome shape for both Challenge modes — unifies the old
+ * per-simulation "healthScore" concept so one reward/feedback UI serves
+ * sliders-and-formulas challenges and sequential-choice case studies alike. */
+export interface ChallengeResult {
+  score: number; // 0-100
+  tier: 'Thriving' | 'Stable' | 'Struggling' | 'At Risk';
+  breakdown: { label: string; value: string }[];
+  feedback: string[];
   xpAwarded: number;
   seedsAwarded: number;
-  feedback: string[];
 }
+
+export interface CaseStudyChoice {
+  label: string;
+  scoreDelta: number;
+  feedback: string;
+}
+
+export interface CaseStudyStep {
+  id: string;
+  prompt: string;
+  choices: CaseStudyChoice[];
+}
+
+interface BaseChallenge {
+  id: string;
+  moduleId: string;
+  title: string;
+  tagline: string;
+  icon: string;
+}
+
+/** The pricing-toggle pattern, generalized: sliders/toggles over a pure
+ * compute() function. Fits formula-driven modules (COGS, break-even,
+ * budgeting, ratios). */
+export interface SimulationChallengeDef extends BaseChallenge {
+  mode: 'simulation';
+  startingCapital: number;
+  decisions: SimulationDecisionField[];
+  compute: (decisions: Record<string, number | boolean>, startingCapital: number) => ChallengeResult;
+}
+
+/** Sequential decision points, each a scenario + 2-4 choices with their own
+ * score delta and feedback. Fits judgment-call modules (positioning,
+ * business structure, funnel diagnosis) that don't reduce to sliders. */
+export interface CaseStudyChallengeDef extends BaseChallenge {
+  mode: 'caseStudy';
+  steps: CaseStudyStep[];
+  /** Converts the summed scoreDelta across all steps into the shared
+   * ChallengeResult shape (case studies have no natural revenue/expense
+   * numbers of their own). */
+  scoreToResult: (totalScore: number, maxPossibleScore: number) => ChallengeResult;
+}
+
+export type Challenge = SimulationChallengeDef | CaseStudyChallengeDef;
 
 // ===================================================================
 // Notifications
@@ -396,6 +484,7 @@ export interface SimulationResult {
 
 export type NotificationType =
   | 'order_placed' | 'new_order' | 'order_accepted' | 'order_ready' | 'order_out_for_delivery' | 'order_completed' | 'order_cancelled' | 'order_received'
+  | 'order_issue_reported'
   | 'low_stock' | 'out_of_stock'
   | 'shop_new_product' | 'shop_restock' | 'shop_promotion'
   | 'welcome' | 'subscription_update' | 'announcement'
@@ -508,16 +597,6 @@ export interface SproutUpFeaturedSprout {
   createdAt: string;
 }
 
-export interface SimulationScenario {
-  id: string;
-  title: string;
-  icon: string;
-  tagline: string;
-  category: string;
-  startingCapital: number;
-  decisions: SimulationDecisionField[];
-  compute: (decisions: Record<string, number | boolean>, startingCapital: number) => SimulationResult;
-}
 
 export interface CartItem {
   product: Product;
@@ -533,4 +612,47 @@ export interface BusinessReview {
   comment: string | null;
   images: string[];
   createdAt: string;
+}
+
+export type ReviewReportStatus = 'open' | 'resolved';
+export type ReviewReportDecision = 'dismissed' | 'removed';
+
+/** A report against a business review (App Store Guideline 1.2 UGC
+ * moderation). The reviewed content is snapshotted at report time by
+ * report_review() (see supabase/migration_30_review_reports.sql), so the
+ * admin queue and any later audit still show what was reported even after
+ * a "removed" decision deletes the live review. */
+export interface ReviewReport {
+  id: string;
+  orderId: string;
+  businessId: string;
+  businessName: string;
+  reporterId: string;
+  reason: string;
+  message?: string;
+  reviewCustomerName: string;
+  reviewStars: number | null;
+  reviewComment: string | null;
+  status: ReviewReportStatus;
+  moderatorDecision?: ReviewReportDecision;
+  moderatorNote?: string;
+  createdAt: string;
+}
+
+/** Shared between every "Report a review" form. */
+export const REVIEW_REPORT_REASONS = [
+  'Spam or fake review',
+  'Harassment or abusive language',
+  'Inappropriate photo',
+  'Off-topic or irrelevant',
+  'Other',
+] as const;
+
+/** A profile matched by admin_lookup_user_by_email(), shown before granting/revoking a role. */
+export interface AdminLookedUpUser {
+  id: string;
+  fullName: string;
+  email: string;
+  isAdmin: boolean;
+  isAmbassador: boolean;
 }

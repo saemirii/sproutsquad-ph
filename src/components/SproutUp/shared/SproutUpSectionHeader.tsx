@@ -1,6 +1,8 @@
 import React from 'react';
+import { Icon } from '../../Icon';
 
 interface SproutUpSectionHeaderProps {
+  /** Key into src/assets/icons/, not a raw emoji. */
   icon: string;
   iconBg: string;
   title: string;
@@ -14,8 +16,8 @@ interface SproutUpSectionHeaderProps {
 export const SproutUpSectionHeader: React.FC<SproutUpSectionHeaderProps> = ({ icon, iconBg, title, subtitle, action }) => (
   <div className="flex items-start justify-between gap-3">
     <div className="flex items-start gap-2.5">
-      <span className={`w-9 h-9 rounded-2xl ${iconBg} flex items-center justify-center text-base shrink-0 shadow-xs`}>
-        {icon}
+      <span className={`w-9 h-9 rounded-2xl ${iconBg} flex items-center justify-center shrink-0 shadow-xs`}>
+        <Icon name={icon} className="w-5 h-5" />
       </span>
       <div className="pt-0.5">
         <h2 className="text-sm font-extrabold text-[#3B2F27] font-['Nunito',sans-serif]">{title}</h2>

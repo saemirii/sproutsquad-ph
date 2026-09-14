@@ -1,8 +1,8 @@
 import React from 'react';
-import { ShoppingBag, Store, GraduationCap, Bot, Sparkles, Compass } from 'lucide-react';
 import { useCart, useShop } from '../../context/AppContext';
 import { playIosTap } from '../../utils/haptics';
 import { isNativeApp } from '../../utils/platform';
+import { Icon } from '../Icon';
 
 export type IosActiveTab = 'market' | 'sproutup' | 'academy' | 'seller' | 'bag';
 
@@ -29,29 +29,29 @@ export const IosTabBar: React.FC<IosTabBarProps> = ({ activeTab, onTabChange }) 
     {
       id: 'market',
       label: 'Market',
-      icon: '🛍️',
+      icon: 'tab-market',
     },
     {
       id: 'sproutup',
       label: 'SproutUp!',
-      icon: '🚀',
+      icon: 'tab-sproutup',
     },
     {
       id: 'academy',
       label: 'Academy',
-      icon: '🌱',
+      icon: 'mascot-owl',
     },
     {
       id: 'seller',
       label: 'Shop OS',
-      icon: '🐻',
+      icon: 'simulation-retail',
       badge: pendingSellerOrders > 0 ? pendingSellerOrders : undefined,
       badgeColor: 'bg-[#FFD3BA] text-[#7A341A]',
     },
     {
       id: 'bag',
       label: 'My Bag',
-      icon: '🎒',
+      icon: 'tab-my-bag',
       badge: cartCount > 0 ? cartCount : undefined,
       badgeColor: 'bg-[#194E3B] text-white',
     },
@@ -84,9 +84,7 @@ export const IosTabBar: React.FC<IosTabBarProps> = ({ activeTab, onTabChange }) 
                     : 'text-[#8C7A6D] group-hover:bg-white/50'
                 }`}
               >
-                <span className="text-base select-none leading-none">
-                  {tab.icon}
-                </span>
+                <Icon name={tab.icon} alt={tab.label} className="w-6 h-6" />
               </div>
 
               {/* Tab Title */}

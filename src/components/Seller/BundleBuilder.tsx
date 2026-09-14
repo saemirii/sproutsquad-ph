@@ -148,6 +148,7 @@ export const BundleBuilder: React.FC = () => {
                 min={1}
                 value={price}
                 onChange={(e) => setPrice(Number(e.target.value))}
+                onFocus={(e) => e.target.select()}
                 className="w-full px-2 py-1.5 bg-white border border-[#E0D5C5] rounded-lg text-xs font-bold text-[#207559]"
               />
             </div>
@@ -158,6 +159,7 @@ export const BundleBuilder: React.FC = () => {
                 min={0}
                 value={inventoryCount}
                 onChange={(e) => setInventoryCount(Number(e.target.value))}
+                onFocus={(e) => e.target.select()}
                 className="w-full px-2 py-1.5 bg-white border border-[#E0D5C5] rounded-lg text-xs"
               />
             </div>

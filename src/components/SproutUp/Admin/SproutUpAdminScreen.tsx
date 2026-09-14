@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { X, Loader2, Check, Ban, Trash2, EyeOff, Eye } from 'lucide-react';
 import { useShop, useSproutUp } from '../../../context/AppContext';
 import { playIosTap } from '../../../utils/haptics';
+import { Icon } from '../../Icon';
 
 interface SproutUpAdminScreenProps {
   onClose: () => void;
@@ -101,7 +102,9 @@ export const SproutUpAdminScreen: React.FC<SproutUpAdminScreenProps> = ({ onClos
   return (
     <div className="fixed inset-0 z-50 bg-[#FFF9E6] overflow-y-auto">
       <div className="sticky top-0 z-10 bg-[#FFF9E6]/95 backdrop-blur-md border-b border-[#EDE4D8] px-4 pt-4 pb-3 flex items-center justify-between">
-        <h2 className="font-extrabold text-base text-[#194E3B] font-['Nunito',sans-serif]">🚀 SproutUp! Admin Tools</h2>
+        <h2 className="font-extrabold text-base text-[#194E3B] font-['Nunito',sans-serif] flex items-center gap-1.5">
+          <Icon name="tab-sproutup" className="w-5 h-5" /> SproutUp! Admin Tools
+        </h2>
         <button onClick={onClose} className="w-8 h-8 rounded-full bg-white border border-[#EDE4D8] flex items-center justify-center cursor-pointer">
           <X className="w-4 h-4 text-[#6B5B4F]" />
         </button>

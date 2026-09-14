@@ -56,6 +56,20 @@
   animation: gentlePulseRing 2s ease-in-out infinite;
 }
 
+/* Gold glow for epic-rarity garden items — a separate keyframe from
+   gentlePulseRing above: both animate box-shadow, so sharing one class
+   would let whichever animation "wins" silently override the other's
+   color (this is how the epic gold ring first went missing — it was
+   reusing gentlePulseRing, whose mint box-shadow clobbered the gold
+   Tailwind ring utility). */
+@keyframes epicGlowRing {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(247, 201, 72, 0.55); }
+  50% { box-shadow: 0 0 0 6px rgba(247, 201, 72, 0); }
+}
+.animate-epic-glow {
+  animation: epicGlowRing 2s ease-in-out infinite;
+}
+
 .btn-bouncy {
   transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }

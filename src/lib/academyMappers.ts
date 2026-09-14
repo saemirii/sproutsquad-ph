@@ -38,7 +38,7 @@ export const rowToGardenItem = (row: any): GardenItem => ({
   id: row.id,
   name: row.name,
   category: row.category as GardenItemCategory,
-  emoji: row.emoji,
+  icon: row.emoji,
   priceSeeds: Number(row.price_seeds),
   rarity: row.rarity as GardenItemRarity,
   seasonalTag: row.seasonal_tag || undefined,

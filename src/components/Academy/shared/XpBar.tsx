@@ -1,5 +1,6 @@
 import React from 'react';
 import { getLevelProgress } from '../../../data/academyLevels';
+import { Icon } from '../../Icon';
 
 interface XpBarProps {
   xp: number;
@@ -13,7 +14,7 @@ export const XpBar: React.FC<XpBarProps> = ({ xp, compact }) => {
     <div className="space-y-1.5">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5">
-          <span className={compact ? 'text-base' : 'text-xl'}>{current.icon}</span>
+          <Icon name={current.icon} className={compact ? 'w-5 h-5' : 'w-7 h-7'} />
           <div>
             <p className={`font-black text-[#3B2F27] font-['Nunito',sans-serif] leading-tight ${compact ? 'text-xs' : 'text-sm'}`}>
               Level {current.level} — {current.title}
@@ -31,8 +32,8 @@ export const XpBar: React.FC<XpBarProps> = ({ xp, compact }) => {
         />
       </div>
       {!compact && (
-        <p className="text-[10px] text-[#8C7A6D]">
-          {next ? `Next: ${next.icon} ${next.title}` : "You've reached the top of the Academy!"}
+        <p className="text-[10px] text-[#8C7A6D] flex items-center gap-1">
+          {next ? <>Next: <Icon name={next.icon} className="w-3 h-3" /> {next.title}</> : "You've reached the top of the Academy!"}
         </p>
       )}
     </div>

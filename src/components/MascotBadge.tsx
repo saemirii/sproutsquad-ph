@@ -1,4 +1,5 @@
 import React from 'react';
+import { Icon } from './Icon';
 
 export type MascotType = 'bunny' | 'owl' | 'fox' | 'bear' | 'chick';
 
@@ -14,7 +15,7 @@ export const MASCOT_PROFILES: Record<
   MascotType,
   {
     name: string;
-    emoji: string;
+    icon: string;
     role: string;
     bgColor: string;
     borderColor: string;
@@ -24,7 +25,7 @@ export const MASCOT_PROFILES: Record<
 > = {
   bunny: {
     name: 'Bella the Bunny',
-    emoji: '🐰',
+    icon: 'mascot-bunny',
     role: 'Campus Marketplace Guide',
     bgColor: 'bg-[#FFD3BA]', // Peachy pink
     borderColor: 'border-[#F8BA9E]',
@@ -33,7 +34,7 @@ export const MASCOT_PROFILES: Record<
   },
   owl: {
     name: 'Peanut the Owl',
-    emoji: '🦉',
+    icon: 'mascot-owl',
     role: 'Financial Literacy & AI Coach',
     bgColor: 'bg-[#B8E6D5]', // Soft mint green
     borderColor: 'border-[#9FD9C3]',
@@ -42,7 +43,7 @@ export const MASCOT_PROFILES: Record<
   },
   fox: {
     name: 'Felix the Fox',
-    emoji: '🦊',
+    icon: 'mascot-fox',
     role: 'Smart Sourcing & Expense Tracker',
     bgColor: 'bg-[#FFD3BA]', // Peachy pink
     borderColor: 'border-[#F8BA9E]',
@@ -51,7 +52,7 @@ export const MASCOT_PROFILES: Record<
   },
   bear: {
     name: 'Bruno the Bear',
-    emoji: '🐻',
+    icon: 'tab-shop-os',
     role: 'Storefront & Inventory Keeper',
     bgColor: 'bg-[#A8D8EA]', // Sky blue
     borderColor: 'border-[#8EC7DC]',
@@ -60,7 +61,7 @@ export const MASCOT_PROFILES: Record<
   },
   chick: {
     name: 'Pip the Chick',
-    emoji: '🐥',
+    icon: 'mascot-chick',
     role: 'Campus Meetup Specialist',
     bgColor: 'bg-[#FFF9E6]',
     borderColor: 'border-[#EADBCE]',
@@ -79,10 +80,16 @@ export const MascotBadge: React.FC<MascotProps> = ({
   const mascot = MASCOT_PROFILES[type] || MASCOT_PROFILES.bunny;
 
   const sizeClasses = {
-    sm: 'w-7 h-7 text-sm',
-    md: 'w-10 h-10 text-xl',
-    lg: 'w-14 h-14 text-2xl',
-    xl: 'w-18 h-18 text-4xl',
+    sm: 'w-7 h-7',
+    md: 'w-10 h-10',
+    lg: 'w-14 h-14',
+    xl: 'w-18 h-18',
+  };
+  const iconSizeClasses = {
+    sm: 'w-5 h-5',
+    md: 'w-7 h-7',
+    lg: 'w-10 h-10',
+    xl: 'w-14 h-14',
   };
 
   return (
@@ -90,7 +97,7 @@ export const MascotBadge: React.FC<MascotProps> = ({
       <div
         className={`${sizeClasses[size]} ${mascot.bgColor} ${mascot.borderColor} border rounded-2xl flex items-center justify-center shadow-xs animate-float-gentle shrink-0`}
       >
-        <span>{mascot.emoji}</span>
+        <Icon name={mascot.icon} alt={mascot.name} className={iconSizeClasses[size]} />
       </div>
 
       {showName && (

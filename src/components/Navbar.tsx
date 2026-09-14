@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useSession, useShop, useCart } from '../context/AppContext';
 import { CampusUniversity } from '../types';
+import { Icon } from './Icon';
 
 interface NavbarProps {
   onOpenCart: () => void;
@@ -64,7 +65,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenCart, onOpenCreateBusiness
               className="flex items-center gap-2.5 group text-left cursor-pointer btn-bouncy"
             >
               <div className="w-10 h-10 rounded-2xl bg-[#B8E6D5] border border-[#9FD9C3] flex items-center justify-center shadow-xs group-hover:rotate-6 transition-transform">
-                <span className="text-xl">🌱</span>
+                <Icon name="level-sprout" className="w-5 h-5" />
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
@@ -93,7 +94,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenCart, onOpenCreateBusiness
                   : 'text-[#6B5B4F] hover:text-[#3B2F27] hover:bg-white/60'
               }`}
             >
-              <span className="text-base">🐰</span>
+              <Icon name="mascot-bunny" className="w-4 h-4" />
               <span>Campus Marketplace</span>
             </button>
 
@@ -109,7 +110,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenCart, onOpenCreateBusiness
                   : 'text-[#6B5B4F] hover:text-[#3B2F27] hover:bg-white/60'
               }`}
             >
-              <span className="text-base">🦉</span>
+              <Icon name="mascot-owl" className="w-4 h-4" />
               <span>Seller OS & Health</span>
               {pendingSellerOrders > 0 && (
                 <span className="inline-flex items-center justify-center w-5 h-5 text-[10px] font-black text-[#7A341A] bg-[#FFD3BA] rounded-full border border-[#F8BA9E]">
@@ -129,7 +130,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenCart, onOpenCreateBusiness
                   : 'text-[#6B5B4F] hover:text-[#3B2F27] hover:bg-white/60'
               }`}
             >
-              <span className="text-base">🎓</span>
+              <Icon name="tab-academy" className="w-4 h-4" />
               <span>Sprout Academy</span>
             </button>
           </nav>
@@ -160,7 +161,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenCart, onOpenCreateBusiness
                 <div className="absolute right-0 mt-2 w-72 bg-white rounded-3xl shadow-lg border border-[#EDE4D8] p-3 z-50 animate-in fade-in zoom-in-95 duration-100">
                   <div className="px-2 py-1.5 border-b border-[#F0E9DF] mb-2">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-sm">🐻</span>
+                      <Icon name="tab-shop-os" className="w-3.5 h-3.5" />
                       <p className="text-[11px] font-bold text-[#6B5B4F] uppercase tracking-wider">
                         Select Active Storefront
                       </p>
@@ -258,7 +259,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenCart, onOpenCreateBusiness
                 : 'text-[#6B5B4F]'
             }`}
           >
-            <span>🐰</span>
+            <Icon name="mascot-bunny" className="w-3.5 h-3.5" />
             <span>Marketplace</span>
           </button>
           <button
@@ -272,7 +273,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenCart, onOpenCreateBusiness
                 : 'text-[#6B5B4F]'
             }`}
           >
-            <span>🦉</span>
+            <Icon name="mascot-owl" className="w-3.5 h-3.5" />
             <span>Seller OS</span>
           </button>
           <button
@@ -283,7 +284,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenCart, onOpenCreateBusiness
                 : 'text-[#6B5B4F]'
             }`}
           >
-            <span>🎓</span>
+            <Icon name="tab-academy" className="w-3.5 h-3.5" />
             <span>Academy</span>
           </button>
         </div>
