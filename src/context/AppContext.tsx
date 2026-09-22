@@ -177,6 +177,7 @@ interface ShopContextType {
   updateDeliverySchedule: (orderId: string, deliveryMethod: DeliveryMethod, deliveryDate: string) => void;
   confirmOrderReceived: (orderId: string) => Promise<{ success: boolean; message?: string }>;
   addExpense: (expense: Omit<Expense, 'id' | 'businessId'>) => void;
+  updateExpense: (expense: Expense) => void;
   deleteExpense: (expenseId: string) => void;
   addCoupon: (coupon: Omit<Coupon, 'id' | 'businessId' | 'redemptionCount' | 'createdAt'>) => void;
   updateCoupon: (coupon: Coupon) => void;
@@ -269,7 +270,7 @@ interface CartContextType {
   cart: CartItem[];
   cartCount: number;
   cartTotal: number;
-  addToCart: (product: Product, quantity?: number) => Promise<{ added: number; available: number }>;
+  addToCart: (product: Product, quantity?: number) => Promise<{ added: number; available: number; blocked?: 'own-business' }>;
   updateCartQuantity: (productId: string, quantity: number) => Promise<{ applied: number; available: number }>;
   removeFromCart: (productId: string) => void;
   clearCart: () => void;
@@ -1494,6 +1495,15 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
     }
   };
 
+  const updateExpense = (updated: Expense) => {
+    setExpenses((prev) => prev.map((e) => (e.id === updated.id ? updated : e)));
+    if (supabase) {
+      void supabase.from('expenses').update(expenseToRow(updated)).eq('id', updated.id).then(({ error }) => {
+        if (error) console.error('Failed to update expense', error);
+      });
+    }
+  };
+
   const deleteExpense = (expenseId: string) => {
     setExpenses((prev) => prev.filter((e) => e.id !== expenseId));
     if (supabase) {
@@ -2268,6 +2278,15 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
         }));
         if (activityType === 'lesson_complete') {
           setOnlineCompletedLessonIds((prev) => (prev.includes(refId) ? prev : [...prev, refId]));
+        } else if (activityType === 'simulation_complete') {
+          // The real, capped reward call completeChallenge always fires
+          // (regardless of simulation vs. case-study mode) — this is what
+          // makes a challenge's own id show up as "done" immediately,
+          // instead of waiting on the slower background syncAcademyProgress
+          // refetch below (which is what previously left Growth Challenge/
+          // module-unlock state looking stale for several seconds after a
+          // genuine first-time completion).
+          setOnlineCompletedChallengeIds((prev) => (prev.includes(refId) ? prev : [...prev, refId]));
         }
         setOnlineActivityCounts((prev) => ({ ...prev, [activityType]: (prev[activityType] || 0) + 1 }));
         void syncAcademyProgress();
@@ -2627,7 +2646,14 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
     return Number(data.inventory_count);
   };
 
-  const addToCart = async (product: Product, quantity = 1): Promise<{ added: number; available: number }> => {
+  const addToCart = async (product: Product, quantity = 1): Promise<{ added: number; available: number; blocked?: 'own-business' }> => {
+    // A seller (or a teammate with BES-key access) can't buy from their own
+    // shop — checked against accessibleBusinessIds rather than just
+    // activeBusiness.id since a user can own/co-run more than one shop.
+    if (accessibleBusinessIds.includes(product.businessId)) {
+      return { added: 0, available: product.inventoryCount, blocked: 'own-business' };
+    }
+
     const liveCount = await getLiveInventory(product.id);
     const available = liveCount !== null ? liveCount : product.inventoryCount;
     if (liveCount !== null && liveCount !== product.inventoryCount) {
@@ -2725,9 +2751,18 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
   }): Promise<{ success: boolean; orders: Order[]; failureReason?: string }> => {
     if (cart.length === 0) return { success: false, orders: [] };
 
+    // Defense-in-depth: addToCart already blocks adding items from a
+    // business the buyer owns/co-runs, but guard here too so a self-
+    // purchase order can never be created even if something else grew
+    // the cart directly.
+    const purchasableCart = cart.filter((item) => !accessibleBusinessIds.includes(item.product.businessId));
+    if (purchasableCart.length === 0) {
+      return { success: false, orders: [], failureReason: 'Your bag only has items from your own shop — remove them to check out.' };
+    }
+
     // Group items by business so multi-store orders produce separate orders per seller
     const itemsByBiz: Record<string, CartItem[]> = {};
-    cart.forEach((item) => {
+    purchasableCart.forEach((item) => {
       const bId = item.product.businessId;
       if (!itemsByBiz[bId]) itemsByBiz[bId] = [];
       itemsByBiz[bId].push(item);
@@ -2952,6 +2987,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
     updateDeliverySchedule,
     confirmOrderReceived,
     addExpense,
+    updateExpense,
     deleteExpense,
     addCoupon,
     updateCoupon,

@@ -19,29 +19,37 @@ export const module5Lessons: Lesson[] = [
     moduleId: 'module-5',
     number: '5.1',
     title: 'From Stranger to Customer',
-    estimatedMinutes: 35,
+    estimatedMinutes: 20,
     hook: '"A customer messages DoodleDrop asking about a custom sticker, then goes silent. What happened between \'interested\' and \'never bought\'?"',
-    simplifiedExplanation: "The sales journey describes the steps a stranger typically moves through before becoming a paying, repeat customer: Prospecting (finding potential customers), Understanding customer needs (asking questions instead of just pitching), Presentation (showing how your product fits their need), Handling objections (addressing hesitations like price or timing calmly, not defensively), Closing (actually asking for the sale), and Follow-up (checking in after the sale to build repeat business).\n\nMany small business owners skip straight to presentation without understanding needs, or forget to actually ask for the sale (closing) after a great conversation.",
-    concept: {
-      body: "DepEd's Senior High School Entrepreneurship curriculum has students actually implement a simple business and sell the product or service to potential customers as part of the applied-track requirements — selling is treated as a practiced skill, not a one-time event. OpenStax's Introduction to Business breaks that skill into the same six steps used in this lesson.",
-      sources: [
-        { title: 'K to 12 Senior High School Applied Track Subject — Entrepreneurship (Curriculum Guide) — DepEd', url: 'https://lrmds.deped.gov.ph/detail/14442' },
-        { title: 'Introduction to Business, 12.7: The Importance of Personal Selling (Steps in the Selling Process) — OpenStax / Rice University', url: 'https://openstax.org/books/introduction-business-2e/pages/12-7-the-importance-of-personal-selling' },
-      ],
-    },
+    beats: [
+      "Every sale moves through the same six steps: **prospecting** (finding the right person), **understanding needs** (asking questions instead of pitching), and **presentation** (showing exactly how you fit what they need).",
+      "Then come **handling objections** (answering hesitations like price or timing calmly), **closing** (actually asking for the sale), and **follow-up** (checking in afterward so they come back).",
+      "Most sellers skip straight to presentation without asking a single question — or have a great chat and never actually close.",
+    ],
+    whyItMatters: 'A seller who never **closes** just gets polite interest, not a sale.',
+    quickStat: 'Cozy Corner\'s founder now ends every chat with one closing line — "want me to set this aside for you?" — instead of just answering questions and hoping.',
     activity: {
       title: 'Fix the Broken Conversation',
-      prompt: "You'll see a short chat where a seller jumps straight from greeting to price, skipping needs and objections. Rewrite the conversation to include all 6 steps of the sales journey, in the correct order.",
+      steps: [
+        "You'll see a short chat where a seller jumps straight from greeting to price, skipping needs and objections.",
+        '**Rewrite the conversation** to include all 6 steps of the sales journey, in the correct order.',
+      ],
     },
     inLessonScenario: {
       title: "DoodleDrop's Silent Customer",
-      prompt: 'A customer asks DoodleDrop about custom stickers, then stops replying after hearing the price. Using the sales journey steps, identify which step DoodleDrop likely skipped, and write one message that addresses a possible objection (e.g., price, timing) instead of just repeating the price.',
+      steps: [
+        'A customer asks DoodleDrop about custom stickers, then stops replying after hearing the price.',
+        'Using the sales journey steps, **identify which step** DoodleDrop likely skipped.',
+        '**Write one message** that addresses a possible objection (e.g., price, timing) instead of just repeating the price.',
+      ],
     },
     quiz: [
       {
         id: 'lesson-5-1-q1',
-        format: 'short_answer',
+        format: 'sort',
         prompt: 'Put these in order: Closing, Prospecting, Handling Objections, Presentation, Follow-up, Understanding Needs.',
+        items: ['Closing', 'Prospecting', 'Handling Objections', 'Presentation', 'Follow-up', 'Understanding Needs'],
+        correctOrder: [1, 5, 3, 2, 0, 4],
         modelAnswer: 'Prospecting → Understanding Needs → Presentation → Handling Objections → Closing → Follow-up.',
         explanation: 'The sales journey moves from finding a customer, to understanding them, to presenting a fit, to handling hesitations, to actually asking for the sale, to keeping the relationship going afterward.',
       },
@@ -59,22 +67,31 @@ export const module5Lessons: Lesson[] = [
     moduleId: 'module-5',
     number: '5.2',
     title: 'The Conversion Funnel',
-    estimatedMinutes: 35,
+    estimatedMinutes: 20,
     hook: '"1,000 people saw PixelPop\'s post. 50 clicked the link. 5 messaged. 1 bought. Where did everyone else go?"',
-    simplifiedExplanation: "The conversion funnel describes how a large group of people gradually narrows down to actual customers, in stages: Awareness (they learn you exist), Interest (they want to know more), Consideration (they're comparing you to alternatives), Purchase (they buy), and Repeat action (they buy again or refer others). It's called a funnel because the numbers shrink at every stage — not everyone who becomes aware will buy, and that's normal.\n\nUnderstanding the funnel helps you diagnose problems: if lots of people are 'aware' but few show 'interest,' the issue might be your message. If people show interest but don't 'purchase,' the issue might be price, trust, or an unclear call to action.",
-    concept: {
-      body: "The classic AIDA marketing model — Attention, Interest, Desire, Action — describes the stages a consumer moves through before purchasing, visualized as a funnel where 'each stage has fewer consumers than the one before.'",
-      sources: [
-        { title: 'AIDA Model (Research Starters) — EBSCO Information Services', url: 'https://www.ebsco.com/research-starters/marketing/aida-model/' },
-      ],
-    },
+    beats: [
+      "A **funnel** narrows in stages: **Awareness** (they learn you exist), **Interest** (they want to know more), and **Consideration** (they're comparing you to alternatives).",
+      'Then **Purchase** (they buy) and **Repeat** (they buy again or refer a friend). Numbers shrink at every stage — that\'s normal, not failure.',
+      'Lots of people aware but few interested? Fix your **message**. Interested people who never buy? Check your **price**, **trust**, or **call to action**.',
+    ],
+    whyItMatters: 'A funnel shows you exactly **which stage** is quietly losing customers, instead of leaving you to guess.',
+    quickStat: "Crumb & Co.'s funnel narrows fast too: 400 people walk past the stall, 80 stop to look, only 12 actually order — the same shrinking shape shows up in every shop.",
     activity: {
       title: 'Diagnose the Funnel',
-      prompt: 'Given 3 different funnel shapes (e.g., many aware but few interested; many interested but few purchase), match each shape to the most likely underlying problem: unclear message, weak call to action, price mismatch, or trust issue.',
+      steps: [
+        "You're given **3 different funnel shapes** (e.g., many aware but few interested; many interested but few purchase).",
+        '**Match each shape** to the most likely underlying problem: unclear message, weak call to action, price mismatch, or trust issue.',
+      ],
     },
     inLessonScenario: {
       title: "PixelPop's Numbers",
-      prompt: "1,000 people saw PixelPop's post (Awareness). 50 clicked to learn more (Interest). 5 messaged to ask questions (Consideration). 1 actually paid (Purchase). At which stage is PixelPop losing the most people, and name one possible fix.",
+      steps: [
+        "1,000 people saw PixelPop's post (**Awareness**).",
+        '50 clicked to learn more (**Interest**).',
+        '5 messaged to ask questions (**Consideration**).',
+        '1 actually paid (**Purchase**).',
+        '**Identify which stage** PixelPop is losing the most people at, and **name one possible fix**.',
+      ],
     },
     shopOsTieIn: {
       note: "Shop OS's storefront analytics show views, clicks, and completed orders — the exact stages of your funnel — so you can see where customers are dropping off.",
@@ -95,23 +112,31 @@ export const module5Lessons: Lesson[] = [
     moduleId: 'module-5',
     number: '5.3',
     title: 'Conversion Math',
-    estimatedMinutes: 35,
+    estimatedMinutes: 20,
     hook: '"Two shops both got 100 visitors. One made 20 sales, the other made 2. The raw visitor count told you nothing — the percentage did."',
-    simplifiedExplanation: "Conversion metrics turn funnel stages into simple percentages you can compare over time: Views→Clicks (what % of people who saw your post clicked?), Clicks→Orders (what % of people who clicked actually bought?), and Visitors→Customers (overall, what % of everyone who encountered your shop became a paying customer?).\n\nThe formula is always: (smaller number ÷ larger number) × 100. Example: if 200 people viewed a product and 20 bought it, the conversion rate is (20 ÷ 200) × 100 = 10%.",
-    concept: {
-      body: "The percentage math behind a conversion rate is exactly what DepEd's Grade 11 Business Mathematics curriculum covers under ratio, proportion, and percentage.",
-      sources: [
-        { title: 'Business Mathematics (Curriculum Guide, Grade 11) — DepEd', url: 'https://lrmds.deped.gov.ph/detail/16008' },
-        { title: 'AIDA Model (Research Starters) — EBSCO Information Services', url: 'https://www.ebsco.com/research-starters/marketing/aida-model/' },
-      ],
-    },
+    beats: [
+      'Turn funnel stages into percentages: **views → clicks**, **clicks → orders**, **visitors → customers**.',
+      'The formula never changes: (smaller number ÷ larger number) × 100. 200 views, 20 buyers? That\'s (20 ÷ 200) × 100 = **10%**.',
+    ],
+    whyItMatters: "**Percentages**, not raw totals, tell you who's actually winning — more visitors doesn't always mean more sales.",
+    quickStat: 'PixelPop once had way fewer views than a competitor but double the conversion rate — smaller crowd, sharper close.',
     activity: {
       title: 'Calculate the Conversion Rate',
-      prompt: 'Calculate conversion rate (%) for 3 scenarios: (1) 150 views, 15 clicks. (2) 40 clicks, 8 orders. (3) 500 visitors, 25 customers.',
+      steps: [
+        '**Calculate the conversion rate (%)** for 3 scenarios.',
+        '**(1)** 150 views, 15 clicks.',
+        '**(2)** 40 clicks, 8 orders.',
+        '**(3)** 500 visitors, 25 customers.',
+      ],
     },
     inLessonScenario: {
       title: 'Which Shop Is Doing Better?',
-      prompt: 'Cozy Corner: 300 views, 60 orders. DoodleDrop: 900 views, 90 orders. Which shop has more raw orders, and which shop has the higher CONVERSION RATE? Explain why looking only at total orders can be misleading.',
+      steps: [
+        '**Cozy Corner**: 300 views, 60 orders.',
+        '**DoodleDrop**: 900 views, 90 orders.',
+        '**Identify** which shop has more raw orders, and which shop has the higher conversion rate.',
+        '**Explain** why looking only at total orders can be misleading.',
+      ],
     },
     shopOsTieIn: {
       note: "Shop OS calculates your view-to-order conversion rate automatically in your analytics tab, so you don't need to do this math by hand once your shop is live.",
@@ -140,22 +165,30 @@ export const module5Lessons: Lesson[] = [
     moduleId: 'module-5',
     number: '5.4',
     title: 'Read the Dashboard',
-    estimatedMinutes: 35,
+    estimatedMinutes: 20,
     hook: '"A number going down isn\'t automatically bad news, and a number going up isn\'t automatically good news — until you ask \'why?\'"',
-    simplifiedExplanation: "Reading business metrics well means going beyond the raw number to ask three questions every time: What changed? (identify the specific metric and how much it moved), Why might it have changed? (consider possible causes — seasonality, a competitor, a price change, a broken link), and What should the business do next? (a specific, testable action, not just a vague reaction).\n\nA common mistake is reacting to a single day's number instead of a trend over time, or assuming a cause without checking it.",
-    concept: {
-      body: "The SBA advises small businesses to track marketing costs against the revenue generated and monitor return on investment (ROI) — reading the 'why' behind performance data, not just the raw totals.",
-      sources: [
-        { title: 'Marketing and Sales — SBA', url: 'https://www.sba.gov/business-guide/manage-your-business/marketing-sales' },
-      ],
-    },
+    beats: [
+      'Three questions turn any number into a decision: **What changed?** **Why might it have changed?** **What should you do next?**',
+      'A single bad day isn\'t proof of a real problem — check the **trend** before you panic and change everything.',
+    ],
+    whyItMatters: 'Reacting to one dip instead of a **trend** means fixing a problem that might not even be real.',
+    quickStat: "Track cost against results, not just results alone — a sales spike that cost twice as much to get isn't actually a win.",
     activity: {
       title: 'What Changed, Why, What Next?',
-      prompt: 'Given a simple chart showing orders dropping 40% in one week, write one sentence for each: What changed? Two possible reasons why? One specific next action to test.',
+      steps: [
+        "You're given a simple chart showing **orders dropping 40%** in one week.",
+        '**What changed?** Write one sentence.',
+        '**Why might it have changed?** Give two possible reasons.',
+        '**What should you do next?** Propose one specific action to test.',
+      ],
     },
     inLessonScenario: {
       title: "Crumb & Co.'s Sudden Dip",
-      prompt: "Crumb & Co.'s weekly orders dropped from 60 to 35 right after exam week began. Using the three-question framework, analyze what likely happened and propose one action for the following week.",
+      steps: [
+        "Crumb & Co.'s weekly orders dropped from **60 to 35** right after exam week began.",
+        'Using the **three-question framework**, analyze what likely happened.',
+        '**Propose one action** for the following week.',
+      ],
     },
     shopOsTieIn: {
       note: "Shop OS's weekly summary highlights the biggest changes automatically — use the three-question framework any time a number surprises you.",
@@ -176,23 +209,30 @@ export const module5Lessons: Lesson[] = [
     moduleId: 'module-5',
     number: '5.5',
     title: 'Sales Mission: Fix the Funnel',
-    estimatedMinutes: 35,
+    estimatedMinutes: 20,
     hook: '"Every SproutSquad business has one stage of its funnel quietly leaking customers. Your mission: find it and fix it."',
-    simplifiedExplanation: 'This lesson combines everything from Module 5: the sales journey, the conversion funnel, conversion math, and the 3-question analysis framework.\n\nReal businesses rarely have one single problem — they usually have one weakest stage that, if improved, would help the most. Finding that stage requires looking at the actual numbers, not guessing based on gut feeling.',
-    concept: {
-      body: 'Combining the funnel model with the personal-selling process gives a complete view: the funnel shows where customers drop off, and the selling-process steps suggest what specific action addresses that stage.',
-      sources: [
-        { title: 'AIDA Model (Research Starters) — EBSCO Information Services', url: 'https://www.ebsco.com/research-starters/marketing/aida-model/' },
-        { title: 'Introduction to Business, 12.7: The Importance of Personal Selling (Steps in the Selling Process) — OpenStax / Rice University', url: 'https://openstax.org/books/introduction-business-2e/pages/12-7-the-importance-of-personal-selling' },
-      ],
-    },
+    beats: [
+      'This mission pulls together everything from Module 5: the **sales journey**, the **funnel**, and **conversion math**.',
+      'Most shops don\'t have one giant problem — they have **one weak stage** quietly leaking customers. Numbers find it faster than gut feeling ever will.',
+    ],
+    whyItMatters: 'Fixing your **single weakest stage** first beats a scattershot overhaul of everything at once.',
     activity: {
       title: 'Full Funnel Audit',
-      prompt: "You are given full funnel numbers for one SproutSquad business (views, clicks, messages, orders, repeat orders). Calculate the conversion rate between each stage, identify the weakest stage, and propose one specific fix tied to that stage (not a generic 'market more' answer).",
+      steps: [
+        "You're given full funnel numbers for one SproutSquad business (views, clicks, messages, orders, repeat orders).",
+        '**Calculate the conversion rate** between each stage.',
+        '**Identify the weakest stage**.',
+        "**Propose one specific fix** tied to that stage — not a generic 'market more' answer.",
+      ],
     },
     inLessonScenario: {
       title: "PixelPop's Full Funnel",
-      prompt: 'PixelPop: 800 views → 120 clicks → 30 messages → 3 orders → 0 repeat orders. Identify the single stage losing the highest percentage of people, and design one specific, testable fix for that exact stage using ideas from this module.',
+      steps: [
+        '**PixelPop**: 800 views → 120 clicks → 30 messages → 3 orders → 0 repeat orders.',
+        '**Identify the single stage** losing the highest percentage of people.',
+        '**Design one specific, testable fix** for that exact stage using ideas from this module.',
+      ],
+      illustration: 'conversion-funnel',
     },
     shopOsTieIn: {
       note: "This kind of full-funnel view is exactly what Shop OS's analytics dashboard is built to show at a glance.",

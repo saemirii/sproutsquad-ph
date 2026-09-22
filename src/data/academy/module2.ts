@@ -19,23 +19,32 @@ export const module2Lessons: Lesson[] = [
     moduleId: 'module-2',
     number: '2.1',
     title: 'What Is a Business Structure?',
-    estimatedMinutes: 35,
+    estimatedMinutes: 20,
     hook: "\"If Cozy Corner's plushies caused an allergic reaction, who would be responsible — the business, or Miggy personally? The answer depends entirely on how the business is legally set up.\"",
-    simplifiedExplanation: "A business structure (also called a legal structure) determines three big things: who owns the business, who is responsible for its debts and decisions, and how much liability (legal and financial risk) the owner personally carries if something goes wrong. Different structures exist because businesses have different needs — a single student selling bracelets doesn't need the same structure as three friends running a growing snack brand.\n\nLiability is the key idea to understand before choosing any structure: in some structures, the business and the owner are legally the same (so personal savings and property are at risk if the business owes money); in others, the business is a separate legal entity that can be sued or go into debt without automatically putting the owner's personal belongings at risk.",
-    concept: {
-      body: "The Philippine Department of Education's Grade 11 ABM curriculum (Fundamentals of Accountancy, Business and Management 1) teaches students to differentiate the forms of business organization and weigh the advantages and disadvantages of each — the same liability tradeoff the SBA highlights: there is no single 'best choice,' only the best fit for a given business.",
-      sources: [
-        { title: 'Fundamentals of Accountancy, Business and Management 1 (Curriculum Guide, Grade 11) — Philippine Department of Education (DepEd)', url: 'https://lrmds.deped.gov.ph/detail/16012' },
-        { title: 'Choose a Business Structure — U.S. Small Business Administration (SBA)', url: 'https://www.sba.gov/business-guide/launch-your-business/choose-business-structure' },
-      ],
-    },
+    beats: [
+      'A **business structure** decides three things: who owns the business, who answers for its debts, and how much personal risk the owner carries if something goes wrong.',
+      'Understand **liability** first. In some structures, you and the business are legally the same thing — your own savings are on the line. In others, the business is separate, so it can owe money without automatically touching what\'s yours.',
+      'There\'s no single **best** structure — only the one that fits how big, risky, and multi-owner your business already is.',
+    ],
+    whyItMatters: 'Pick the wrong structure and a business problem can turn into a **personal** one — your own money and belongings suddenly on the line.',
+    quickStat: 'Right now, Crumb & Co., DoodleDrop, and PixelPop are all one-person operations — meaning each founder is personally carrying every peso of business risk, whether they\'ve thought about it or not.',
     activity: {
       title: 'Liability Line-Up',
-      prompt: "You'll see 3 short business scenarios. For each, decide: does it sound like the owner and the business are the 'same' (personal risk), or 'separate' (business risk only)? (1) A student sells snacks alone from home, using her own money. (2) Three friends form a company with its own bank account and its own name registered with the government. (3) A shop owner personally signs every contract and pays suppliers from his own wallet.",
+      steps: [
+        "You'll see 3 short business scenarios.",
+        "For each, decide: does it sound like the owner and the business are the **'same'** (personal risk), or **'separate'** (business risk only)?",
+        '**Scenario 1**: a student sells snacks alone from home, using her own money.',
+        '**Scenario 2**: three friends form a company with its own bank account and its own name registered with the government.',
+        '**Scenario 3**: a shop owner personally signs every contract and pays suppliers from his own wallet.',
+      ],
     },
     inLessonScenario: {
       title: 'One Founder, Growing Fast',
-      prompt: "PixelPop started as a one-person side hustle. It's now hired 2 part-time designers and is taking on bigger client contracts. What risk does the founder now carry that she didn't before, and why might this be a reason to reconsider her business structure as she grows?",
+      steps: [
+        "PixelPop started as a one-person side hustle. It's now hired **2 part-time designers** and is taking on bigger client contracts.",
+        '**What risk** does the founder now carry that she didn\'t before?',
+        '**Why** might this be a reason to reconsider her business structure as she grows?',
+      ],
     },
     jurisdictionNote: 'Legal structures and their names vary by country. This lesson introduces the general idea of ownership and liability. The following lessons show how this applies specifically in the Philippines, where sole proprietorships, partnerships, and corporations each register with a different government agency.',
     quiz: [
@@ -62,23 +71,29 @@ export const module2Lessons: Lesson[] = [
     moduleId: 'module-2',
     number: '2.2',
     title: 'Sole Proprietorship',
-    estimatedMinutes: 35,
+    estimatedMinutes: 20,
     hook: '"Aya runs DoodleDrop entirely on her own — no partners, no co-owners. In the Philippines, this makes her a sole proprietor, and there\'s one specific government agency she needs to register with."',
-    simplifiedExplanation: "A sole proprietorship is a business owned and run by one person, with no legal separation between the owner and the business. It's the simplest and most common way to start a small business because it requires the least paperwork. The tradeoff: the owner is personally responsible for all business debts — there's no separate 'business self' to absorb the risk.\n\nAdvantages: easy and inexpensive to start, the owner keeps full control and all profits, minimal ongoing paperwork. Disadvantages: unlimited personal liability, harder to raise large amounts of funding, and the business technically ends if the owner stops operating it.",
-    concept: {
-      body: "DepEd's Grade 11 ABM curriculum lists the sole proprietorship as a foundational form of business organization Filipino students learn to identify and evaluate. Internationally, the SBA notes sole proprietorships 'can be a good choice for low-risk businesses and owners who want to test their business idea before forming a more formal business.'",
-      sources: [
-        { title: 'Fundamentals of Accountancy, Business and Management 1 (Curriculum Guide, Grade 11) — Philippine Department of Education (DepEd)', url: 'https://lrmds.deped.gov.ph/detail/16012' },
-        { title: 'Choose a Business Structure — U.S. Small Business Administration (SBA)', url: 'https://www.sba.gov/business-guide/launch-your-business/choose-business-structure' },
-      ],
-    },
+    beats: [
+      'A **sole proprietorship** is a business owned and run by one person — no legal split between owner and business. It\'s the simplest way to start, with the least paperwork.',
+      'The tradeoff is **unlimited personal liability**: there\'s no separate business self to absorb the risk if something goes wrong.',
+      'The upside: full control, all the profits, and next-to-nothing needed to set up — great for testing an idea before committing further.',
+    ],
+    whyItMatters: '**Simple to start** also means **fully exposed** — every peso of business debt is legally the owner\'s to pay.',
+    quickStat: 'A sole proprietorship technically ends the moment its owner stops running it — there\'s no separate business left behind without the person.',
     activity: {
       title: 'Would You Choose It?',
-      prompt: 'List 2 reasons a first-time student entrepreneur might choose a sole proprietorship, and 2 reasons they might eventually outgrow it. Use DoodleDrop as your example.',
+      steps: [
+        '**List 2 reasons** a first-time student entrepreneur might choose a sole proprietorship.',
+        '**List 2 reasons** they might eventually outgrow it.',
+        'Use **DoodleDrop** as your example.',
+      ],
     },
     inLessonScenario: {
       title: "DoodleDrop's First Step",
-      prompt: "Aya wants to sell her stickers under the name 'DoodleDrop' instead of her own name, and wants legal protection so no one else nearby can use that name. In the Philippine context, which government agency should she register her business name with first?",
+      steps: [
+        "Aya wants to sell her stickers under the name 'DoodleDrop' instead of her own name, and wants legal protection so no one else nearby can use that name.",
+        'In the Philippine context, **which government agency** should she register her business name with first?',
+      ],
     },
     jurisdictionNote: 'In the Philippines, a sole proprietorship registers its business name with the Department of Trade and Industry (DTI) through the Business Name Registration System (BNRS), which protects the exclusive use of that name. Registering with DTI is separate from registering for taxes with the BIR (covered in Module 3) — both are required to legally operate.',
     quiz: [
@@ -105,23 +120,28 @@ export const module2Lessons: Lesson[] = [
     moduleId: 'module-2',
     number: '2.3',
     title: 'Partnerships',
-    estimatedMinutes: 35,
+    estimatedMinutes: 20,
     hook: '"Two friends want to launch a snack brand together, splitting the work — one bakes, one handles orders. If they never write anything down about who owns what, what happens the day they disagree?"',
-    simplifiedExplanation: "A partnership is a business owned by two or more people who share responsibilities, profits, and risks. It's simple to form — sometimes as easy as agreeing verbally — but that simplicity is exactly why written partnership agreements matter: they spell out how profits are split, who decides what, and what happens if someone wants to leave.\n\nAdvantages: shared workload, combined skills and capital, relatively easy to set up. Risks: partners can be held responsible for decisions made by other partners, personal liability is common (depending on the type of partnership), and disagreements without a clear agreement can break the business.",
-    concept: {
-      body: "DepEd's Grade 11 ABM curriculum covers partnerships as one of the core forms of business organization, including their advantages and disadvantages. Internationally, the SBA describes partnerships as 'the simplest structure for two or more people to own a business together.'",
-      sources: [
-        { title: 'Fundamentals of Accountancy, Business and Management 1 (Curriculum Guide, Grade 11) — Philippine Department of Education (DepEd)', url: 'https://lrmds.deped.gov.ph/detail/16012' },
-        { title: 'Choose a Business Structure — U.S. Small Business Administration (SBA)', url: 'https://www.sba.gov/business-guide/launch-your-business/choose-business-structure' },
-      ],
-    },
+    beats: [
+      'A **partnership** is two or more people sharing ownership, work, profits, and risk. It\'s easy to form — sometimes just a verbal handshake.',
+      'That ease is also the danger: without a **written agreement**, nothing spells out who decides what, how profits split, or what happens if someone wants out.',
+      'Partners can also be held responsible for each other\'s decisions — shared upside comes with **shared liability** too.',
+    ],
+    whyItMatters: 'A handshake deal works fine until the first disagreement — only a **written agreement** protects the friendship and the business after that.',
+    quickStat: 'A partnership can dissolve the moment one partner leaves — without anything in writing, that can mean the whole business ends with them.',
     activity: {
       title: 'Draft a Mini Partnership Agreement',
-      prompt: 'Write 4 short bullet points that two co-founders should agree on before starting a business together (e.g., how profits are split, who makes final decisions on big purchases, what happens if one partner wants to quit).',
+      steps: [
+        '**Write 4 short bullet points** that two co-founders should agree on before starting a business together (e.g., how profits are split, who makes final decisions on big purchases, what happens if one partner wants to quit).',
+      ],
     },
     inLessonScenario: {
       title: "Crumb & Co.'s New Co-Owner",
-      prompt: "Crumb & Co.'s founder wants to bring in a friend as a full business partner to help with deliveries and social media. Before agreeing, what 2 questions should they answer together, and which Philippine government agency would this new partnership need to register with?",
+      steps: [
+        "Crumb & Co.'s founder wants to bring in a friend as a full business partner to help with deliveries and social media.",
+        'Before agreeing, **what 2 questions** should they answer together?',
+        '**Which Philippine government agency** would this new partnership need to register with?',
+      ],
     },
     jurisdictionNote: 'In the Philippines, partnerships register with the Securities and Exchange Commission (SEC) through the eSPARC online portal — not with DTI, which is only for sole proprietorships. Partners typically need a notarized Articles of Partnership before registering, and (once approved) still register separately with the BIR for tax purposes.',
     quiz: [
@@ -147,25 +167,31 @@ export const module2Lessons: Lesson[] = [
     moduleId: 'module-2',
     number: '2.4',
     title: 'Corporations and Limited-Liability Forms',
-    estimatedMinutes: 35,
+    estimatedMinutes: 20,
     hook: '"A big toy company can be sued without its owners losing their personal homes. That protection is one of the biggest reasons corporations exist."',
-    simplifiedExplanation: "A corporation is a business structure that is legally separate from its owners — it can own property, sign contracts, and be sued in its own name. This creates limited liability: owners (shareholders) generally only risk the money they invested, not their personal assets.\n\nThis protection comes at a cost: corporations require more formal paperwork, ongoing government reporting, and higher setup costs than a sole proprietorship or simple partnership. Businesses often start small (sole proprietorship or partnership) and convert to a corporation later, once they need more protection, more investors, or more formal structure to grow.",
-    concept: {
-      body: "DepEd's Grade 11 ABM curriculum covers corporations as a distinct form of business organization with its own advantages and disadvantages. Internationally, the SBA explains corporations 'offer the strongest protection to its owners from personal liability, but the cost to form a corporation is higher... Corporations also require more extensive record-keeping.'",
-      sources: [
-        { title: 'Fundamentals of Accountancy, Business and Management 1 (Curriculum Guide, Grade 11) — Philippine Department of Education (DepEd)', url: 'https://lrmds.deped.gov.ph/detail/16012' },
-        { title: 'Choose a Business Structure — U.S. Small Business Administration (SBA)', url: 'https://www.sba.gov/business-guide/launch-your-business/choose-business-structure' },
-      ],
-    },
+    beats: [
+      'A **corporation** is legally separate from its owners — it can own property, sign contracts, and get sued in its own name, not theirs.',
+      'That separation creates **limited liability**: owners (shareholders) generally only risk what they invested, not their personal assets.',
+      'The tradeoff is more paperwork, higher setup costs, and ongoing government reporting — which is why most businesses start smaller and convert later.',
+    ],
+    whyItMatters: '**Limited liability** is the whole reason big companies can take big risks — a lawsuit can drain the business without touching a founder\'s personal savings.',
     activity: {
       title: 'Sole Prop, Partnership, or Corporation?',
-      prompt: 'Match each situation to the most likely structure: (1) One student testing a small idea with ₱500. (2) Two friends co-running a growing snack shop. (3) A company with 5 investors planning to expand nationally and wanting to protect personal assets.',
+      steps: [
+        '**Match each situation** to the most likely structure.',
+        '**Situation 1**: one student testing a small idea with ₱500.',
+        '**Situation 2**: two friends co-running a growing snack shop.',
+        '**Situation 3**: a company with 5 investors planning to expand nationally and wanting to protect personal assets.',
+      ],
     },
     inLessonScenario: {
       title: 'PixelPop Goes Big',
-      prompt: 'PixelPop is being offered a large contract that requires signing a formal, higher-risk agreement. The founder is worried about personal liability if something goes wrong. What structure characteristic (introduced in this lesson) would most directly address her worry, and why?',
+      steps: [
+        'PixelPop is being offered a large contract that requires signing a formal, higher-risk agreement. The founder is worried about **personal liability** if something goes wrong.',
+        '**What structure characteristic** (introduced in this lesson) would most directly address her worry, and why?',
+      ],
     },
-    jurisdictionNote: 'Exact legal rules, minimum capital requirements, and filing steps for corporations vary by country. In the Philippines, corporations and partnerships both register with the SEC via eSPARC; requirements differ from the U.S. corporate system described generally above. Always confirm current requirements directly with the relevant agency (SEC, DTI, or BIR) before registering a real business.',
+    jurisdictionNote: 'Exact legal rules, minimum capital requirements, and filing steps for corporations vary by country. In the Philippines, corporations and partnerships both register with the SEC via eSPARC. Always confirm current requirements directly with the relevant agency (SEC, DTI, or BIR) before registering a real business.',
     quiz: [
       {
         id: 'lesson-2-4-q1',
@@ -189,22 +215,31 @@ export const module2Lessons: Lesson[] = [
     moduleId: 'module-2',
     number: '2.5',
     title: 'Pick the Setup',
-    estimatedMinutes: 35,
+    estimatedMinutes: 20,
     hook: "\"You've learned three structures. Now it's time to apply them to real (fictional) decisions.\"",
-    simplifiedExplanation: "Choosing a structure isn't about finding the 'best' one — it's about matching the structure to the business's size, risk, number of owners, and growth plans. A useful checklist: How many owners are there? How much personal risk is the owner willing to accept? Will the business need outside investment soon? How much paperwork can the owner realistically manage right now?",
-    concept: {
-      body: "DepEd's Grade 11 ABM curriculum asks students to compare forms of business organization and identify the advantages and disadvantages of each — the same comparative approach used in this lesson's case files.",
-      sources: [
-        { title: 'Fundamentals of Accountancy, Business and Management 1 (Curriculum Guide, Grade 11) — Philippine Department of Education (DepEd)', url: 'https://lrmds.deped.gov.ph/detail/16012' },
-      ],
-    },
+    beats: [
+      'Choosing a structure isn\'t about finding the **best** one — it\'s about matching the structure to your business right now.',
+      'Run through a quick checklist: how many owners are there, how much **personal risk** can you accept, and is outside investment coming soon?',
+      'One more question matters just as much: how much paperwork can you realistically keep up with today?',
+    ],
+    whyItMatters: 'The right structure **fits where your business is now** — not where you hope it\'ll be in five years.',
+    quickStat: 'All four SproutSquad founders are still sole proprietors right now — completely normal at this stage, and each one will hit a different signal for when it\'s time to reconsider.',
     activity: {
       title: 'Structure Case Files',
-      prompt: 'For each mini-case, recommend a structure and name the correct Philippine registration agency: (1) A student selling snacks alone at ₱300 starting capital. (2) Two cousins co-running a plush-toy business who want to split profits 50/50. (3) A group of 4 friends planning to raise outside investment to scale a delivery app nationally.',
+      steps: [
+        'For each mini-case, **recommend a structure** and name the correct Philippine registration agency.',
+        '**Case 1**: a student selling snacks alone at ₱300 starting capital.',
+        '**Case 2**: two cousins co-running a plush-toy business who want to split profits 50/50.',
+        '**Case 3**: a group of 4 friends planning to raise outside investment to scale a delivery app nationally.',
+      ],
     },
     inLessonScenario: {
       title: "The Founders' Meeting",
-      prompt: 'The four SproutSquad businesses meet to compare notes. Crumb & Co. (1 owner), DoodleDrop (1 owner, hiring freelancers), Cozy Corner (2 co-owners, informal), and PixelPop (planning to bring in an investor). Which one is most ready to consider moving beyond a sole proprietorship, and what should they do first before changing structures?',
+      steps: [
+        "The four SproutSquad businesses meet to compare notes: **Crumb & Co.** (1 owner), **DoodleDrop** (1 owner, hiring freelancers), **Cozy Corner** (2 co-owners, informal), and **PixelPop** (planning to bring in an investor).",
+        '**Which one** is most ready to consider moving beyond a sole proprietorship?',
+        '**What should they do first** before changing structures?',
+      ],
     },
     jurisdictionNote: 'Remember: in the Philippines, sole proprietorships register with DTI, while partnerships and corporations register with the SEC. All business types must still separately register with the BIR for taxes (Module 3).',
     quiz: [

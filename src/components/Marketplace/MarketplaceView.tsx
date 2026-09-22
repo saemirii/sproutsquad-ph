@@ -45,6 +45,9 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory | 'All'>('All');
   const [sortBy, setSortBy] = useState<'popular' | 'price-low' | 'price-high' | 'name'>('popular');
+  // Hidden by default — there's no point browsing something you can no
+  // longer buy; this just lets someone opt back in to see them.
+  const [showSoldOut, setShowSoldOut] = useState(false);
   const [quickAddedId, setQuickAddedId] = useState<string | null>(null);
 
   const categories: (ProductCategory | 'All')[] = [
@@ -74,8 +77,9 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
 
       const matchesCategory = selectedCategory === 'All' || p.category === selectedCategory;
       const matchesCampus = selectedCampusFilter === 'All Campuses' || p.university === selectedCampusFilter;
+      const matchesStock = showSoldOut || p.inventoryCount > 0;
 
-      return matchesSearch && matchesCategory && matchesCampus;
+      return matchesSearch && matchesCategory && matchesCampus && matchesStock;
     }).sort((a, b) => {
       if (sortBy === 'popular') return b.soldCount - a.soldCount;
       if (sortBy === 'price-low') return a.price - b.price;
@@ -83,7 +87,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
       if (sortBy === 'name') return a.name.localeCompare(b.name);
       return 0;
     });
-  }, [products, searchQuery, selectedCategory, selectedCampusFilter, sortBy]);
+  }, [products, searchQuery, selectedCategory, selectedCampusFilter, sortBy, showSoldOut]);
 
   // Featured Shops respects the same category/campus filters as the product
   // grid — previously the category pills only ever filtered products, so
@@ -288,7 +292,15 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
           </div>
 
           {/* Sort Dropdown */}
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+          <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+            <button
+              onClick={() => setShowSoldOut((v) => !v)}
+              className={`shrink-0 px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap border transition-colors cursor-pointer ${
+                showSoldOut ? 'bg-[#B8E6D5] border-[#71C7A5] text-[#194E3B]' : 'bg-[#FAF7F2] border-[#E5DACD] text-[#6E5D52] hover:bg-[#F2EAE0]'
+              }`}
+            >
+              {showSoldOut ? '✓ ' : ''}Show sold out
+            </button>
             <span className="text-xs text-[#8A796D] hidden sm:inline">Sort:</span>
             <select
               value={sortBy}
@@ -326,6 +338,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
                 setSearchQuery('');
                 setSelectedCategory('All');
                 setSelectedCampusFilter('All Campuses');
+                setShowSoldOut(false);
               }}
               className="px-4 py-2 bg-[#B8E6D5] text-[#1A4E3B] rounded-xl text-xs font-bold hover:bg-[#A3DEC9] transition-colors"
             >

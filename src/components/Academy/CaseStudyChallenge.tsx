@@ -6,12 +6,17 @@ import { ChallengeResultCard } from './shared/ChallengeResultCard';
 
 interface CaseStudyChallengeProps {
   challenge: CaseStudyChallengeDef;
+  /** Fires the moment this challenge's reward is actually awarded —
+   * decoupled from any toast/timer lifecycle, so a caller can reliably
+   * detect "did a completion just happen" regardless of how long the
+   * learner lingers on the result screen afterward. */
+  onComplete?: (result: ChallengeResult) => void;
 }
 
 /** Sequential decision points, each a scenario + 2-4 choices with their own
  * score delta and feedback. Used by module checkpoints whose content is a
  * judgment call rather than a formula (positioning, structure, funding). */
-export const CaseStudyChallenge: React.FC<CaseStudyChallengeProps> = ({ challenge }) => {
+export const CaseStudyChallenge: React.FC<CaseStudyChallengeProps> = ({ challenge, onComplete }) => {
   const { completeChallenge } = useAcademy();
   const [stepIndex, setStepIndex] = useState(0);
   const [totalScore, setTotalScore] = useState(0);
@@ -42,6 +47,7 @@ export const CaseStudyChallenge: React.FC<CaseStudyChallengeProps> = ({ challeng
       setIsSubmitting(true);
       await completeChallenge(challenge.id, computed);
       setIsSubmitting(false);
+      onComplete?.(computed);
       return;
     }
 
@@ -104,6 +110,7 @@ export const CaseStudyChallenge: React.FC<CaseStudyChallengeProps> = ({ challeng
           <div className="p-3.5 bg-[#FAF7F2] rounded-2xl border border-[#EDE4D8] text-xs text-[#54453C] space-y-1">
             <span className="font-bold text-[#207559]">Peanut's Take:</span>
             <p>{step.choices[chosenIndex].feedback}</p>
+            <p className="pt-1 text-[11px] font-bold text-[#207559]">📈 Business Confidence +{step.choices[chosenIndex].scoreDelta}</p>
           </div>
         )}
 

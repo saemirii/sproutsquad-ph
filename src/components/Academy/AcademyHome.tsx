@@ -5,7 +5,9 @@ import { SeedBalance } from './shared/SeedBalance';
 import { StreakBadge } from './shared/StreakBadge';
 import { getPeriodKey } from '../../data/academyQuests';
 import { getLevelForXp } from '../../data/academyLevels';
+import { getSkillMastery } from '../../data/academySkills';
 import { Icon } from '../Icon';
+import { SkillMasteryBars } from './shared/SkillMasteryBars';
 import type { AcademyTab } from './AcademyRoot';
 
 interface AcademyHomeProps {
@@ -30,7 +32,7 @@ const getGreeting = () => {
 
 export const AcademyHome: React.FC<AcademyHomeProps> = ({ onNavigate }) => {
   const { currentUser } = useSession();
-  const { academyProfile, modules, lessons, completedLessonIds, isModuleUnlocked, quests, questProgress, achievements, unlockedAchievementIds } = useAcademy();
+  const { academyProfile, modules, lessons, completedLessonIds, completedChallengeIds, isModuleUnlocked, quests, questProgress, achievements, unlockedAchievementIds } = useAcademy();
 
   const orderedUnlockedLessons = modules
     .filter((m) => isModuleUnlocked(m.id))
@@ -45,6 +47,7 @@ export const AcademyHome: React.FC<AcademyHomeProps> = ({ onNavigate }) => {
     .sort((a, b) => b.sortOrder - a.sortOrder)
     .slice(0, 3);
   const level = getLevelForXp(academyProfile.xp);
+  const skillMastery = getSkillMastery(modules, completedLessonIds, completedChallengeIds);
 
   return (
     <div className="space-y-5">
@@ -100,6 +103,14 @@ export const AcademyHome: React.FC<AcademyHomeProps> = ({ onNavigate }) => {
           <span className="shrink-0 px-4 py-2.5 rounded-2xl bg-[#B8E6D5] text-[#194E3B] text-xs font-black">Continue</span>
         </button>
       )}
+
+      {/* Business Skills */}
+      <div className="bg-white rounded-3xl border border-[#EDE4D8] shadow-xs p-5 space-y-3">
+        <h3 className="text-xs font-black text-[#3B2F27] uppercase tracking-wider flex items-center gap-1.5">
+          <Icon name="level-sprout" className="w-3.5 h-3.5" /> Business Skills
+        </h3>
+        <SkillMasteryBars skills={skillMastery} />
+      </div>
 
       {/* Garden preview */}
       <button

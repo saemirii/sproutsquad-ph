@@ -1,6 +1,6 @@
 import React from 'react';
 import { ArrowLeft } from 'lucide-react';
-import { Challenge } from '../../types';
+import { Challenge, ChallengeResult } from '../../types';
 import { Icon } from '../Icon';
 import { SimulationChallenge } from './SimulationChallenge';
 import { CaseStudyChallenge } from './CaseStudyChallenge';
@@ -8,12 +8,13 @@ import { CaseStudyChallenge } from './CaseStudyChallenge';
 interface ChallengePlayerProps {
   challenge: Challenge;
   onBack: () => void;
+  onComplete?: (result: ChallengeResult) => void;
 }
 
 /** Dispatches a Challenge to the right player by mode — one entry point
  * regardless of whether the content is a slider simulation or a sequential
  * case study. */
-export const ChallengePlayer: React.FC<ChallengePlayerProps> = ({ challenge, onBack }) => (
+export const ChallengePlayer: React.FC<ChallengePlayerProps> = ({ challenge, onBack, onComplete }) => (
   <div className="space-y-5">
     <button onClick={onBack} className="flex items-center gap-1.5 text-xs font-bold text-[#8C7A6D] hover:text-[#3B2F27] cursor-pointer">
       <ArrowLeft className="w-3.5 h-3.5" /> Back
@@ -34,9 +35,9 @@ export const ChallengePlayer: React.FC<ChallengePlayerProps> = ({ challenge, onB
     </div>
 
     {challenge.mode === 'simulation' ? (
-      <SimulationChallenge challenge={challenge} />
+      <SimulationChallenge challenge={challenge} onComplete={onComplete} />
     ) : (
-      <CaseStudyChallenge challenge={challenge} />
+      <CaseStudyChallenge challenge={challenge} onComplete={onComplete} />
     )}
   </div>
 );

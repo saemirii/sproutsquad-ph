@@ -37,7 +37,7 @@ export const ModuleDetail: React.FC<ModuleDetailProps> = ({ module, lessons, che
           </div>
         </div>
         <p className="text-xs text-[#7A6B5F] leading-relaxed">{module.intro}</p>
-        <p className="text-[11px] font-bold text-[#207559]">{doneCount} / {lessons.length} lessons completed</p>
+        <p className="text-[11px] font-bold text-[#207559]">{doneCount} / {lessons.length} missions completed</p>
       </div>
 
       <div className="space-y-2.5">
@@ -76,10 +76,10 @@ export const ModuleDetail: React.FC<ModuleDetailProps> = ({ module, lessons, che
           <div className="text-left">
             <p className="text-xs font-black text-[#7A341A] flex items-center gap-1.5">
               {allLessonsDone ? <Icon name="leaderboard-business-builder" className="w-4 h-4" /> : <Lock className="w-3.5 h-3.5" />}
-              Module Checkpoint: {checkpoint.title}
+              🌳 Growth Challenge: {checkpoint.title}
             </p>
             <p className="text-[10px] text-[#8C5A3E]">
-              {checkpointDone ? 'Completed — you can retry anytime' : allLessonsDone ? checkpoint.tagline : 'Finish every lesson above to unlock'}
+              {checkpointDone ? 'Completed — you can retry anytime' : allLessonsDone ? checkpoint.tagline : 'Finish every mission above to unlock'}
             </p>
           </div>
           <span className="text-lg">→</span>

@@ -19,22 +19,28 @@ export const module7Lessons: Lesson[] = [
     moduleId: 'module-7',
     number: '7.1',
     title: 'Selling Price vs. COGS',
-    estimatedMinutes: 35,
+    estimatedMinutes: 20,
     hook: '"Two products sell for the same price. One earns Crumb & Co. ₱90 in gross profit; the other earns ₱20. Same price, very different business."',
-    simplifiedExplanation: "Revisiting Module 3: Selling price is what the customer pays. COGS is the direct cost of that specific product. Gross profit = Selling price − COGS. This simple subtraction is the foundation for every deeper financial analysis in this module — margins, break-even, and ratios all build on it.",
-    concept: {
-      body: "This is the exact calculation DepEd's Grade 11 ABM curriculum has students prepare when they build the Statement of Cost of Goods Sold and Gross Profit for a merchandising business.",
-      sources: [
-        { title: 'Fundamentals of Accountancy, Business and Management 1 (Curriculum Guide, Grade 11) — DepEd', url: 'https://lrmds.deped.gov.ph/detail/16012' },
-      ],
-    },
+    beats: [
+      '**Selling price** is what the customer pays. **COGS** is the direct cost of making that one product — ingredients, materials, packaging.',
+      '**Gross profit** = Selling price − COGS. It\'s plain subtraction, but it\'s the number every deeper calculation in this module builds on.',
+    ],
+    whyItMatters: 'Two products can share a price tag and still be worlds apart — the one with the fatter **gross profit** is doing more for your business, even if a customer can\'t tell the difference.',
     activity: {
       title: 'Quick Gross Profit Drill',
-      prompt: 'Calculate gross profit for 4 products with given selling price and COGS. Rank them from highest to lowest gross profit per unit.',
+      steps: [
+        '**Calculate gross profit** for 4 products, each with a given selling price and COGS.',
+        '**Rank them** from highest to lowest gross profit per unit.',
+      ],
     },
     inLessonScenario: {
       title: "Crumb & Co.'s Two Cookies",
-      prompt: "Cookie A sells for ₱150, COGS ₱60. Cookie B sells for ₱150, COGS ₱130. Both sell equally well. Which cookie should Crumb & Co. prioritize promoting, and why does 'same price' not mean 'same value to the business'?",
+      steps: [
+        '**Cookie A** sells for ₱150, COGS ₱60.',
+        '**Cookie B** sells for ₱150, COGS ₱130.',
+        'Both sell equally well.',
+        'Which cookie should Crumb & Co. prioritize promoting, and why does "same price" not mean "same value to the business"?',
+      ],
     },
     shopOsTieIn: {
       note: 'Shop OS shows gross profit per product automatically once you enter COGS — useful for spotting which products like Cookie B are quietly underperforming.',
@@ -56,23 +62,28 @@ export const module7Lessons: Lesson[] = [
     moduleId: 'module-7',
     number: '7.2',
     title: 'Unit Economics',
-    estimatedMinutes: 35,
+    estimatedMinutes: 20,
     hook: "\"Selling more isn't automatically good — if each unit barely covers its own cost, more sales can mean more work for barely more profit.\"",
-    simplifiedExplanation: "Unit economics means analyzing profitability at the level of ONE unit sold. Price per unit is the selling price of one item. Variable cost per unit is the cost that changes directly with how many units you make (materials, packaging — similar to COGS). Contribution margin = Price per unit − Variable cost per unit — this is how much each unit 'contributes' toward covering fixed costs (like rent) and eventually, profit. Example: if a plush keychain sells for ₱180 and its variable cost is ₱75, its contribution margin is ₱105.",
-    concept: {
-      body: "DepEd's Grade 11 Business Mathematics curriculum has students differentiate mark-up from margin and describe how gross margin is used in sales — contribution margin is the same 'what's left after variable cost' idea applied per unit. OpenStax's managerial accounting text adds the formal per-unit, ratio, and total forms of the calculation.",
-      sources: [
-        { title: 'Business Mathematics (Curriculum Guide, Grade 11) — DepEd', url: 'https://lrmds.deped.gov.ph/detail/16008' },
-        { title: 'Principles of Accounting, Vol. 2: Managerial Accounting, Ch. 3 (Contribution Margin & Break-Even) — OpenStax / Rice University', url: 'https://openstax.org/books/principles-managerial-accounting/pages/3-2-calculate-a-break-even-point-in-units-and-dollars' },
-      ],
-    },
+    beats: [
+      '**Unit economics** means checking profit one sale at a time, not just as one lump total.',
+      '**Variable cost per unit** is the cost that grows with every unit made — materials, packaging, anything that scales with production, similar to COGS.',
+      '**Contribution margin** = Price per unit − Variable cost per unit. A ₱180 keychain with a ₱75 variable cost leaves a ₱105 contribution margin — ₱105 chipping away at rent and other fixed costs every time one sells.',
+    ],
+    whyItMatters: '**Contribution margin isn\'t profit yet** — it\'s the fuel that pays off fixed costs first, which is why a flood of low-margin sales can add up to less real money than a handful of high-margin ones.',
     activity: {
       title: 'Calculate Contribution Margin',
-      prompt: "Calculate the contribution margin per unit for 3 products, given their selling price and variable cost per unit. Identify which product 'contributes' the most toward covering the shop's fixed costs.",
+      steps: [
+        '**Calculate the contribution margin per unit** for 3 products, given their selling price and variable cost per unit.',
+        'Identify which product **"contributes"** the most toward covering the shop\'s fixed costs.',
+      ],
     },
     inLessonScenario: {
       title: "Cozy Corner's Per-Unit Reality",
-      prompt: "Cozy Corner's keychain: price ₱180, variable cost ₱75. Calculate the contribution margin per unit. If Cozy Corner sells 40 keychains this month, what's the TOTAL contribution margin?",
+      steps: [
+        "Cozy Corner's keychain: price ₱180, variable cost ₱75.",
+        '**Calculate the contribution margin per unit.**',
+        "If Cozy Corner sells 40 keychains this month, what's the **TOTAL contribution margin**?",
+      ],
     },
     quiz: [
       {
@@ -97,23 +108,30 @@ export const module7Lessons: Lesson[] = [
     moduleId: 'module-7',
     number: '7.3',
     title: 'Gross Margin & Net Margin',
-    estimatedMinutes: 35,
+    estimatedMinutes: 20,
     hook: '"Two shops both made ₱10,000 gross profit this month. One has ₱50,000 in sales; the other has ₱15,000. Which one is actually healthier?"',
-    simplifiedExplanation: "Gross margin = (Gross Profit ÷ Revenue) × 100 — it shows what percentage of each peso of sales is left after covering direct product costs. Net margin = (Net Profit ÷ Revenue) × 100, where Net Profit also subtracts operating expenses — it shows the percentage left after ALL costs. Expressing profit as a percentage (not just a peso amount) makes it possible to fairly compare businesses or products of very different sizes. Example: Crumb & Co. has ₱15,000 revenue and ₱6,000 gross profit → gross margin = (6,000 ÷ 15,000) × 100 = 40%.",
-    concept: {
-      body: 'DepEd\'s Grade 11 Business Mathematics curriculum has students describe how gross margin is used in sales, and Grade 12 Business Finance has students compute, analyze, and interpret the gross profit ratio and net profit ratio directly.',
-      sources: [
-        { title: 'Business Mathematics (Curriculum Guide, Grade 11) — DepEd', url: 'https://lrmds.deped.gov.ph/detail/16008' },
-        { title: 'Business Finance (Curriculum Guide, Grade 12) — DepEd', url: 'https://lrmds.deped.gov.ph/detail/16007' },
-      ],
-    },
+    beats: [
+      '**Gross margin** = (Gross Profit ÷ Revenue) × 100 — the % of every peso of sales left after direct product costs.',
+      '**Net margin** = (Net Profit ÷ Revenue) × 100, where Net Profit also subtracts operating expenses — the % left after literally everything.',
+      'Percentages let you compare fairly across sizes. Crumb & Co.\'s ₱15,000 revenue and ₱6,000 gross profit works out to a 40% gross margin — a number you can stack up against a shop twice its size.',
+    ],
+    whyItMatters: '**Peso profit alone can mislead** — a bigger shop can post a bigger number and still be less efficient per sale than a smaller one.',
+    quickStat: "Rule of thumb: if net margin keeps shrinking while revenue climbs, costs are quietly outgrowing sales — worth an expense check before it becomes a real problem.",
     activity: {
       title: 'Calculate Both Margins',
-      prompt: 'Given revenue, COGS, and operating expenses for a business, calculate gross margin % and net margin %. Explain in one sentence what each percentage tells the owner.',
+      steps: [
+        'Given revenue, COGS, and operating expenses for a business, **calculate gross margin %** and **net margin %**.',
+        '**Explain in one sentence** what each percentage tells the owner.',
+      ],
     },
     inLessonScenario: {
       title: 'Which Shop Is Healthier?',
-      prompt: "Shop A: ₱50,000 revenue, ₱10,000 gross profit (20% margin). Shop B: ₱15,000 revenue, ₱10,000 gross profit. Calculate Shop B's gross margin %. Which shop is more efficient per peso of sales, even though their PESO gross profit is identical?",
+      steps: [
+        '**Shop A**: ₱50,000 revenue, ₱10,000 gross profit (20% margin).',
+        '**Shop B**: ₱15,000 revenue, ₱10,000 gross profit.',
+        "**Calculate Shop B's gross margin %.**",
+        'Which shop is **more efficient** per peso of sales, even though their PESO gross profit is identical?',
+      ],
     },
     shopOsTieIn: {
       note: 'Shop OS displays gross margin % alongside peso amounts in your financial summary — always compare both, not peso amounts alone.',
@@ -142,23 +160,34 @@ export const module7Lessons: Lesson[] = [
     moduleId: 'module-7',
     number: '7.4',
     title: 'Break-Even: When Do We Stop Losing?',
-    estimatedMinutes: 35,
+    estimatedMinutes: 20,
     hook: '"PixelPop pays ₱3,000/month for design software no matter how many projects it takes. How many projects does it need before that cost stops being a loss?"',
-    simplifiedExplanation: "Fixed costs don't change with how much you sell (rent, a monthly subscription). Variable costs change directly with each unit sold (materials, packaging). Contribution margin is the key link between them. The break-even point is the sales level at which total revenue exactly equals total costs — no profit, no loss. Formula: Break-even units = Fixed Costs ÷ Contribution Margin per Unit. Example: if PixelPop's fixed cost is ₱3,000/month and each logo project has a contribution margin of ₱500, break-even = 3,000 ÷ 500 = 6 projects per month.",
-    concept: {
-      body: "Break-even is a named competency in DepEd's Grade 11 Business Mathematics curriculum: students learn to 'define break-even; illustrate how to determine break-even point.' OpenStax's managerial accounting text adds the formal fixed-cost/contribution-margin formula used to calculate it.",
-      sources: [
-        { title: 'Business Mathematics (Curriculum Guide, Grade 11) — DepEd', url: 'https://lrmds.deped.gov.ph/detail/16008' },
-        { title: 'Principles of Accounting, Vol. 2: Managerial Accounting, Ch. 3 (Contribution Margin & Break-Even) — OpenStax / Rice University', url: 'https://openstax.org/books/principles-managerial-accounting/pages/3-2-calculate-a-break-even-point-in-units-and-dollars' },
-      ],
+    beats: [
+      '**Fixed costs** don\'t budge no matter how much you sell — rent, a monthly subscription. **Variable costs** move with every unit — materials, packaging.',
+      'The **break-even point** is where total revenue exactly equals total costs. No profit, no loss — yet.',
+      'Break-even units = Fixed Costs ÷ Contribution Margin per Unit. PixelPop\'s ₱3,000/month software cost ÷ ₱500 contribution margin per logo = 6 projects just to break even.',
+    ],
+    whyItMatters: 'Every sale before break-even is just **paying off fixed costs** — the real profit only starts on project #7.',
+    quickStat: 'Break-even isn\'t one universal number — a snack stall might break even at 40 cookies a day, a design shop at 6 logos a month. It all comes down to your own fixed costs and margin.',
+    image: {
+      url: 'https://upload.wikimedia.org/wikipedia/commons/2/23/CVP-TC-Sales-PL-BEP.svg',
+      alt: 'Break-even chart showing Total Costs and Sales lines crossing at the break-even point, with Profit and Loss regions on either side',
+      attribution: 'Image: Nils R. Barth / Wikimedia Commons (public domain)',
     },
     activity: {
       title: 'Find the Break-Even Point',
-      prompt: 'Given fixed costs and contribution margin per unit for 3 different mini-businesses, calculate the break-even point in units for each.',
+      steps: [
+        'Given fixed costs and contribution margin per unit for 3 different mini-businesses, **calculate the break-even point** in units for each.',
+      ],
     },
     inLessonScenario: {
       title: "PixelPop's Break-Even Month",
-      prompt: 'PixelPop\'s fixed cost is ₱3,000/month (software subscription). Each logo project has a selling price of ₱800 and variable cost of ₱300 (contribution margin = ₱500). Calculate PixelPop\'s break-even point in projects per month. If PixelPop completes 9 projects this month, calculate its profit.',
+      steps: [
+        "PixelPop's fixed cost is ₱3,000/month (software subscription).",
+        'Each logo project has a selling price of ₱800 and variable cost of ₱300 (**contribution margin = ₱500**).',
+        "**Calculate PixelPop's break-even point** in projects per month.",
+        'If PixelPop completes 9 projects this month, **calculate its profit**.',
+      ],
     },
     shopOsTieIn: {
       note: 'Once you set your fixed costs and per-product contribution margin in Shop OS, it can calculate your break-even point automatically each month.',
@@ -187,22 +216,28 @@ export const module7Lessons: Lesson[] = [
     moduleId: 'module-7',
     number: '7.5',
     title: 'Ratios: Health Checks for a Business',
-    estimatedMinutes: 35,
+    estimatedMinutes: 20,
     hook: '"A business can look busy and successful while quietly owing more than it owns. Ratios catch what a glance at sales numbers alone can miss."',
-    simplifiedExplanation: "Financial ratios are simple health checks calculated from your financial statements. This lesson focuses on three beginner-friendly categories: Liquidity — can the business pay its short-term bills? (Working Capital = Current Assets − Current Liabilities). Profitability — is the business actually making money relative to its sales? (gross/net margins are profitability ratios). Leverage/solvency — how much of the business is funded by debt versus the owner's own investment? (Debt-to-Equity Ratio = Total Liabilities ÷ Equity — higher means more funded by borrowing).",
-    concept: {
-      body: "DepEd's Grade 12 Business Finance curriculum names these exact ratios as required competencies: students compute, analyze, and interpret 'current ratio, working capital, gross profit ratio, net profit ratio, receivable turnover, inventory turnover, debt-to-equity ratio, and the like.'",
-      sources: [
-        { title: 'Business Finance (Curriculum Guide, Grade 12) — DepEd', url: 'https://lrmds.deped.gov.ph/detail/16007' },
-      ],
-    },
+    beats: [
+      '**Liquidity** asks: can you pay your short-term bills? **Working Capital** = Current Assets − Current Liabilities.',
+      '**Profitability** asks: are you actually making money relative to sales? The gross and net margins from Lesson 7.3 are profitability ratios.',
+      '**Leverage** asks how much of the business runs on borrowed money. **Debt-to-Equity Ratio** = Total Liabilities ÷ Equity — the higher it climbs, the more the business leans on debt instead of the owner\'s own money.',
+    ],
+    whyItMatters: 'Sales totals only tell part of the story — a **quick ratio check** is what tells you whether growth is actually making the business healthier, or just busier.',
+    quickStat: 'Three ratios, three questions: can you pay today\'s bills (liquidity), are you actually profitable (profitability), and who really owns the business — you or your lenders (leverage)?',
     activity: {
       title: 'Calculate Three Ratios',
-      prompt: 'Given a simple balance sheet, calculate: Working Capital, Debt-to-Equity Ratio, and Net Margin.',
+      steps: [
+        'Given a simple balance sheet, calculate three numbers: **Working Capital**, **Debt-to-Equity Ratio**, and **Net Margin**.',
+      ],
     },
     inLessonScenario: {
       title: "Cozy Corner's Health Check",
-      prompt: "Cozy Corner: Current Assets ₱6,000, Current Liabilities ₱2,000, Total Liabilities ₱2,000, Equity ₱8,000. Calculate Working Capital and Debt-to-Equity Ratio. Is Cozy Corner's short-term financial health (liquidity) currently strong or weak?",
+      steps: [
+        'Cozy Corner: Current Assets ₱6,000, Current Liabilities ₱2,000, Total Liabilities ₱2,000, Equity ₱8,000.',
+        '**Calculate Working Capital** and **Debt-to-Equity Ratio**.',
+        "Is Cozy Corner's short-term financial health (liquidity) currently **strong or weak**?",
+      ],
     },
     shopOsTieIn: {
       note: "Shop OS's financial health panel calculates these same ratios automatically from your recorded assets, liabilities, and monthly profit.",

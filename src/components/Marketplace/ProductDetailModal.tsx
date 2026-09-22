@@ -29,7 +29,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   onClose,
   onViewBusiness,
 }) => {
-  const { businesses, products } = useShop();
+  const { businesses, products, accessibleBusinessIds } = useShop();
   const { addToCart } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [isAdded, setIsAdded] = useState(false);
@@ -48,6 +48,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   if (!product) return null;
 
   const business = businesses.find((b) => b.id === product.businessId);
+  const isOwnProduct = accessibleBusinessIds.includes(product.businessId);
   const bundledProducts = product.bundledProductIds
     ? product.bundledProductIds.map((id) => products.find((p) => p.id === id)).filter((p): p is Product => Boolean(p))
     : [];
@@ -57,10 +58,16 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   // addToCart re-checks the live count, so what actually lands in the bag
   // can be less than `quantity` even though the stepper above allowed it.
   const handleAddToCart = async () => {
+    if (isOwnProduct) return;
     setIsAdding(true);
     setStockMessage(null);
-    const { added, available } = await addToCart(product, quantity);
+    const { added, available, blocked } = await addToCart(product, quantity);
     setIsAdding(false);
+
+    if (blocked === 'own-business') {
+      setStockMessage("You can't buy your own shop's products.");
+      return;
+    }
 
     if (added <= 0) {
       setStockMessage(
@@ -237,10 +244,11 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
               <button
                 id="modal-add-to-cart-btn"
-                disabled={product.inventoryCount <= 0 || isAdding}
+                disabled={product.inventoryCount <= 0 || isAdding || isOwnProduct}
                 onClick={() => void handleAddToCart()}
+                title={isOwnProduct ? "You can't buy your own shop's products" : undefined}
                 className={`w-full py-3.5 rounded-2xl font-black text-xs transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer active:scale-95 disabled:cursor-not-allowed ${
-                  product.inventoryCount <= 0
+                  product.inventoryCount <= 0 || isOwnProduct
                     ? 'bg-[#FAF3DE] text-[#A39284]'
                     : isAdded
                     ? 'bg-[#194E3B] text-white'
@@ -249,7 +257,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               >
                 {product.isPreOrder ? <CalendarClock className="w-4 h-4" /> : <ShoppingBag className="w-4 h-4" />}
                 <span className="inline-flex items-center gap-1">
-                  {product.inventoryCount <= 0
+                  {isOwnProduct
+                    ? "This is your shop's product"
+                    : product.inventoryCount <= 0
                     ? 'Out of Stock'
                     : isAdding
                     ? 'Checking stock...'

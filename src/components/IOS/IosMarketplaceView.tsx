@@ -23,6 +23,7 @@ export const IosMarketplaceView: React.FC<IosMarketplaceViewProps> = ({
     businesses,
     activeBusiness,
     setActiveBusiness,
+    accessibleBusinessIds,
   } = useShop();
   const { addToCart, cartCount } = useCart();
   const { selectedCampusFilter, setSelectedCampusFilter } = useSession();
@@ -31,6 +32,9 @@ export const IosMarketplaceView: React.FC<IosMarketplaceViewProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory | 'All'>('All');
   const [isCampusSheetOpen, setIsCampusSheetOpen] = useState(false);
   const [isBizSheetOpen, setIsBizSheetOpen] = useState(false);
+  // Hidden by default — there's no point browsing something you can no
+  // longer buy; this just lets someone opt back in to see them.
+  const [showSoldOut, setShowSoldOut] = useState(false);
   const [quickAddedId, setQuickAddedId] = useState<string | null>(null);
 
   const categories: (ProductCategory | 'All')[] = [
@@ -63,16 +67,26 @@ export const IosMarketplaceView: React.FC<IosMarketplaceViewProps> = ({
       // Product Drop Scheduler: hide anything scheduled for a future drop —
       // it shows up automatically once that moment passes, no seller action needed.
       const hasDropped = !p.dropDate || new Date(p.dropDate).getTime() <= Date.now();
+      const matchesStock = showSoldOut || p.inventoryCount > 0;
 
-      return matchesSearch && matchesCategory && matchesCampus && hasDropped;
+      return matchesSearch && matchesCategory && matchesCampus && hasDropped && matchesStock;
     });
-  }, [products, searchQuery, selectedCategory, selectedCampusFilter]);
+  }, [products, searchQuery, selectedCategory, selectedCampusFilter, showSoldOut]);
 
   const handleQuickAdd = async (e: React.MouseEvent, product: Product) => {
     e.stopPropagation();
     if (product.inventoryCount <= 0) return;
+    if (accessibleBusinessIds.includes(product.businessId)) {
+      onShowAlert?.('badge-low-stock', "That's your own shop", "You can't buy your own business' products.");
+      return;
+    }
     playIosSuccess();
-    const { added, available } = await addToCart(product, 1);
+    const { added, available, blocked } = await addToCart(product, 1);
+
+    if (blocked === 'own-business') {
+      onShowAlert?.('badge-low-stock', "That's your own shop", "You can't buy your own business' products.");
+      return;
+    }
 
     if (added <= 0) {
       onShowAlert?.(
@@ -175,10 +189,21 @@ export const IosMarketplaceView: React.FC<IosMarketplaceViewProps> = ({
 
       {/* Products Grid (2-Column Mobile Feed) */}
       <div className="px-4">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-[11px] font-bold text-[#8C7A6D]">
+        <div className="flex items-center justify-between mb-2 gap-2">
+          <span className="text-[11px] font-bold text-[#8C7A6D] shrink-0">
             {filteredProducts.length} campus creations
           </span>
+          <button
+            onClick={() => {
+              playIosTap();
+              setShowSoldOut((v) => !v);
+            }}
+            className={`shrink-0 px-2.5 py-1 rounded-xl text-[11px] font-bold whitespace-nowrap border transition-all active:scale-95 ${
+              showSoldOut ? 'bg-[#B8E6D5] text-[#194E3B] border-[#9FD9C3]' : 'bg-white text-[#6B5B4F] border-[#EDE4D8]'
+            }`}
+          >
+            {showSoldOut ? '✓ ' : ''}Show sold out
+          </button>
         </div>
 
         {filteredProducts.length === 0 ? (
@@ -191,6 +216,7 @@ export const IosMarketplaceView: React.FC<IosMarketplaceViewProps> = ({
                 setSearchQuery('');
                 setSelectedCategory('All');
                 setSelectedCampusFilter('All Campuses');
+                setShowSoldOut(false);
               }}
               className="mt-2 px-3 py-1.5 bg-[#B8E6D5] text-[#194E3B] text-[11px] font-bold rounded-xl"
             >
@@ -202,6 +228,7 @@ export const IosMarketplaceView: React.FC<IosMarketplaceViewProps> = ({
             {filteredProducts.map((product) => {
               const isOutOfStock = product.inventoryCount <= 0;
               const isLowStock = product.inventoryCount > 0 && product.inventoryCount <= 5;
+              const isOwnProduct = accessibleBusinessIds.includes(product.businessId);
 
               return (
                 <div
@@ -283,10 +310,11 @@ export const IosMarketplaceView: React.FC<IosMarketplaceViewProps> = ({
                       </div>
 
                       <button
-                        disabled={isOutOfStock}
+                        disabled={isOutOfStock || isOwnProduct}
                         onClick={(e) => handleQuickAdd(e, product)}
+                        title={isOwnProduct ? "That's your own shop's product" : undefined}
                         className={`w-7 h-7 rounded-xl flex items-center justify-center transition-all ${
-                          isOutOfStock
+                          isOutOfStock || isOwnProduct
                             ? 'bg-[#FAF3DE] text-[#A39284] cursor-not-allowed'
                             : quickAddedId === product.id
                             ? 'bg-[#194E3B] text-white'

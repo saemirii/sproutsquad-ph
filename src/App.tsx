@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { AppProvider, AuthenticatedUser, useSession, useShop } from './context/AppContext';
 import { AuthPage, LocalAccount } from './components/AuthPage';
+import { ResetPasswordPage } from './components/ResetPasswordPage';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
 import { safeSetItem } from './utils/safeStorage';
 import { IPhoneFrame } from './components/IOS/IPhoneFrame';
@@ -178,6 +179,11 @@ export default function App() {
     return saved ? JSON.parse(saved) : null;
   });
   const [isLoading, setIsLoading] = useState(true);
+  // Supabase's recovery link signs the user into a real (temporary-purpose)
+  // session and fires this event — without intercepting it here, clicking
+  // a "reset password" email would just silently log the user in without
+  // ever letting them set a new password.
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 
   // One-time native status bar setup — the app's own UI reserves
   // safe-area-inset-top space (see IosStatusBar.tsx) rather than drawing a
@@ -216,7 +222,8 @@ export default function App() {
       .catch((error) => console.error('Failed to restore session', error))
       .finally(() => { clearTimeout(timeout); resolveLoading(); });
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (event === 'PASSWORD_RECOVERY') setIsPasswordRecovery(true);
       setSession(nextSession);
       resolveLoading();
     });
@@ -271,6 +278,10 @@ export default function App() {
     setLocalUser(null);
     return { success: true };
   };
+
+  if (isPasswordRecovery) {
+    return <ResetPasswordPage onDone={() => setIsPasswordRecovery(false)} />;
+  }
 
   if (!isSupabaseConfigured && localUser) {
     return (

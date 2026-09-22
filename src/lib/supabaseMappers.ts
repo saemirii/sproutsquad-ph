@@ -156,6 +156,9 @@ export const expenseToRow = (e: Expense) => ({
   category: e.category,
   supplier_or_store: e.supplierOrStore,
   notes: e.notes,
+  product_id: e.productId,
+  product_name: e.productName,
+  units_purchased: e.unitsPurchased,
 });
 
 export const rowToExpense = (row: any): Expense => ({
@@ -167,6 +170,9 @@ export const rowToExpense = (row: any): Expense => ({
   category: row.category as ExpenseCategory,
   supplierOrStore: row.supplier_or_store || undefined,
   notes: row.notes || undefined,
+  productId: row.product_id || undefined,
+  productName: row.product_name || undefined,
+  unitsPurchased: row.units_purchased != null ? Number(row.units_purchased) : undefined,
 });
 
 export const couponToRow = (c: Coupon) => ({

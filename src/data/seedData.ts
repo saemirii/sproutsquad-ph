@@ -730,7 +730,7 @@ export const initialExpenses: Expense[] = [
     date: '2026-08-27',
     description: 'Tricycle and LRT-2 Fare for Divisoria supply trip & Katipunan supply haul',
     amount: 220,
-    category: 'Logistics & Campus Fare',
+    category: 'Transportation',
     supplierOrStore: 'LRT-2 & Katipunan Trike',
     notes: 'Transportation cost logging.',
   },
@@ -740,7 +740,7 @@ export const initialExpenses: Expense[] = [
     date: '2026-08-29',
     description: 'JGSOM Student Entrepreneurship Org Fair Table Share Fee (2 Days)',
     amount: 600,
-    category: 'Stall & Fair Booth',
+    category: 'Rent',
     supplierOrStore: 'Ateneo MEc Org Fair Committee',
     notes: 'Shared booth with roommate’s craft store.',
   }

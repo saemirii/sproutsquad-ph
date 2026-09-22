@@ -35,8 +35,9 @@ export const SellerOverview: React.FC = () => {
   const {
     revenue,
     expenses,
-    profit,
-    profitMargin,
+    grossProfit,
+    grossProfitMargin,
+    hasIncompleteCogsData,
     orderCount,
     healthScore,
     healthStatus,
@@ -46,7 +47,7 @@ export const SellerOverview: React.FC = () => {
     lowStockCount
   } = activeBusinessMetrics;
 
-  const isProfitPositive = profit >= 0;
+  const isProfitPositive = grossProfit >= 0;
 
   // Compute category expense shares
   const expenseCategories: Record<string, number> = {};
@@ -56,7 +57,10 @@ export const SellerOverview: React.FC = () => {
 
   const packagingTotal = expenseCategories['Packaging'] || 0;
   const packagingRatio = expenses > 0 ? Math.round((packagingTotal / expenses) * 100) : 0;
-  const suppliesTotal = expenseCategories['Materials & Supplies'] || 0;
+  // Grouped together since both feed the same FIFO COGS pool (see
+  // calculateFifoCogs) — splitting them into separate bar segments here
+  // wouldn't add insight, just more legend entries.
+  const suppliesTotal = (expenseCategories['Materials & Supplies'] || 0) + (expenseCategories['Inventory'] || 0);
   const suppliesRatio = expenses > 0 ? Math.round((suppliesTotal / expenses) * 100) : 0;
 
   return (
@@ -123,12 +127,12 @@ export const SellerOverview: React.FC = () => {
           </div>
         </div>
 
-        {/* Net Profit */}
+        {/* Gross Profit */}
         <div className="bg-white p-5 rounded-3xl border border-[#EDE4D8] shadow-xs space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-[#8C7A6D] flex items-center gap-1">
-              Net Profit
-              <InfoTip text="What you actually keep after paying all expenses. Formula: Total Revenue − Total Expenses." />
+              Gross Profit
+              <InfoTip text="What completed orders earned above their cost of goods. Formula: Completed Order Revenue − Cost of Goods Sold (FIFO-matched to units actually sold). Pending/unfulfilled orders aren't counted yet." />
             </span>
             <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
               isProfitPositive ? 'bg-[#B8E6D5] text-[#194E3B]' : 'bg-[#FEE2E2] text-[#991B1B]'
@@ -139,40 +143,40 @@ export const SellerOverview: React.FC = () => {
           <div className={`text-2xl font-black font-['Nunito',sans-serif] ${
             isProfitPositive ? 'text-[#194E3B]' : 'text-[#991B1B]'
           }`}>
-            {formatPHP(profit)}
+            {formatPHP(grossProfit)}
           </div>
           <div className="flex items-center justify-between text-[11px] text-[#7A6B5F]">
-            <span>Revenue - Expenses</span>
+            <span>Completed Revenue − COGS</span>
             <span className={isProfitPositive ? 'text-[#207559] font-bold' : 'text-[#991B1B] font-bold'}>
               {isProfitPositive ? 'Profitable' : 'Deficit'}
             </span>
           </div>
         </div>
 
-        {/* Profit Margin */}
+        {/* Gross Profit Margin */}
         <div className="bg-white p-5 rounded-3xl border border-[#EDE4D8] shadow-xs space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-[#8C7A6D] flex items-center gap-1">
-              Profit Margin
-              <InfoTip text="The % of each sale you keep as profit after costs. Formula: (Net Profit ÷ Revenue) × 100. Higher is better — 35%+ is a healthy target for student businesses." />
+              Gross Profit Margin
+              <InfoTip text="The % of completed-order revenue left after cost of goods. Formula: (Gross Profit ÷ Completed Revenue) × 100. Higher is better — 35%+ is a healthy target for student businesses. Needs a Materials/Packaging expense logged (with product + units) for every product you sell, or this will look better than it really is." />
             </span>
             <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black ${
-              profitMargin >= 35 ? 'bg-[#B8E6D5] text-[#194E3B]' : 'bg-[#FEF3C7] text-[#92400E]'
+              hasIncompleteCogsData ? 'bg-[#FEF3C7] text-[#92400E]' : grossProfitMargin >= 35 ? 'bg-[#B8E6D5] text-[#194E3B]' : 'bg-[#FEF3C7] text-[#92400E]'
             }`}>
               %
             </div>
           </div>
           <div className="text-2xl font-black text-[#3B2F27] font-['Nunito',sans-serif] flex items-baseline gap-1">
-            <span>{profitMargin}%</span>
+            <span>{grossProfitMargin}%</span>
             <span className="text-[11px] text-[#8C7A6D] font-medium">
-              {profitMargin >= 35 ? 'Healthy' : 'Needs boost'}
+              {hasIncompleteCogsData ? 'Incomplete data' : grossProfitMargin >= 35 ? 'Healthy' : 'Needs boost'}
             </span>
           </div>
           <div className="flex items-center justify-between text-[11px] text-[#7A6B5F]">
             <span>Campus Target: 35%+</span>
             <span className="font-semibold text-[#207559] inline-flex items-center gap-1">
-              <Icon name={profitMargin >= 35 ? 'decision-confirmed' : 'sellerOS-margin-warning'} className="w-3 h-3" />
-              {profitMargin >= 35 ? 'On Target' : 'Below 35%'}
+              <Icon name={hasIncompleteCogsData ? 'sellerOS-margin-warning' : grossProfitMargin >= 35 ? 'decision-confirmed' : 'sellerOS-margin-warning'} className="w-3 h-3" />
+              {hasIncompleteCogsData ? 'Log costs to confirm' : grossProfitMargin >= 35 ? 'On Target' : 'Below 35%'}
             </span>
           </div>
         </div>
@@ -244,8 +248,8 @@ export const SellerOverview: React.FC = () => {
                 <div className="flex justify-between items-center text-[#54453C]">
                   <span className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-[#207559]" />
-                    <span>Profit Margin Ratio (Max 35 pts)</span>
-                    <InfoTip align="right" text="Rewards a higher profit margin. 45%+ margin scores the full 35 pts; it tapers down the lower your margin gets, and hits 0 if you're not profitable." />
+                    <span>Gross Margin Ratio (Max 35 pts)</span>
+                    <InfoTip align="right" text="Rewards a higher gross margin on completed orders. 45%+ margin scores the full 35 pts; it tapers down the lower your margin gets, and hits 0 if you're not profitable." />
                   </span>
                   <span className="font-bold">{healthScoreBreakdown.marginScore}/35</span>
                 </div>
@@ -360,6 +364,20 @@ export const SellerOverview: React.FC = () => {
                           <p className="text-[11px] text-[#6E5D52] leading-relaxed">
                             {ins.description}
                           </p>
+                          {ins.items && ins.items.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 pt-0.5">
+                              {ins.items.map((item, idx) => (
+                                <span
+                                  key={idx}
+                                  className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold ${
+                                    item.urgent ? 'bg-[#FEE2E2] text-[#991B1B]' : 'bg-[#FFF3E8] text-[#7A341A]'
+                                  }`}
+                                >
+                                  {item.label} · {item.meta}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                           {ins.metricImpact && (
                             <p className="text-[11px] font-bold text-[#EA580C] flex items-center gap-1">
                               <Icon name="lesson-tip-insight" className="w-3 h-3" /> Impact: {ins.metricImpact}
@@ -429,7 +447,7 @@ export const SellerOverview: React.FC = () => {
             <div className="flex flex-wrap items-center justify-between text-[11px] text-[#6E5D52] pt-1">
               <div className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#207559]" />
-                <span>Materials & Raw Ingredients ({suppliesRatio}%)</span>
+                <span>Inventory & Materials ({suppliesRatio}%)</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#E07A5F]" />
@@ -437,7 +455,7 @@ export const SellerOverview: React.FC = () => {
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#A8D8EA]" />
-                <span>Fare & Stall Fees</span>
+                <span>Other Expenses</span>
               </div>
             </div>
           </div>

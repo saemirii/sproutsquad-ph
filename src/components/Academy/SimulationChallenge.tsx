@@ -6,12 +6,17 @@ import { ChallengeResultCard } from './shared/ChallengeResultCard';
 
 interface SimulationChallengeProps {
   challenge: SimulationChallengeDef;
+  /** Fires the moment this challenge's reward is actually awarded —
+   * decoupled from any toast/timer lifecycle, so a caller can reliably
+   * detect "did a completion just happen" regardless of how long the
+   * learner lingers on the result screen afterward. */
+  onComplete?: (result: ChallengeResult) => void;
 }
 
 /** The pricing-toggle pattern, generalized — sliders/toggles over a pure
  * compute() function. Used by every module checkpoint (and practice
  * simulation) whose content is formula-driven. */
-export const SimulationChallenge: React.FC<SimulationChallengeProps> = ({ challenge }) => {
+export const SimulationChallenge: React.FC<SimulationChallengeProps> = ({ challenge, onComplete }) => {
   const { completeChallenge } = useAcademy();
   const [decisions, setDecisions] = useState<Record<string, number | boolean>>(() =>
     Object.fromEntries(challenge.decisions.map((d) => [d.key, d.default]))
@@ -25,6 +30,7 @@ export const SimulationChallenge: React.FC<SimulationChallengeProps> = ({ challe
     setIsSubmitting(true);
     await completeChallenge(challenge.id, computed);
     setIsSubmitting(false);
+    onComplete?.(computed);
   };
 
   const handleRetry = () => {

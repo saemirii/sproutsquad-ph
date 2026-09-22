@@ -19,23 +19,32 @@ export const module8Lessons: Lesson[] = [
     moduleId: 'module-8',
     number: '8.1',
     title: 'Capital: What Does a Business Need Money For?',
-    estimatedMinutes: 35,
+    estimatedMinutes: 20,
     hook: '"Crumb & Co. wants to buy a second oven to fulfill bigger orders. That single purchase could double its production capacity — if it had the money."',
-    simplifiedExplanation: "Capital is money used to start, run, or grow a business — different from the day-to-day sales revenue coming in from customers. Working capital is money used for short-term, everyday operations: buying ingredients this week, paying for packaging, covering the costs that keep the business running right now.\n\nOther common uses of capital include inventory (stocking up on materials or finished products before they're sold), equipment (tools that let a business produce more, or produce better), and growth (expanding into new products, locations, or markets). Naming which category a funding request falls into is the first step toward building a clear, convincing case for that money.",
-    concept: {
-      body: "DepEd's Grade 12 Business Finance curriculum has students identify uses of funds as part of the financial planning process — the same categories (working capital, inventory, equipment, growth) covered in this lesson. The SBA adds the practical detail that a funding request should specify exactly how funds will be used, since lenders and investors expect a clear plan before they commit money.",
-      sources: [
-        { title: 'Business Finance (Curriculum Guide, Grade 12) — DepEd', url: 'https://lrmds.deped.gov.ph/detail/16007' },
-        { title: 'Fund Your Business (Debt vs. Equity Financing) — U.S. Small Business Administration (SBA)', url: 'https://www.sba.gov/business-guide/plan-your-business/fund-your-business' },
-      ],
-    },
+    beats: [
+      "**Capital** is money used to start, run, or grow a business — it's different from the sales revenue already coming in from customers.",
+      '**Working capital** covers the everyday stuff: ingredients, packaging, this week\'s bills. **Inventory**, **equipment**, and **growth** are the other three buckets most funding requests fall into.',
+      'Naming the exact bucket a request falls into is what turns "I need money" into a plan someone can actually say yes to.',
+    ],
+    whyItMatters: "A funder can't say yes to a request they don't understand — **naming the exact use** turns ₱15,000 into a plan instead of a guess.",
+    quickStat: "DoodleDrop's bulk sticker paper is inventory. Cozy Corner's new sewing machine is equipment. Same \"I need money,\" completely different bucket.",
     activity: {
       title: "What's the Capital For?",
-      prompt: "For 4 funding requests — buying a second oven, restocking fabric for next month's orders, paying a graphic designer this week, and opening a second small stall — label each as working capital, inventory, equipment, or growth.",
+      steps: [
+        '**Label each of these 4 funding requests** as working capital, inventory, equipment, or growth.',
+        '**Request 1**: buying a second oven.',
+        "**Request 2**: restocking fabric for next month's orders.",
+        '**Request 3**: paying a graphic designer this week.',
+        '**Request 4**: opening a second small stall.',
+      ],
     },
     inLessonScenario: {
       title: "Crumb & Co.'s Oven Decision",
-      prompt: 'Crumb & Co. wants ₱15,000 for a second oven. What category of capital use is this, and what specific evidence should Crumb & Co. gather (from Modules 6 & 7) to prove the oven will actually pay for itself?',
+      steps: [
+        'Crumb & Co. wants ₱15,000 for a second oven.',
+        '**Name the category** of capital use this falls into.',
+        '**List the specific evidence** (from Modules 6 & 7) Crumb & Co. should gather to prove the oven will actually pay for itself.',
+      ],
     },
     quiz: [
       {
@@ -53,25 +62,34 @@ export const module8Lessons: Lesson[] = [
     moduleId: 'module-8',
     number: '8.2',
     title: 'Debt vs. Equity',
-    estimatedMinutes: 35,
+    estimatedMinutes: 20,
     hook: '"PixelPop needs ₱20,000. One friend offers a loan to be repaid with interest. Another offers to invest in exchange for a share of future profits. Which is the better deal?"',
-    simplifiedExplanation: "Debt financing means borrowing money that must be repaid, usually with interest — the cost of borrowing. The business keeps full ownership, but must repay the loan regardless of how the business performs.\n\nEquity financing means receiving investment in exchange for giving up some ownership or control of the business — the investor shares in future profits (or losses) but isn't guaranteed repayment the way a lender is. Neither is universally 'better': debt keeps ownership intact but adds repayment pressure even in a bad month; equity removes that repayment pressure but means sharing future success (and decisions) with someone else.",
-    concept: {
-      body: "DepEd's Grade 12 Business Finance curriculum has students compare and contrast the loan requirements of different bank and nonbank institutions, and list entrepreneurs' obligations to creditors — the debt side of this lesson. The SBA adds the equity side: a funding request should specify 'whether you want debt or equity, the terms you'd like applied.'",
-      sources: [
-        { title: 'Business Finance (Curriculum Guide, Grade 12) — DepEd', url: 'https://lrmds.deped.gov.ph/detail/16007' },
-        { title: 'Fund Your Business (Debt vs. Equity Financing) — U.S. Small Business Administration (SBA)', url: 'https://www.sba.gov/business-guide/plan-your-business/fund-your-business' },
-      ],
-    },
+    beats: [
+      '**Debt financing** is money you borrow and pay back, usually with interest — you keep full ownership, but the loan comes due whether or not it was a good month.',
+      "**Equity financing** trades away a slice of ownership for cash. No repayment schedule — but the investor now shares in your profits, and often your decisions.",
+      'Neither one is automatically the smarter pick. Debt protects your ownership; equity protects your cash flow. The right call depends on which pressure you can actually handle.',
+    ],
+    whyItMatters: "Pick wrong and you either owe money you don't have, or you've handed away a piece of the business you built. **Match the financing to the risk**, not the other way around.",
     activity: {
       title: 'Debt or Equity?',
-      prompt: 'For 3 funding offers, label each as debt or equity, and note one advantage and one risk of each: (1) A loan repaid monthly with interest. (2) An investor who gets 20% of future profits but no repayment guarantee. (3) A cooperative loan with a fixed repayment schedule.',
+      steps: [
+        '**Label each of these 3 funding offers** as debt or equity, and note one advantage and one risk of each.',
+        '**Offer 1**: a loan repaid monthly with interest.',
+        '**Offer 2**: an investor who gets 20% of future profits but no repayment guarantee.',
+        '**Offer 3**: a cooperative loan with a fixed repayment schedule.',
+      ],
     },
     inLessonScenario: {
       title: "PixelPop's Two Offers",
-      prompt: "PixelPop needs ₱20,000. Offer A: a loan repaid over 6 months with interest, full ownership kept. Offer B: an investor providing ₱20,000 for 25% ownership, no repayment required. If PixelPop's income is unpredictable month to month, which offer carries less risk of default, and what does PixelPop give up in exchange under Offer B?",
+      steps: [
+        'PixelPop needs ₱20,000.',
+        '**Offer A**: a loan repaid over 6 months with interest, full ownership kept.',
+        '**Offer B**: an investor providing ₱20,000 for 25% ownership, no repayment required.',
+        "PixelPop's income is unpredictable month to month — **which offer carries less risk of default**?",
+        '**What does PixelPop give up** in exchange under Offer B?',
+      ],
     },
-    jurisdictionNote: 'In the Philippines, common debt-financing sources for small entrepreneurs include rural banks, cooperatives, and microfinance institutions regulated by the Bangko Sentral ng Pilipinas (BSP). Equity financing — bringing in an investor for a share of ownership — is less common for very small or informal businesses, but follows the same basic tradeoff explained here.',
+    jurisdictionNote: 'In the Philippines, common debt-financing sources for small entrepreneurs include rural banks, cooperatives, and microfinance institutions. Equity financing — bringing in an investor for a share of ownership — is less common for very small or informal businesses, but the same basic tradeoff still applies.',
     quiz: [
       {
         id: 'lesson-8-2-q1',
@@ -96,22 +114,29 @@ export const module8Lessons: Lesson[] = [
     moduleId: 'module-8',
     number: '8.3',
     title: 'Leverage: Using Borrowed Money',
-    estimatedMinutes: 35,
+    estimatedMinutes: 20,
     hook: '"Borrowing ₱10,000 to buy equipment that earns ₱15,000 extra profit sounds great — until sales drop and that ₱10,000 still has to be repaid."',
-    simplifiedExplanation: "Leverage means using borrowed money to try to increase potential returns. If the borrowed money is used well — equipment that increases production and profit by more than the loan's cost, for example — leverage can boost growth faster than relying on savings alone.\n\nBut leverage cuts both ways: if the business underperforms, the debt still must be repaid — increasing both the opportunity and the risk at the same time.",
-    concept: {
-      body: 'DepEd\'s Grade 12 Business Finance curriculum has students explain the risk-return trade-off as a core financial concept — leverage is that trade-off applied specifically to borrowed money: more potential upside, but more risk if the business underperforms.',
-      sources: [
-        { title: 'Business Finance (Curriculum Guide, Grade 12) — DepEd', url: 'https://lrmds.deped.gov.ph/detail/16007' },
-      ],
-    },
+    beats: [
+      '**Leverage** means using borrowed money to try to boost your returns. A loan that buys equipment which earns more than the loan costs is leverage working in your favor.',
+      "But the loan doesn't care how business is going. If sales dip, that borrowed money still comes due — on schedule, no exceptions.",
+      'Leverage doesn\'t just multiply your upside. It multiplies your downside at the exact same time.',
+    ],
+    whyItMatters: '**Leverage cuts both ways** — the same loan that could double your growth is the one you still owe on your worst month.',
+    quickStat: "Crumb & Co.'s new oven from Lesson 8.1? That's leverage in action — money borrowed to make more money, due back either way.",
     activity: {
       title: 'Weigh the Leverage',
-      prompt: 'Cozy Corner considers borrowing ₱8,000 for a sewing machine expected to add ₱1,500/month extra profit. Calculate how many months of extra profit it takes to repay the loan, and identify one risk if sales are lower than expected during that period.',
+      steps: [
+        'Cozy Corner considers borrowing ₱8,000 for a sewing machine expected to add ₱1,500/month extra profit.',
+        '**Calculate** how many months of extra profit it takes to repay the loan.',
+        '**Identify one risk** if sales are lower than expected during that period.',
+      ],
     },
     inLessonScenario: {
       title: "Cozy Corner's Machine",
-      prompt: "Using the numbers above, if Cozy Corner's sales drop by half for 2 months right after borrowing, what specific problem could this create, even though the sewing machine itself is a genuinely good long-term investment?",
+      steps: [
+        "Using the numbers above, imagine Cozy Corner's sales drop by half for 2 months right after borrowing.",
+        '**What specific problem** could this create — even though the sewing machine itself is a genuinely good long-term investment?',
+      ],
     },
     quiz: [
       {
@@ -137,25 +162,31 @@ export const module8Lessons: Lesson[] = [
     moduleId: 'module-8',
     number: '8.4',
     title: 'Short-Term Financing',
-    estimatedMinutes: 35,
+    estimatedMinutes: 20,
     hook: '"DoodleDrop has a big order due Friday but needs to buy printing supplies today — before the customer\'s payment arrives."',
-    simplifiedExplanation: "Short-term financing helps cover timing gaps — moments when a business needs cash now but expected income hasn't arrived yet. It's typically meant to be repaid quickly, often within weeks or months, once the expected cash comes in.\n\nThis is different from long-term financing, like a loan for a major piece of equipment repaid over years — short-term financing solves a temporary gap, not an ongoing investment.",
-    concept: {
-      body: 'DepEd\'s Grade 12 Business Finance curriculum specifically covers sources and uses of short-term funds as distinct from long-term financing. The Bangko Sentral ng Pilipinas (BSP) documents how Philippine microfinance institutions — rural banks, cooperatives, and microfinance NGOs regulated under BSP policy — provide exactly this kind of small, short-term loan to entrepreneurs.',
-      sources: [
-        { title: 'Business Finance (Curriculum Guide, Grade 12) — DepEd', url: 'https://lrmds.deped.gov.ph/detail/16007' },
-        { title: 'Microfinancing MSMEs (Inclusive Finance / Economic and Financial Learning Program) — Bangko Sentral ng Pilipinas (BSP)', url: 'https://www.bsp.gov.ph/Inclusive%20Finance/EFLP/EFLP_MSMEs_01b.pdf' },
-      ],
-    },
+    beats: [
+      '**Short-term financing** bridges a timing gap: cash needed now, income arriving soon, usually repaid within weeks or a few months.',
+      "It's not the same as a **long-term loan** for a big piece of equipment paid off over years. Short-term financing solves a temporary squeeze, not an ongoing investment.",
+      "The tell: if the money's already on its way and you just need to cover the gap until it lands, that's short-term financing — not a case for a bigger loan.",
+    ],
+    whyItMatters: '**Matching financing to the timeline** keeps a temporary cash squeeze from turning into a longer, more expensive problem.',
+    quickStat: "DoodleDrop's Friday deadline and a slow week at any campus shop are the same problem: money that's already coming, just not fast enough.",
     activity: {
       title: 'Spot the Timing Gap',
-      prompt: "For 3 scenarios, identify whether the business has a timing gap that short-term financing could solve, and explain in one sentence why it's temporary rather than a long-term need.",
+      steps: [
+        '**For 3 scenarios of your choosing**, identify whether the business has a timing gap that short-term financing could solve.',
+        "**Explain in one sentence** why it's temporary rather than a long-term need.",
+      ],
     },
     inLessonScenario: {
       title: "DoodleDrop's Friday Deadline",
-      prompt: "DoodleDrop needs ₱1,000 for printing supplies today for an order due Friday, and the customer's ₱3,500 payment arrives next Monday. Explain why this is a short-term financing situation rather than a case for a long-term loan.",
+      steps: [
+        'DoodleDrop needs ₱1,000 for printing supplies today for an order due Friday.',
+        "The customer's ₱3,500 payment arrives next Monday.",
+        '**Explain** why this is a short-term financing situation rather than a case for a long-term loan.',
+      ],
     },
-    jurisdictionNote: 'In the Philippines, short-term and microfinance loans for small entrepreneurs are commonly offered through rural banks, cooperatives (registered with the Cooperative Development Authority), and microfinance NGOs — sectors the BSP helps regulate and support as part of its financial-inclusion programs.',
+    jurisdictionNote: 'In the Philippines, short-term and microfinance loans for small entrepreneurs are commonly offered through rural banks, cooperatives, and microfinance NGOs — not just big commercial banks.',
     quiz: [
       {
         id: 'lesson-8-4-q1',
@@ -171,23 +202,32 @@ export const module8Lessons: Lesson[] = [
     moduleId: 'module-8',
     number: '8.5',
     title: 'Investment Pitch: Should They Fund You?',
-    estimatedMinutes: 35,
+    estimatedMinutes: 20,
     hook: '"You have 2 minutes to convince a potential funder that your business deserves their money. What do they actually need to hear?"',
-    simplifiedExplanation: "A funding request or investment pitch — whether to a bank, a cooperative, or an individual investor — should clearly cover six things: the business idea (what you do and for whom), the purpose of funding (exactly what the money will be used for), the expected use of money and how it connects to growth, basic financial information (revenue, costs, and profitability), the risk involved, and the potential return for the funder (repayment terms for debt, or expected growth for equity).\n\nLeaving any of these out makes a pitch feel incomplete — a funder can't say yes to a request they don't fully understand.",
-    concept: {
-      body: 'DepEd\'s Grade 12 Business Finance curriculum has students draw a flow chart of the steps in a loan application and prepare the financial statements that support it — the same information a real Philippine lender or investor will ask for. The SBA adds the pitch-writing angle: a funding request should be supported by financial projections that convince the reader the business is stable and will succeed.',
-      sources: [
-        { title: 'Business Finance (Curriculum Guide, Grade 12) — DepEd', url: 'https://lrmds.deped.gov.ph/detail/16007' },
-        { title: 'Fund Your Business (Debt vs. Equity Financing) — U.S. Small Business Administration (SBA)', url: 'https://www.sba.gov/business-guide/plan-your-business/fund-your-business' },
-      ],
-    },
+    beats: [
+      "A strong funding pitch covers six things: your **business idea**, the **purpose of the funding**, exactly how the **money will be used**, your **basic financials**, the **risk** involved, and the **return** for whoever's funding you.",
+      "Skip even one of these and the pitch feels incomplete — a funder can't say yes to a request they don't fully understand.",
+      'Numbers beat adjectives. "This machine pays for itself in 8 months" lands harder than "this will really help my business."',
+    ],
+    whyItMatters: "**A funder can't say yes to what they don't understand** — leaving out even one of the six pieces turns an easy yes into a hard pass.",
     activity: {
       title: 'Build a One-Page Pitch',
-      prompt: 'Using any SproutSquad business, write a one-page pitch covering all 6 elements: business idea, purpose of funding, expected use of money, key financial numbers, risk, and potential return for the funder.',
+      steps: [
+        'Using any SproutSquad business, **write a one-page pitch** covering all 6 elements:',
+        '**Business idea**.',
+        '**Purpose of funding**.',
+        '**Expected use of money**.',
+        '**Key financial numbers**.',
+        '**Risk**.',
+        '**Potential return** for the funder.',
+      ],
     },
     inLessonScenario: {
       title: "The Investor's Questions",
-      prompt: "A potential investor asks PixelPop: 'What happens to my investment if you don't get enough clients next month?' Using what you've learned about risk (Module 6) and break-even (Module 7), write a thoughtful, honest 2-3 sentence answer PixelPop could give.",
+      steps: [
+        "A potential investor asks PixelPop: **'What happens to my investment if you don't get enough clients next month?'**",
+        "Using what you've learned about risk (Module 6) and break-even (Module 7), **write a thoughtful, honest 2-3 sentence answer** PixelPop could give.",
+      ],
     },
     quiz: [
       {

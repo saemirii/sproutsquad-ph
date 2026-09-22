@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  // Must match the bundle ID registered in App Store Connect once that's created.
-  appId: 'com.mondenissin.sproutsquad',
+  // Must match the bundle ID registered in App Store Connect.
+  appId: 'com.sproutsquad.app',
   appName: 'SproutSquad',
   webDir: 'dist',
   // Matches the app's cream background so any native-side gap (before web

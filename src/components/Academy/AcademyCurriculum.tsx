@@ -1,19 +1,24 @@
 import React, { useState } from 'react';
 import { Lock, CheckCircle2 } from 'lucide-react';
 import { useAcademy } from '../../context/AppContext';
-import { Lesson, Challenge } from '../../types';
+import { Lesson, Challenge, ChallengeResult } from '../../types';
 import { getLessonsForModule, getCheckpointForModule, finalChallenge } from '../../data/academy';
 import { Icon } from '../Icon';
 import { ModuleDetail } from './ModuleDetail';
 import { LessonReader } from './LessonReader';
 import { ChallengePlayer } from './ChallengePlayer';
+import { GrowthChallengeIntro } from './shared/GrowthChallengeIntro';
+import { MilestoneScreen } from './shared/MilestoneScreen';
 
 type CurriculumView =
   | { kind: 'modules' }
   | { kind: 'module'; moduleId: string }
   | { kind: 'lesson'; moduleId: string; lesson: Lesson }
-  | { kind: 'checkpoint'; moduleId: string; challenge: Challenge }
-  | { kind: 'final-challenge' };
+  | { kind: 'checkpoint-intro'; moduleId: string; challenge: Challenge }
+  | { kind: 'checkpoint'; moduleId: string; challenge: Challenge; wasCompletedBefore: boolean }
+  | { kind: 'final-challenge-intro' }
+  | { kind: 'final-challenge'; wasCompletedBefore: boolean }
+  | { kind: 'milestone'; moduleTitle: string; lessonTitles: string[]; result: ChallengeResult; backTo: CurriculumView };
 
 interface AcademyCurriculumProps {
   onOpenSimulations: () => void;
@@ -25,17 +30,110 @@ export const AcademyCurriculum: React.FC<AcademyCurriculumProps> = ({ onOpenSimu
   const [view, setView] = useState<CurriculumView>(
     initialModuleId ? { kind: 'module', moduleId: initialModuleId } : { kind: 'modules' }
   );
+  // Set the moment a challenge's reward is actually awarded (via
+  // ChallengePlayer's onComplete) — deliberately NOT derived from
+  // `lastReward`/completedChallengeIds, both of which are unreliable here:
+  // lastReward gets auto-cleared by RewardToast's own 2.6s timer long
+  // before a learner finishes reading the result screen, and
+  // completedChallengeIds can lag a beat behind the actual award.
+  const [pendingCompletion, setPendingCompletion] = useState<ChallengeResult | null>(null);
 
   if (view.kind === 'lesson') {
     return <LessonReader lesson={view.lesson} onBack={() => setView({ kind: 'module', moduleId: view.moduleId })} />;
   }
 
+  if (view.kind === 'checkpoint-intro') {
+    return (
+      <GrowthChallengeIntro
+        title={view.challenge.title}
+        tagline={view.challenge.tagline}
+        icon={view.challenge.icon}
+        onBegin={() => {
+          setPendingCompletion(null);
+          setView({
+            kind: 'checkpoint',
+            moduleId: view.moduleId,
+            challenge: view.challenge,
+            wasCompletedBefore: completedChallengeIds.includes(view.challenge.id),
+          });
+        }}
+        onBack={() => setView({ kind: 'module', moduleId: view.moduleId })}
+      />
+    );
+  }
+
   if (view.kind === 'checkpoint') {
-    return <ChallengePlayer challenge={view.challenge} onBack={() => setView({ kind: 'module', moduleId: view.moduleId })} />;
+    const { moduleId, challenge, wasCompletedBefore } = view;
+    return (
+      <ChallengePlayer
+        challenge={challenge}
+        onComplete={setPendingCompletion}
+        onBack={() => {
+          if (!wasCompletedBefore && pendingCompletion) {
+            const module = modules.find((m) => m.id === moduleId);
+            const lessonTitles = module ? getLessonsForModule(module.id).map((l) => l.title) : [];
+            setView({
+              kind: 'milestone',
+              moduleTitle: module?.title || challenge.title,
+              lessonTitles,
+              result: pendingCompletion,
+              backTo: { kind: 'module', moduleId },
+            });
+          } else {
+            setView({ kind: 'module', moduleId });
+          }
+        }}
+      />
+    );
+  }
+
+  if (view.kind === 'final-challenge-intro') {
+    return (
+      <GrowthChallengeIntro
+        title={finalChallenge.title}
+        tagline={finalChallenge.tagline}
+        icon={finalChallenge.icon}
+        onBegin={() => {
+          setPendingCompletion(null);
+          setView({ kind: 'final-challenge', wasCompletedBefore: completedChallengeIds.includes(finalChallenge.id) });
+        }}
+        onBack={() => setView({ kind: 'modules' })}
+      />
+    );
   }
 
   if (view.kind === 'final-challenge') {
-    return <ChallengePlayer challenge={finalChallenge} onBack={() => setView({ kind: 'modules' })} />;
+    const { wasCompletedBefore } = view;
+    return (
+      <ChallengePlayer
+        challenge={finalChallenge}
+        onComplete={setPendingCompletion}
+        onBack={() => {
+          if (!wasCompletedBefore && pendingCompletion) {
+            setView({
+              kind: 'milestone',
+              moduleTitle: 'The SproutSquad Business Challenge',
+              lessonTitles: modules.map((m) => m.title),
+              result: pendingCompletion,
+              backTo: { kind: 'modules' },
+            });
+          } else {
+            setView({ kind: 'modules' });
+          }
+        }}
+      />
+    );
+  }
+
+  if (view.kind === 'milestone') {
+    return (
+      <MilestoneScreen
+        moduleTitle={view.moduleTitle}
+        lessonTitles={view.lessonTitles}
+        reward={{ xpAwarded: view.result.xpAwarded, seedsAwarded: view.result.seedsAwarded }}
+        onContinue={() => setView(view.backTo)}
+      />
+    );
   }
 
   if (view.kind === 'module') {
@@ -50,7 +148,7 @@ export const AcademyCurriculum: React.FC<AcademyCurriculumProps> = ({ onOpenSimu
         checkpoint={checkpoint}
         onBack={() => setView({ kind: 'modules' })}
         onOpenLesson={(lesson) => setView({ kind: 'lesson', moduleId: module.id, lesson })}
-        onOpenCheckpoint={(challenge) => setView({ kind: 'checkpoint', moduleId: module.id, challenge })}
+        onOpenCheckpoint={(challenge) => setView({ kind: 'checkpoint-intro', moduleId: module.id, challenge })}
       />
     );
   }
@@ -63,7 +161,7 @@ export const AcademyCurriculum: React.FC<AcademyCurriculumProps> = ({ onOpenSimu
         </div>
         <div>
           <h2 className="text-xl font-black text-[#3B2F27] font-['Nunito',sans-serif]">SproutSquad Academy</h2>
-          <p className="text-xs text-[#6B5B4F] mt-0.5">8 modules, source-backed and built for Philippine student founders</p>
+          <p className="text-xs text-[#6B5B4F] mt-0.5">8 modules, built for Philippine student founders</p>
         </div>
       </div>
 
@@ -91,7 +189,7 @@ export const AcademyCurriculum: React.FC<AcademyCurriculumProps> = ({ onOpenSimu
                 <p className="text-[10px] font-black uppercase tracking-wider text-[#8C7A6D]">Module {module.number} • {module.stage}</p>
                 <h3 className="font-bold text-sm text-[#3B2F27] truncate">{module.title}</h3>
                 <p className="text-[11px] text-[#8C7A6D] truncate">
-                  {unlocked ? `${doneCount} / ${lessons.length} lessons` : 'Finish the previous module\'s checkpoint to unlock'}
+                  {unlocked ? `${doneCount} / ${lessons.length} missions` : 'Finish the previous module\'s Growth Challenge to unlock'}
                 </p>
               </div>
               {checkpointDone && (
@@ -110,7 +208,7 @@ export const AcademyCurriculum: React.FC<AcademyCurriculumProps> = ({ onOpenSimu
         const finalDone = completedChallengeIds.includes(finalChallenge.id);
         return (
           <button
-            onClick={() => allModulesDone && setView({ kind: 'final-challenge' })}
+            onClick={() => allModulesDone && setView({ kind: 'final-challenge-intro' })}
             disabled={!allModulesDone}
             className={`btn-bouncy w-full flex items-center justify-between gap-2 p-5 rounded-2xl border cursor-pointer disabled:cursor-not-allowed ${
               finalDone ? 'bg-[#EBFBF0] border-[#10B981]/40' : allModulesDone ? 'bg-gradient-to-r from-[#F7C948]/30 to-[#FF8FA3]/20 border-[#F7C948]' : 'bg-[#FAF7F2] border-[#EDE4D8] opacity-60'
@@ -122,7 +220,7 @@ export const AcademyCurriculum: React.FC<AcademyCurriculumProps> = ({ onOpenSimu
                 The SproutSquad Business Challenge
               </p>
               <p className="text-[10px] text-[#8C5A3E]">
-                {finalDone ? 'Completed — you can retry anytime' : allModulesDone ? 'All 21 decisions, one business, start to finish' : 'Finish every module checkpoint to unlock'}
+                {finalDone ? 'Completed — you can retry anytime' : allModulesDone ? 'All 21 decisions, one business, start to finish' : 'Finish every module\'s Growth Challenge to unlock'}
               </p>
             </div>
             <span className="text-lg">→</span>

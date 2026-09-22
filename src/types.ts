@@ -168,11 +168,12 @@ export interface Coupon {
 }
 
 export type ExpenseCategory =
-  | 'Materials & Supplies'
+  | 'Inventory'
   | 'Packaging'
-  | 'Marketing & Promo'
-  | 'Logistics & Campus Fare'
-  | 'Stall & Fair Booth'
+  | 'Materials & Supplies'
+  | 'Transportation'
+  | 'Marketing'
+  | 'Rent'
   | 'Tools & Equipment'
   | 'Other Expenses';
 
@@ -185,6 +186,14 @@ export interface Expense {
   category: ExpenseCategory;
   supplierOrStore?: string;
   notes?: string;
+  /** Required (enforced in the UI) when category is 'Inventory', 'Materials
+   * & Supplies', or 'Packaging' — this is what lets Gross Profit match a
+   * product's units sold against the FIFO cost of the batches that funded
+   * them. productName is a denormalized snapshot so the log stays legible
+   * even if the product is later deleted (productId then goes null). */
+  productId?: string;
+  productName?: string;
+  unitsPurchased?: number;
 }
 
 export interface HealthInsight {
@@ -192,6 +201,10 @@ export interface HealthInsight {
   type: 'warning' | 'positive' | 'tip' | 'action_needed';
   title: string;
   description: string;
+  /** Optional itemized breakdown (e.g. one chip per low-stock product) shown
+   * below the description — keeps a list of specifics out of the prose
+   * sentence itself. */
+  items?: { label: string; meta: string; urgent?: boolean }[];
   metricImpact?: string;
   recommendedAction: string;
   actionTab?: 'products' | 'expenses' | 'orders' | 'academy' | 'analytics';
@@ -207,10 +220,27 @@ export interface HealthScoreBreakdown {
 }
 
 export interface BusinessMetrics {
+  /** All non-cancelled orders regardless of fulfillment stage — unchanged,
+   * still the "Total Revenue" figure shown elsewhere. */
   revenue: number;
+  /** Total logged cash expenses across every category — unchanged. */
   expenses: number;
-  profit: number;
-  profitMargin: number; // %
+  /** Revenue from Completed orders only — the base for Gross Profit,
+   * deliberately separate from `revenue` above since fulfillment stage
+   * matters for margin but not for a top-line sales figure. */
+  completedRevenue: number;
+  /** FIFO-matched cost of goods for the units sold in Completed orders —
+   * see calculateFifoCogs. Only "Materials & Supplies" and "Packaging"
+   * expenses with a productId + unitsPurchased feed this; net profit and
+   * operating-expense allocation are deliberately no longer tracked. */
+  cogs: number;
+  grossProfit: number;
+  grossProfitMargin: number; // %
+  /** True when some or all of the cost data behind grossProfit/grossProfitMargin
+   * is missing (a product sold with no linked Materials/Packaging expense
+   * at all, or not enough units logged to cover what sold) — the number
+   * above may look better than it really is until that's filled in. */
+  hasIncompleteCogsData: boolean;
   orderCount: number;
   unitsSold: number;
   averageOrderValue: number;
@@ -224,7 +254,7 @@ export interface BusinessMetrics {
 
 export interface QuizQuestion {
   id: string;
-  format: 'multiple_choice' | 'short_answer';
+  format: 'multiple_choice' | 'short_answer' | 'sort' | 'match';
   /** Scenario + question combined — case-style, not pure recall. */
   prompt: string;
   /** multiple_choice only. */
@@ -232,6 +262,12 @@ export interface QuizQuestion {
   correctIndex?: number;
   /** short_answer only — shown after submit as a self-check, never auto-graded. */
   modelAnswer?: string;
+  /** sort only — the items in scrambled display order; correctOrder holds
+   * the indices (into `items`) of their correct sequence. */
+  items?: string[];
+  correctOrder?: number[];
+  /** match only — pairs to connect; rendered as two shuffled columns. */
+  pairs?: { left: string; right: string }[];
   explanation: string;
 }
 
@@ -252,9 +288,29 @@ export interface AcademyModule {
   checkpointId: string;
 }
 
-export interface LessonSource {
-  title: string;
+export interface LessonImage {
   url: string;
+  alt: string;
+  /** Small, unobtrusive caption line — not a full source block. */
+  attribution: string;
+}
+
+/** Keys into the small hand-built illustration set in
+ * src/components/Academy/shared/LessonIllustrations.tsx — drawn in the
+ * app's own visual style instead of sourced stock/stock-chart images, so
+ * there's no licensing or content-mismatch risk. */
+export type LessonIllustrationKey = 'problem-customer-solution' | 'stp-funnel' | 'conversion-funnel' | 'budget-allocation';
+
+/** Shared shape for both the "Try It" activity and the optional in-lesson
+ * scenario — a title plus short instruction lines (not one run-on
+ * paragraph), each supporting inline **bold**, with an optional supporting
+ * image (a real photo/chart, sourced+attributed) or illustration (a custom
+ * in-app diagram) for spatial/drawing exercises. */
+export interface LessonExercise {
+  title: string;
+  steps: string[];
+  image?: LessonImage;
+  illustration?: LessonIllustrationKey;
 }
 
 export interface Lesson {
@@ -266,13 +322,21 @@ export interface Lesson {
   estimatedMinutes: number;
   /** The opening story/quote that frames the lesson. */
   hook: string;
-  simplifiedExplanation: string;
-  concept: { body: string; sources: LessonSource[] };
-  activity: { title: string; prompt: string };
+  /** Short chunks (1-3 sentences each) instead of one dense paragraph.
+   * Supports inline **bold** for key terms — parsed by renderRichText. */
+  beats: string[];
+  /** One punchy line on why the concept matters — replaces the old
+   * citation-heavy "concept" paragraph entirely. No sources; nobody is
+   * checking citations on a mobile lesson card. */
+  whyItMatters: string;
+  /** Optional flavor stat/fact to make a lesson feel less like a textbook. */
+  quickStat?: string;
+  image?: LessonImage;
+  activity: LessonExercise;
   /** The PDF's embedded "SIMULATION" block — a short reflection prompt on one
    * of the recurring fictional businesses. Not machine-scored (unlike a
    * module Challenge) — self-check only. */
-  inLessonScenario?: { title: string; prompt: string };
+  inLessonScenario?: LessonExercise;
   shopOsTieIn?: { note: string; deepLink?: { sellerTab: SellerTab } };
   jurisdictionNote?: string;
   quiz: QuizQuestion[];

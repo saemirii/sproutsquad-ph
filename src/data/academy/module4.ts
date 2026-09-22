@@ -19,22 +19,30 @@ export const module4Lessons: Lesson[] = [
     moduleId: 'module-4',
     number: '4.1',
     title: 'What Is a Brand?',
-    estimatedMinutes: 35,
+    estimatedMinutes: 20,
     hook: "\"A logo is a picture. A brand is a feeling. Cozy Corner's plushies could have any logo — but customers keep coming back because of how the shop makes them feel: cozy, cared for, a little nostalgic.\"",
-    simplifiedExplanation: "A brand is not the same as a logo. A logo is a visual symbol; a brand is the overall feeling and perception customers associate with a business — built through every interaction, not just the visuals. Brand identity includes the visuals (colors, fonts, logo) but also tone of voice, values, and the experience of buying from you.\n\nCustomer perception — how people actually feel about your business, which may differ from how you intend it — is the real measure of your brand. This matters because customers often choose a slightly more expensive product from a brand they trust or feel connected to, over a cheaper option from an unfamiliar business.",
-    concept: {
-      body: "OpenStax explains that a brand 'is a feeling that is made up of the organization's promotion efforts along with consumer meaning' — challenging to measure, but often the most valuable part of a company.",
-      sources: [
-        { title: 'Principles of Marketing, 9.5: Branding and Brand Development — OpenStax / Rice University', url: 'https://openstax.org/books/principles-marketing/pages/9-5-branding-and-brand-development' },
-      ],
-    },
+    beats: [
+      "A **logo** is just a picture. A **brand** is the overall feeling and perception customers have about your business — built through every interaction, not only the visuals.",
+      '**Brand identity** covers colors, fonts, and logo, but also your tone of voice, your values, and what it feels like to actually buy from you.',
+      "**Customer perception** is the real scoreboard — it's how people actually feel about you, which can end up different from how you meant to come across.",
+    ],
+    whyItMatters: 'Customers happily pay more for a brand they **trust and feel connected to** — a strong brand is often a business\'s most valuable asset, even though it never shows up on a price tag.',
+    quickStat: "PixelPop and Crumb & Co. sell completely different things, but customers can fall for either one's vibe just the same — brand isn't tied to what you're selling.",
     activity: {
       title: 'Logo vs. Brand Sort',
-      prompt: "Sort these into 'Logo' or 'Brand': color scheme, the feeling customers get after a purchase, the icon on packaging, how a complaint is handled, the font used in posts, whether customers trust the shop.",
+      steps: [
+        "**Sort each of these six items** into either 'Logo' or 'Brand.'",
+        'The items: color scheme, the feeling customers get after a purchase, the icon on packaging, how a complaint is handled, the font used in posts, whether customers trust the shop.',
+      ],
     },
     inLessonScenario: {
       title: 'Same Logo, Different Feelings',
-      prompt: 'Two competing sticker shops use nearly identical minimalist logos. One replies to every customer message within an hour with friendly, personal notes. The other is slow and formal. Which shop is more likely to build a stronger brand (not just logo), and why?',
+      steps: [
+        'Two competing sticker shops use nearly identical minimalist logos.',
+        '**Shop A** replies to every customer message within an hour with friendly, personal notes.',
+        '**Shop B** is slow and formal.',
+        '**Which shop** is more likely to build a stronger brand (not just logo)? Explain why.',
+      ],
     },
     quiz: [
       {
@@ -52,22 +60,33 @@ export const module4Lessons: Lesson[] = [
     moduleId: 'module-4',
     number: '4.2',
     title: 'Brand Strategy: Make It Consistent',
-    estimatedMinutes: 35,
+    estimatedMinutes: 20,
     hook: "\"PixelPop's designs are bold and modern — but its customer replies are stiff and overly formal. Something feels off, even if customers can't name it.\"",
-    simplifiedExplanation: "A brand strategy connects five elements so they all point in the same direction: your target audience (from Module 1's STP), your brand promise (what customers can always expect from you), your personality, your voice (how that personality sounds in writing), and your visual identity (colors, fonts, imagery).\n\nConsistency across all five is what makes a brand feel trustworthy and memorable — inconsistency, even in small details, quietly erodes trust.",
-    concept: {
-      body: "OpenStax notes that a brand's essence 'must be reinforced at every touchpoint' — meaning consistency across every customer interaction, not just the logo, is what builds lasting brand value.",
-      sources: [
-        { title: 'Principles of Marketing, 9.5: Branding and Brand Development — OpenStax / Rice University', url: 'https://openstax.org/books/principles-marketing/pages/9-5-branding-and-brand-development' },
-      ],
-    },
+    beats: [
+      'A **brand strategy** lines up five things so they all point the same way: your **target audience**, your **brand promise** (what customers can always count on), your **personality**, your **voice**, and your **visual identity**.',
+      "Get all five pointing together and a brand feels trustworthy. Let even one drift — bold visuals paired with a stiff, formal voice — and customers notice, even if they can't say why.",
+      '**Consistency** isn\'t just the logo. It has to show up everywhere: captions, replies, packaging, all of it.',
+    ],
+    whyItMatters: 'Every touchpoint either reinforces your brand or quietly wrecks it — a mismatch a customer notices is **trust leaking out**.',
+    quickStat: "DoodleDrop's playful Instagram next to a stiff, formal storefront bio is the same mismatch in a different color scheme — brand inconsistency wears a lot of disguises.",
     activity: {
       title: 'Brand Strategy Snapshot',
-      prompt: 'For one SproutSquad business, fill in one line each for: Target audience, Brand promise, Personality (3 words), Voice (formal/casual/playful/etc.), Visual identity (2 colors + 1 style word).',
+      steps: [
+        '**Pick one SproutSquad business** to build a Brand Strategy Snapshot for.',
+        '**Target audience**: one line.',
+        '**Brand promise**: one line — what customers can always count on.',
+        '**Personality**: exactly 3 words.',
+        '**Voice**: one word or phrase (formal, casual, playful, etc.).',
+        '**Visual identity**: 2 colors + 1 style word.',
+      ],
     },
     inLessonScenario: {
       title: "PixelPop's Mismatch",
-      prompt: "PixelPop's visuals are bold and modern, but its customer service replies are stiff and formal. Identify which of the 5 brand strategy elements is out of sync, and rewrite one sample customer reply to match the bold, modern personality.",
+      steps: [
+        "PixelPop's visuals are bold and modern, but its customer service replies are stiff and formal.",
+        '**Identify** which of the 5 brand strategy elements is out of sync.',
+        '**Rewrite one sample customer reply** to match the bold, modern personality.',
+      ],
     },
     shopOsTieIn: {
       note: "Shop OS lets you set your shop's colors, tagline, and description in one place — use this checklist to make sure all three match your brand strategy before publishing.",
@@ -88,23 +107,31 @@ export const module4Lessons: Lesson[] = [
     moduleId: 'module-4',
     number: '4.3',
     title: 'Marketing Channels: Where Do Customers Find You?',
-    estimatedMinutes: 35,
+    estimatedMinutes: 20,
     hook: '"Crumb & Co. spends hours posting on a platform where none of its actual customers spend time. Meanwhile, word-of-mouth from happy classmates brings in more orders than any post."',
-    simplifiedExplanation: "A marketing channel is any way a business reaches and communicates with customers: social media, online marketplaces, messaging apps, in-person events, email, or simple word of mouth. No single channel is automatically 'best' — the right channel depends on where your specific target customer already spends their time and attention, and what fits your business's resources.\n\nA common mistake is copying whatever channel is trendy instead of asking: does my target customer actually use this, and can I realistically maintain it?",
-    concept: {
-      body: "DTI's nationwide Negosyo Centers (established under the Go Negosyo Act, RA 10644) exist specifically to connect Filipino MSMEs to marketing training and channel selection, alongside financial literacy support. The SBA's guide to marketing and sales adds the practical planning step: listing the specific channels you'll use, and tracking cost against the revenue each one generates.",
-      sources: [
-        { title: 'Negosyo Center Program — FAQs — DTI', url: 'https://www.dti.gov.ph/negosyo/negosyo-center/faqs/' },
-        { title: 'Marketing and Sales — SBA', url: 'https://www.sba.gov/business-guide/manage-your-business/marketing-sales' },
-      ],
-    },
+    beats: [
+      'A **marketing channel** is any way you reach customers — social media, online marketplaces, messaging apps, in-person events, or plain **word of mouth**.',
+      "No channel is automatically \"best.\" The right one is wherever your specific target customer already spends their attention — not whatever's trending.",
+      "List the channels you're actually using, then track what each one costs against what it brings back. If you can't keep it up, it's not a real channel for you.",
+    ],
+    whyItMatters: "Chasing a trendy channel your customers don't even use is **wasted effort that only feels like progress**.",
+    quickStat: "Cozy Corner's regulars mostly came from campus group chats, not ads — sometimes the free channel beats the paid one.",
     activity: {
       title: 'Match the Channel to the Customer',
-      prompt: 'For 4 different target customers (busy parents, students on campus, teachers, online shoppers nationwide), pick the single best-fit channel from: social media, word of mouth at school, email newsletter, online marketplace. Justify each choice in one sentence.',
+      steps: [
+        '**Four target customers**: busy parents, students on campus, teachers, and online shoppers nationwide.',
+        '**Four channel options**: social media, word of mouth at school, email newsletter, online marketplace.',
+        '**Pick the single best-fit channel** for each customer type.',
+        '**Justify each choice** in one sentence.',
+      ],
     },
     inLessonScenario: {
       title: "Crumb & Co.'s Channel Mix-Up",
-      prompt: "Crumb & Co.'s target customers are students at their own school. They've been spending most of their effort on a national online marketplace, with little to show for it. What channel might actually work better for a hyper-local, school-based customer base, and why?",
+      steps: [
+        "Crumb & Co.'s target customers are students at their own school.",
+        "They've been spending most of their effort on a **national online marketplace**, with little to show for it.",
+        '**What channel** might actually work better for a hyper-local, school-based customer base? Explain why.',
+      ],
     },
     shopOsTieIn: {
       note: 'Shop OS tracks which channel (link, QR code, or in-app storefront) each order came from, so you can see which channels are actually converting into sales.',
@@ -126,23 +153,32 @@ export const module4Lessons: Lesson[] = [
     moduleId: 'module-4',
     number: '4.4',
     title: 'Pricing: More Than Guessing',
-    estimatedMinutes: 35,
+    estimatedMinutes: 20,
     hook: '"Cozy Corner priced a keychain at \'cost plus ₱20\' with no other thinking involved — until a competitor\'s nearly identical product, priced ₱30 higher, kept selling out."',
-    simplifiedExplanation: "Pricing is not just 'cost plus a random markup.' A thoughtful price considers at least four factors: Cost (you must at least cover COGS to avoid losing money on every sale), Value (how much the customer believes the product is worth to them), Competition (what similar products cost elsewhere), and Customer perception (a price that's 'too low' can sometimes make a product seem cheap or low-quality, hurting sales). There's no single formula that works for every product — pricing is a judgment call informed by all four factors together.\n\nOne vocabulary note: mark-up is the amount added on top of cost to set a selling price (expressed as a % of cost), while margin is profit expressed as a percentage of the selling price, not the cost. A ₱60-cost item priced at ₱90 has a mark-up of 50% of cost, but a margin of only 33% of the selling price.",
-    concept: {
-      body: "DepEd's Grade 11 Business Mathematics curriculum has students differentiate mark-on, mark-down, and mark-up, and distinguish mark-up from margin — the exact distinction this lesson teaches. The SBA's marketing guide adds the broader strategy layer: pricing should weigh 'reasonable margins to make a profit,' whether the market will bear the price, and trade-offs between margin and market share.",
-      sources: [
-        { title: 'Business Mathematics (Curriculum Guide, Grade 11) — DepEd', url: 'https://lrmds.deped.gov.ph/detail/16008' },
-        { title: 'Marketing and Sales — SBA', url: 'https://www.sba.gov/business-guide/manage-your-business/marketing-sales' },
-      ],
-    },
+    beats: [
+      'Pricing isn\'t "cost plus whatever feels right." Weigh four things together: **Cost** (never sell below what it costs you), **Value** (what it\'s worth to the customer), **Competition** (what similar products charge nearby), and **Customer perception** (too cheap can read as low-quality).',
+      "**Mark-up** is what you add on top of cost, as a percentage of cost. **Margin** is your profit as a percentage of the selling price — they're not the same number. A ₱60-cost item priced at ₱90 has a 50% mark-up, but only a 33% margin.",
+      'Sometimes a **lower margin that sells more** beats a higher margin that just sits on the shelf. Pricing is a trade-off, not a formula.',
+    ],
+    whyItMatters: 'Mix up mark-up and margin and you can think you\'re profitable while you\'re actually **barely breaking even**.',
     activity: {
       title: 'Four-Factor Price Check',
-      prompt: "For a product of your choice, write one line under each factor: Cost (your COGS), Value (why a customer would pay for it), Competition (a nearby comparable price), Customer perception (would a very low price seem 'cheap' instead of a bargain?). Then propose a final price.",
+      steps: [
+        '**Pick a product** of your choice.',
+        '**Cost**: write your COGS.',
+        '**Value**: why would a customer pay for it?',
+        '**Competition**: a nearby comparable price.',
+        "**Customer perception**: would a very low price seem 'cheap' instead of a bargain?",
+        '**Propose a final price** using all four factors together.',
+      ],
     },
     inLessonScenario: {
       title: 'Cozy Corner Reconsiders',
-      prompt: "Cozy Corner's keychain costs ₱75 in COGS. A similar competitor product sells for ₱180. Using all four pricing factors (not just cost), propose a price for Cozy Corner's keychain and justify it.",
+      steps: [
+        "Cozy Corner's keychain costs **₱75** in COGS.",
+        'A similar competitor product sells for **₱180**.',
+        '**Using all four pricing factors** (not just cost), propose a price for Cozy Corner\'s keychain and justify it.',
+      ],
     },
     shopOsTieIn: {
       note: "When you update a product's price in Shop OS, its margin and gross profit recalculate instantly — helpful for testing different prices before committing.",
@@ -171,22 +207,33 @@ export const module4Lessons: Lesson[] = [
     moduleId: 'module-4',
     number: '4.5',
     title: 'Build a Mini Campaign',
-    estimatedMinutes: 35,
+    estimatedMinutes: 20,
     hook: '"You now have a brand, a channel, and a price. It\'s time to put them together into one focused push."',
-    simplifiedExplanation: "A simple marketing campaign connects five pieces into one coordinated effort: Target audience (who this campaign speaks to), Main message (the one idea you want them to remember), Channel (where they'll see it), Call to action (the specific next step you want them to take), and Success metric (how you'll know if it worked — e.g., number of orders, messages received, or link clicks).\n\nCampaigns fail most often when they try to say too many things at once, or when there's no clear call to action.",
-    concept: {
-      body: 'The SBA recommends comparing marketing costs to the revenue generated, and tracking return on investment (ROI) — a reminder that every campaign needs a clear, measurable goal.',
-      sources: [
-        { title: 'Marketing and Sales — SBA', url: 'https://www.sba.gov/business-guide/manage-your-business/marketing-sales' },
-      ],
-    },
+    beats: [
+      'A **campaign** ties five pieces into one push: **Target audience**, **Main message** (the one idea to remember), **Channel**, **Call to action** (the exact next step), and **Success metric** (the number that tells you it worked).',
+      'Campaigns flop for two reasons: trying to say too many things at once, or having **no clear call to action**.',
+      "Always compare what a campaign costs against what it brings back. A campaign with no number attached is just a guess dressed up as a launch.",
+    ],
+    whyItMatters: 'A campaign with **no clear next step** leaves even an interested customer with nothing to do — which means nothing happens.',
     activity: {
       title: 'Build Your Mini Campaign',
-      prompt: "For one SproutSquad business, fill in all five campaign elements: Target audience, Main message (one sentence), Channel, Call to action (exact words), Success metric (a specific number you'd track).",
+      steps: [
+        '**Pick one SproutSquad business** to build a mini campaign for.',
+        '**Target audience**: who this campaign is for.',
+        '**Main message**: one sentence — the one idea to remember.',
+        '**Channel**: where the campaign runs.',
+        "**Call to action**: the exact words you'd use.",
+        '**Success metric**: a specific number you\'d track.',
+      ],
     },
     inLessonScenario: {
       title: "DoodleDrop's Launch Week",
-      prompt: 'DoodleDrop is launching a new sticker pack and has one week and no budget. Design a mini campaign using only free tools (school group chat, word of mouth, one social post). What\'s the single call to action you\'d use, and what number would tell DoodleDrop the campaign worked?',
+      steps: [
+        'DoodleDrop is launching a new sticker pack with **one week and no budget**.',
+        '**Design a mini campaign** using only free tools: school group chat, word of mouth, one social post.',
+        "**What's the single call to action** you'd use?",
+        '**What number** would tell DoodleDrop the campaign worked?',
+      ],
     },
     shopOsTieIn: {
       note: "Shop OS's order source tracking (from Lesson 4.3) is exactly how you'd measure your campaign's success metric in a real launch.",

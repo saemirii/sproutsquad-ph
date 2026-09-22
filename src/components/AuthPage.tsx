@@ -17,15 +17,18 @@ export interface LocalAccount {
 
 export const AuthPage: React.FC<AuthPageProps> = ({ onLocalAuth }) => {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showResendConfirmation, setShowResendConfirmation] = useState(false);
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     setMessage('');
+    setShowResendConfirmation(false);
 
     if (!supabase) {
       const accounts: LocalAccount[] = JSON.parse(localStorage.getItem('sproutsquad_local_accounts') || '[]');
@@ -61,13 +64,41 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLocalAuth }) => {
         });
 
     if (result.error) {
-      setMessage(result.error.message);
+      if (result.error.code === 'email_not_confirmed') {
+        setMessage('Please confirm your email before signing in — check your inbox (and spam folder) for the confirmation link.');
+        setShowResendConfirmation(true);
+      } else {
+        setMessage(result.error.message);
+      }
     } else if (mode === 'signup' && !result.data.session) {
       setMessage('Account created. Check your email to confirm your account, then sign in.');
       setMode('login');
     }
 
     setIsSubmitting(false);
+  };
+
+  const handleResendConfirmation = async () => {
+    if (!supabase) return;
+    setIsSubmitting(true);
+    const { error } = await supabase.auth.resend({ type: 'signup', email });
+    setIsSubmitting(false);
+    setMessage(error ? error.message : 'Confirmation email resent — check your inbox.');
+  };
+
+  const handleForgotPassword = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!supabase) return;
+    setMessage('');
+    setIsSubmitting(true);
+    // Always the deployed web origin (not window.location.origin) — inside
+    // the native Capacitor shell that would resolve to a capacitor://
+    // scheme the email client can't open, so the reset link always opens
+    // the hosted web app in a real browser instead.
+    const redirectTo = (import.meta.env.VITE_APP_URL as string | undefined) || window.location.origin;
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+    setIsSubmitting(false);
+    setMessage(error ? error.message : "If an account exists for that email, we've sent a password reset link.");
   };
 
   return (
@@ -95,28 +126,32 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLocalAuth }) => {
           </div>
           <div className="mt-5 lg:mt-0">
             <p className="text-xs font-black uppercase tracking-[0.16em] text-[#207559]">
-              {mode === 'login' ? 'Welcome back' : 'Start your storefront'}
+              {showForgotPassword ? 'Reset password' : mode === 'login' ? 'Welcome back' : 'Start your storefront'}
             </p>
             <h2 className="mt-2 text-3xl font-black font-['Nunito',sans-serif]">
-              {mode === 'login' ? 'Sign in to your squad' : 'Make room to grow'}
+              {showForgotPassword ? 'Forgot your password?' : mode === 'login' ? 'Sign in to your squad' : 'Make room to grow'}
             </h2>
             <p className="mt-2 text-sm text-[#7A6B5F]">
-              {mode === 'login' ? 'Pick up where your campus business left off.' : 'One account for buying, selling, and building your shop.'}
+              {showForgotPassword
+                ? "Enter your email and we'll send you a link to set a new one."
+                : mode === 'login' ? 'Pick up where your campus business left off.' : 'One account for buying, selling, and building your shop.'}
             </p>
           </div>
 
-          <div className="mt-6 grid grid-cols-2 gap-1 rounded-2xl bg-[#F2EAE0] p-1">
-            {(['login', 'signup'] as const).map((authMode) => (
-              <button
-                key={authMode}
-                type="button"
-                onClick={() => { setMode(authMode); setMessage(''); }}
-                className={`rounded-xl py-2.5 text-xs font-black transition-colors ${mode === authMode ? 'bg-white text-[#194E3B] shadow-sm' : 'text-[#8C7A6D]'}`}
-              >
-                {authMode === 'login' ? 'Sign in' : 'Create account'}
-              </button>
-            ))}
-          </div>
+          {!showForgotPassword && (
+            <div className="mt-6 grid grid-cols-2 gap-1 rounded-2xl bg-[#F2EAE0] p-1">
+              {(['login', 'signup'] as const).map((authMode) => (
+                <button
+                  key={authMode}
+                  type="button"
+                  onClick={() => { setMode(authMode); setMessage(''); setShowResendConfirmation(false); }}
+                  className={`rounded-xl py-2.5 text-xs font-black transition-colors ${mode === authMode ? 'bg-white text-[#194E3B] shadow-sm' : 'text-[#8C7A6D]'}`}
+                >
+                  {authMode === 'login' ? 'Sign in' : 'Create account'}
+                </button>
+              ))}
+            </div>
+          )}
 
           {!isSupabaseConfigured && (
             <div className="mt-5 rounded-2xl border border-[#F8BA9E] bg-[#FFF0E8] px-3 py-2.5 text-xs leading-5 text-[#7A341A]">
@@ -124,38 +159,91 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLocalAuth }) => {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-            {mode === 'signup' && (
+          {showForgotPassword ? (
+            <form onSubmit={handleForgotPassword} className="mt-6 space-y-4">
               <label className="block">
-                <span className="mb-1.5 block text-xs font-bold text-[#6B5B4F]">Your name</span>
+                <span className="mb-1.5 block text-xs font-bold text-[#6B5B4F]">Email address</span>
                 <span className="flex items-center gap-2 rounded-xl border border-[#E5DACD] bg-white px-3 focus-within:ring-2 focus-within:ring-[#B8E6D5]">
-                  <UserRound className="w-4 h-4 text-[#8C7A6D]" />
-                  <input required value={name} onChange={(event) => setName(event.target.value)} className="w-full bg-transparent py-3 text-sm outline-none" placeholder="e.g. Alex Santos" />
+                  <Mail className="w-4 h-4 text-[#8C7A6D]" />
+                  <input required type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="w-full bg-transparent py-3 text-sm outline-none" placeholder="you@campus.edu" />
                 </span>
               </label>
-            )}
-            <label className="block">
-              <span className="mb-1.5 block text-xs font-bold text-[#6B5B4F]">Email address</span>
-              <span className="flex items-center gap-2 rounded-xl border border-[#E5DACD] bg-white px-3 focus-within:ring-2 focus-within:ring-[#B8E6D5]">
-                <Mail className="w-4 h-4 text-[#8C7A6D]" />
-                <input required type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="w-full bg-transparent py-3 text-sm outline-none" placeholder="you@campus.edu" />
-              </span>
-            </label>
-            <label className="block">
-              <span className="mb-1.5 block text-xs font-bold text-[#6B5B4F]">Password</span>
-              <span className="flex items-center gap-2 rounded-xl border border-[#E5DACD] bg-white px-3 focus-within:ring-2 focus-within:ring-[#B8E6D5]">
-                <LockKeyhole className="w-4 h-4 text-[#8C7A6D]" />
-                <input required minLength={6} type="password" value={password} onChange={(event) => setPassword(event.target.value)} className="w-full bg-transparent py-3 text-sm outline-none" placeholder="At least 6 characters" />
-              </span>
-            </label>
 
-            {message && <p className="rounded-xl bg-[#FFF0E8] px-3 py-2.5 text-xs leading-5 text-[#7A341A]">{message}</p>}
+              {message && <p className="rounded-xl bg-[#FFF0E8] px-3 py-2.5 text-xs leading-5 text-[#7A341A]">{message}</p>}
 
-            <button disabled={isSubmitting} className="w-full rounded-xl bg-[#207559] py-3.5 text-sm font-black text-white transition-colors hover:bg-[#194E3B] disabled:cursor-wait disabled:opacity-60 flex items-center justify-center gap-2">
-              {isSubmitting ? 'Connecting...' : mode === 'login' ? 'Enter SproutSquad' : 'Create my account'}
-              {!isSubmitting && <ArrowRight className="w-4 h-4" />}
-            </button>
-          </form>
+              <button disabled={isSubmitting} className="w-full rounded-xl bg-[#207559] py-3.5 text-sm font-black text-white transition-colors hover:bg-[#194E3B] disabled:cursor-wait disabled:opacity-60 flex items-center justify-center gap-2">
+                {isSubmitting ? 'Sending...' : 'Send reset link'}
+                {!isSubmitting && <ArrowRight className="w-4 h-4" />}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setShowForgotPassword(false); setMessage(''); setShowResendConfirmation(false); }}
+                className="w-full text-center text-xs font-bold text-[#8C7A6D] hover:text-[#3B2F27] cursor-pointer"
+              >
+                ← Back to sign in
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+              {mode === 'signup' && (
+                <label className="block">
+                  <span className="mb-1.5 block text-xs font-bold text-[#6B5B4F]">Your name</span>
+                  <span className="flex items-center gap-2 rounded-xl border border-[#E5DACD] bg-white px-3 focus-within:ring-2 focus-within:ring-[#B8E6D5]">
+                    <UserRound className="w-4 h-4 text-[#8C7A6D]" />
+                    <input required value={name} onChange={(event) => setName(event.target.value)} className="w-full bg-transparent py-3 text-sm outline-none" placeholder="e.g. Alex Santos" />
+                  </span>
+                </label>
+              )}
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-bold text-[#6B5B4F]">Email address</span>
+                <span className="flex items-center gap-2 rounded-xl border border-[#E5DACD] bg-white px-3 focus-within:ring-2 focus-within:ring-[#B8E6D5]">
+                  <Mail className="w-4 h-4 text-[#8C7A6D]" />
+                  <input required type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="w-full bg-transparent py-3 text-sm outline-none" placeholder="you@campus.edu" />
+                </span>
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-bold text-[#6B5B4F]">Password</span>
+                <span className="flex items-center gap-2 rounded-xl border border-[#E5DACD] bg-white px-3 focus-within:ring-2 focus-within:ring-[#B8E6D5]">
+                  <LockKeyhole className="w-4 h-4 text-[#8C7A6D]" />
+                  <input required minLength={6} type="password" value={password} onChange={(event) => setPassword(event.target.value)} className="w-full bg-transparent py-3 text-sm outline-none" placeholder="At least 6 characters" />
+                </span>
+              </label>
+
+              {mode === 'login' && isSupabaseConfigured && (
+                <div className="text-right -mt-2">
+                  <button
+                    type="button"
+                    onClick={() => { setShowForgotPassword(true); setMessage(''); setShowResendConfirmation(false); }}
+                    className="text-xs font-bold text-[#207559] hover:underline cursor-pointer"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+              )}
+
+              {message && (
+                <div className="rounded-xl bg-[#FFF0E8] px-3 py-2.5 text-xs leading-5 text-[#7A341A] space-y-1.5">
+                  <p>{message}</p>
+                  {showResendConfirmation && (
+                    <button
+                      type="button"
+                      disabled={isSubmitting}
+                      onClick={handleResendConfirmation}
+                      className="font-bold underline disabled:opacity-60 cursor-pointer"
+                    >
+                      Resend confirmation email
+                    </button>
+                  )}
+                </div>
+              )}
+
+              <button disabled={isSubmitting} className="w-full rounded-xl bg-[#207559] py-3.5 text-sm font-black text-white transition-colors hover:bg-[#194E3B] disabled:cursor-wait disabled:opacity-60 flex items-center justify-center gap-2">
+                {isSubmitting ? 'Connecting...' : mode === 'login' ? 'Enter SproutSquad' : 'Create my account'}
+                {!isSubmitting && <ArrowRight className="w-4 h-4" />}
+              </button>
+            </form>
+          )}
         </section>
       </div>
     </main>

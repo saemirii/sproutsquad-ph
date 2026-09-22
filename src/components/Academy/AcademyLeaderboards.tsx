@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useAcademy } from '../../context/AppContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
+import { getLevelForXp } from '../../data/academyLevels';
+import { getSkillMastery } from '../../data/academySkills';
 import { Icon } from '../Icon';
 
 interface LeaderboardCategory {
@@ -21,7 +23,10 @@ const CATEGORIES: LeaderboardCategory[] = [
 ];
 
 export const AcademyLeaderboards: React.FC = () => {
-  const { academyProfile, setLeaderboardOptIn } = useAcademy();
+  const { academyProfile, modules, completedLessonIds, completedChallengeIds, setLeaderboardOptIn } = useAcademy();
+  const level = getLevelForXp(academyProfile.xp);
+  const skillMastery = getSkillMastery(modules, completedLessonIds, completedChallengeIds);
+  const avgMastery = skillMastery.length > 0 ? Math.round(skillMastery.reduce((s, sk) => s + sk.percent, 0) / skillMastery.length) : 0;
   const [activeCategory, setActiveCategory] = useState<LeaderboardCategory>(CATEGORIES[0]);
   const [rows, setRows] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -70,6 +75,29 @@ export const AcademyLeaderboards: React.FC = () => {
         >
           {academyProfile.leaderboardOptIn ? 'Visible ✓' : 'Hidden'}
         </button>
+      </div>
+
+      {/* Your Progress — so rank isn't the only visible signal of growth */}
+      <div className="bg-white p-5 rounded-3xl border border-[#EDE4D8] shadow-xs">
+        <h3 className="text-[11px] font-black uppercase tracking-wider text-[#8C7A6D] mb-3">Your Progress</h3>
+        <div className="grid grid-cols-4 gap-2 text-center">
+          <div>
+            <p className="text-lg font-black text-[#207559] font-['Nunito',sans-serif]">{level.level}</p>
+            <p className="text-[10px] text-[#8C7A6D]">Level</p>
+          </div>
+          <div>
+            <p className="text-lg font-black text-[#207559] font-['Nunito',sans-serif]">{academyProfile.xp.toLocaleString()}</p>
+            <p className="text-[10px] text-[#8C7A6D]">XP</p>
+          </div>
+          <div>
+            <p className="text-lg font-black text-[#207559] font-['Nunito',sans-serif]">{completedLessonIds.length}</p>
+            <p className="text-[10px] text-[#8C7A6D]">Missions</p>
+          </div>
+          <div>
+            <p className="text-lg font-black text-[#207559] font-['Nunito',sans-serif]">{avgMastery}%</p>
+            <p className="text-[10px] text-[#8C7A6D]">Mastery</p>
+          </div>
+        </div>
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">

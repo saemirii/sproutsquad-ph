@@ -56,13 +56,15 @@ export const BusinessDetailView: React.FC<BusinessDetailViewProps> = ({
 }) => {
   const {
     products, setActiveBusiness, fetchBusinessReviews, fetchBusinessFollowerCount,
-    reviewReportsByOrderId, fetchReviewReportsForOrders, reportReview,
+    reviewReportsByOrderId, fetchReviewReportsForOrders, reportReview, accessibleBusinessIds,
   } = useShop();
   const { addToCart } = useCart();
   const { setCurrentView, setSellerTab, currentUser } = useSession();
   const { favoritedBusinessIds, toggleFavoriteBusiness } = useNotifications();
   const isFavorited = favoritedBusinessIds.includes(business.id);
-  const isOwnBusiness = business.sellerId === currentUser.id;
+  // Covers a BES-key teammate too, not just the seller of record — matches
+  // the same "own business" definition addToCart enforces in AppContext.
+  const isOwnBusiness = accessibleBusinessIds.includes(business.id);
 
   // A product scheduled for a future drop should stay invisible to buyers
   // until that moment passes (same rule IosMarketplaceView's grid already
@@ -86,8 +88,9 @@ export const BusinessDetailView: React.FC<BusinessDetailViewProps> = ({
   const [quickAddFeedback, setQuickAddFeedback] = useState<Record<string, string>>({});
 
   const handleQuickAdd = async (product: Product) => {
-    const { added, available } = await addToCart(product, 1);
-    const message = added > 0 ? 'Added!' : available <= 0 ? 'Sold out' : `Only ${available} left`;
+    if (isOwnBusiness) return;
+    const { added, available, blocked } = await addToCart(product, 1);
+    const message = blocked === 'own-business' ? "Can't buy your own" : added > 0 ? 'Added!' : available <= 0 ? 'Sold out' : `Only ${available} left`;
     setQuickAddFeedback((prev) => ({ ...prev, [product.id]: message }));
     setTimeout(() => {
       setQuickAddFeedback((prev) => {
@@ -459,15 +462,16 @@ export const BusinessDetailView: React.FC<BusinessDetailViewProps> = ({
                   </div>
 
                   <button
-                    disabled={product.inventoryCount <= 0}
+                    disabled={product.inventoryCount <= 0 || isOwnBusiness}
                     onClick={(e) => {
                       e.stopPropagation();
                       void handleQuickAdd(product);
                     }}
+                    title={isOwnBusiness ? "You can't buy your own shop's products" : undefined}
                     className="px-3 py-1.5 rounded-xl text-xs font-bold bg-[#B8E6D5] hover:bg-[#A3DEC9] text-[#194E3B] shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <ShoppingBag className="w-3.5 h-3.5" />
-                    <span>{quickAddFeedback[product.id] || (product.inventoryCount <= 0 ? 'Sold out' : 'Add')}</span>
+                    <span>{quickAddFeedback[product.id] || (isOwnBusiness ? 'Your shop' : product.inventoryCount <= 0 ? 'Sold out' : 'Add')}</span>
                   </button>
                 </div>
               </div>

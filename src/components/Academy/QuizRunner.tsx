@@ -2,15 +2,18 @@ import React, { useState } from 'react';
 import { CheckCircle2, RotateCcw, Eye } from 'lucide-react';
 import { QuizQuestion } from '../../types';
 import { Icon } from '../Icon';
+import { SortInteraction } from './shared/SortInteraction';
+import { MatchInteraction } from './shared/MatchInteraction';
 
 interface QuizRunnerProps {
   quiz: QuizQuestion[];
   /** Already completed in an earlier visit — shows every question in its
    * resolved state instead of replaying the quiz. */
   alreadyCompleted: boolean;
-  /** isFirstAttemptAllCorrect: true only if every multiple_choice question
-   * was answered correctly on the first try (short_answer questions are
-   * self-checked, not graded, and never break a "perfect" run). */
+  /** isFirstAttemptAllCorrect: true only if every graded question (multiple
+   * choice, sort, match) was answered correctly on the first try
+   * (short_answer questions are self-checked, not graded, and never break
+   * a "perfect" run). */
   onComplete: (isFirstAttemptAllCorrect: boolean) => void;
 }
 
@@ -39,6 +42,14 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({ quiz, alreadyCompleted, 
     if (!isCorrect) setUsedRetry(true);
   };
 
+  /** Shared grading outcome handler for the sort/match interactions —
+   * mirrors handleSubmitMultipleChoice's logic, parameterized by a
+   * pre-computed correctness boolean instead of comparing a selection. */
+  const handleGradedSubmit = (isCorrect: boolean) => {
+    setStates((prev) => prev.map((s, i) => (i === index ? (isCorrect ? 'correct' : 'incorrect') : s)));
+    if (!isCorrect) setUsedRetry(true);
+  };
+
   const handleRetryQuestion = () => {
     setSelectedOption(null);
     setStates((prev) => prev.map((s, i) => (i === index ? 'unanswered' : s)));
@@ -63,6 +74,15 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({ quiz, alreadyCompleted, 
 
   const canAdvance = state === 'correct' || state === 'revealed';
 
+  const feedbackPanel = (
+    <div className="p-3.5 bg-[#FAF7F2] rounded-2xl border border-[#EDE4D8] text-xs text-[#54453C] space-y-1">
+      <span className="font-bold text-[#207559]">
+        {state === 'correct' ? '🌱 Nice work!' : "🌿 Not quite — here's the idea:"}
+      </span>
+      <p>{question.explanation}</p>
+    </div>
+  );
+
   return (
     <div className="p-6 rounded-3xl bg-white border-2 border-[#B8E6D5] space-y-4 shadow-xs relative">
       {showReward && (
@@ -83,7 +103,7 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({ quiz, alreadyCompleted, 
 
       <p className="text-xs sm:text-sm font-bold text-[#3B2F27]">{question.prompt}</p>
 
-      {question.format === 'multiple_choice' ? (
+      {question.format === 'multiple_choice' && (
         <>
           <div className="space-y-2">
             {(question.options || []).map((option, idx) => {
@@ -110,12 +130,7 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({ quiz, alreadyCompleted, 
               );
             })}
           </div>
-          {(state === 'correct' || state === 'incorrect') && (
-            <div className="p-3.5 bg-[#FAF7F2] rounded-2xl border border-[#EDE4D8] text-xs text-[#54453C] space-y-1">
-              <span className="font-bold text-[#207559]">Peanut's Explanation:</span>
-              <p>{question.explanation}</p>
-            </div>
-          )}
+          {(state === 'correct' || state === 'incorrect') && feedbackPanel}
           <div className="pt-2 flex items-center justify-between">
             {state === 'incorrect' && (
               <button onClick={handleRetryQuestion} className="flex items-center gap-1 text-xs text-[#8C7A6D] hover:text-[#3B2F27] cursor-pointer">
@@ -138,7 +153,58 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({ quiz, alreadyCompleted, 
             )}
           </div>
         </>
-      ) : (
+      )}
+
+      {question.format === 'sort' && (
+        <>
+          {state === 'unanswered' && <p className="text-[11px] text-[#8C7A6D] italic">🔀 Tap the arrows to arrange these in the right order.</p>}
+          <SortInteraction
+            items={question.items || []}
+            correctOrder={question.correctOrder || []}
+            disabled={state !== 'unanswered'}
+            onSubmit={handleGradedSubmit}
+          />
+          {(state === 'correct' || state === 'incorrect') && feedbackPanel}
+          <div className="pt-2 flex items-center justify-between">
+            {state === 'incorrect' && (
+              <button onClick={handleRetryQuestion} className="flex items-center gap-1 text-xs text-[#8C7A6D] hover:text-[#3B2F27] cursor-pointer">
+                <RotateCcw className="w-3.5 h-3.5" /> Try again
+              </button>
+            )}
+            {canAdvance && (
+              <button onClick={handleNext} className="ml-auto px-5 py-2.5 bg-[#207559] hover:bg-[#194E3B] text-white font-extrabold text-xs rounded-2xl shadow-xs transition-colors cursor-pointer btn-bouncy">
+                {isLast ? 'Finish Quiz' : 'Next Question'}
+              </button>
+            )}
+          </div>
+        </>
+      )}
+
+      {question.format === 'match' && (
+        <>
+          {state === 'unanswered' && <p className="text-[11px] text-[#8C7A6D] italic">🎯 Tap one on the left, then its match on the right.</p>}
+          <MatchInteraction
+            pairs={question.pairs || []}
+            disabled={state !== 'unanswered'}
+            onSubmit={handleGradedSubmit}
+          />
+          {(state === 'correct' || state === 'incorrect') && feedbackPanel}
+          <div className="pt-2 flex items-center justify-between">
+            {state === 'incorrect' && (
+              <button onClick={handleRetryQuestion} className="flex items-center gap-1 text-xs text-[#8C7A6D] hover:text-[#3B2F27] cursor-pointer">
+                <RotateCcw className="w-3.5 h-3.5" /> Try again
+              </button>
+            )}
+            {canAdvance && (
+              <button onClick={handleNext} className="ml-auto px-5 py-2.5 bg-[#207559] hover:bg-[#194E3B] text-white font-extrabold text-xs rounded-2xl shadow-xs transition-colors cursor-pointer btn-bouncy">
+                {isLast ? 'Finish Quiz' : 'Next Question'}
+              </button>
+            )}
+          </div>
+        </>
+      )}
+
+      {question.format === 'short_answer' && (
         <>
           {state === 'revealed' ? (
             <div className="p-3.5 bg-[#FAF7F2] rounded-2xl border border-[#EDE4D8] text-xs text-[#54453C] space-y-2">

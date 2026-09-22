@@ -54,6 +54,12 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('GCash');
   const [fulfillmentType, setFulfillmentType] = useState<FulfillmentType>('Campus Meetup');
   const [meetupLocation, setMeetupLocation] = useState('Gonzaga Hall Entrance / Main Quad');
+  // Defaults to tomorrow, matching the fallback placeOrder already applies
+  // server-side when no date is supplied — picking a date here just makes
+  // that choice explicit and buyer-controlled instead of always "tomorrow."
+  const [preferredDate, setPreferredDate] = useState(
+    () => new Date(Date.now() + 86400000).toISOString().slice(0, 10)
+  );
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [couponInput, setCouponInput] = useState('');
@@ -381,6 +387,7 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
         customerUniversity,
         paymentMethod,
         fulfillmentType,
+        deliveryDate: preferredDate,
         meetupLocation,
         notes,
         couponCode: appliedCoupon?.code,
@@ -681,6 +688,20 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
                   </select>
                 </div>
 
+                <div className="space-y-2">
+                  <label className="text-[11px] font-bold text-[#6B5B4F] block">
+                    Preferred Pickup / Delivery Date:
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    min={new Date().toISOString().split('T')[0]}
+                    value={preferredDate}
+                    onChange={(e) => setPreferredDate(e.target.value)}
+                    className="w-full bg-[#FAF3DE] border border-[#EDE4D8] rounded-xl px-3 py-2 text-xs font-semibold text-[#3B2F27] focus:outline-none focus:ring-2 focus:ring-[#B8E6D5]"
+                  />
+                </div>
+
                 {/* Payment Method */}
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-bold text-[#6B5B4F] block">
@@ -889,11 +910,17 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
                       ))}
                     </div>
 
-                    <div className="pt-2 border-t border-[#EDE4D8] flex items-center justify-between text-[11px] text-[#6B5B4F]">
+                    <div className="pt-2 border-t border-[#EDE4D8] flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[11px] text-[#6B5B4F]">
                       <span className="flex items-center gap-1 text-[10px]">
                         <MapPin className="w-3 h-3 text-[#194E3B]" />
                         {order.meetupLocation}
                       </span>
+                      {order.deliveryDate && (
+                        <span className="flex items-center gap-1 text-[10px]">
+                          <Clock className="w-3 h-3 text-[#194E3B]" />
+                          {new Date(order.deliveryDate + 'T00:00:00').toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}
+                        </span>
+                      )}
                       {business?.instagramHandle && (
                         <a
                           href={`https://instagram.com/${business.instagramHandle.replace(/^@/, '')}`}

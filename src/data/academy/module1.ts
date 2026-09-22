@@ -19,23 +19,34 @@ export const module1Lessons: Lesson[] = [
     moduleId: 'module-1',
     number: '1.1',
     title: 'What Problem Are You Solving?',
-    estimatedMinutes: 35,
+    estimatedMinutes: 20,
     hook: '"Jhun always forgets his umbrella. So do half the students at his school. On rainy days, the school store sells out of ₱20 ponchos in ten minutes. Jhun didn\'t invent ponchos — he just noticed a problem nobody was solving fast enough."',
-    simplifiedExplanation: 'A product is a thing you sell. A problem is the reason anyone would want it. New entrepreneurs often fall in love with a product idea first ("I want to sell bracelets!") instead of starting with a problem ("My classmates have no affordable way to personalize their uniforms"). Businesses exist because they solve problems for customers — people with a specific need, and enough reason to pay someone else to meet it.\n\nThe clearest way to check if you have a real business idea is to map it in three steps: Problem (what\'s frustrating, missing, or inconvenient for someone), Customer (exactly who feels that problem most), and Solution (the product or service that removes the problem). If you can\'t fill in all three honestly, you don\'t have a business idea yet — you have a product looking for a reason to exist.',
-    concept: {
-      body: "The Philippine Department of Education's Senior High School Entrepreneurship curriculum teaches students to first identify the market problem or need before proposing a product or service solution, then screen that solution for viability, profitability, and fit with customer requirements — problem before product, not the other way around.",
-      sources: [
-        { title: 'K to 12 Senior High School Applied Track Subject — Entrepreneurship (Curriculum Guide), DepEd', url: 'https://lrmds.deped.gov.ph/detail/14442' },
-        { title: 'Market Research and Competitive Analysis, U.S. Small Business Administration (SBA)', url: 'https://www.sba.gov/business-guide/plan-your-business/market-research-competitive-analysis' },
-      ],
-    },
+    beats: [
+      "A **product** is what you sell. A **problem** is the reason anyone buys it — beginners almost always start with the wrong one.",
+      'Falling for a product idea first ("I want to sell bracelets!") skips the question that actually matters: does anyone **need** this?',
+      'Test any idea with three boxes: **Problem → Customer → Solution**. Can\'t fill in all three honestly? You don\'t have a business yet — just a product looking for a reason to exist.',
+    ],
+    whyItMatters: '**Problem before product** is what separates a real business from a hobby. Skip it, and you\'re just guessing — which is how inventory sits unsold.',
+    quickStat: 'Every business in this app — Crumb & Co., DoodleDrop, Cozy Corner — started with a problem, not a product idea.',
     activity: {
       title: 'Problem → Customer → Solution Map',
-      prompt: 'Draw three connected boxes. In Box 1, write one real problem you or someone you know faces (school, home, or neighborhood). In Box 2, write exactly who feels this problem the most — be specific (not "students," but "Grade 9 students who bike to school and arrive sweaty before first period"). In Box 3, write one possible solution. Test it: if you removed Box 1, would Box 3 still make sense? If yes, start over — you built a product without a problem.',
+      steps: [
+        'Draw three connected boxes.',
+        '**Box 1**: write one real problem you or someone you know faces (school, home, or neighborhood).',
+        '**Box 2**: write exactly who feels this problem the most — be specific (not "students," but "Grade 9 students who bike to school and arrive sweaty before first period").',
+        '**Box 3**: write one possible solution.',
+        '**Test it**: if you removed Box 1, would Box 3 still make sense? If yes, start over — you built a product without a problem.',
+      ],
+      illustration: 'problem-customer-solution',
     },
     inLessonScenario: {
       title: "DoodleDrop's Dilemma",
-      prompt: 'Aya runs DoodleDrop, a sticker and illustration business. She notices two things happening at school: (1) students keep losing their water bottles because they all look the same, and (2) students want cooler notebook covers. She only has time to launch one product this month. Using the Problem → Customer → Solution map, which problem is more specific and more clearly tied to a paying customer? Write one sentence defending your choice.',
+      steps: [
+        'Aya runs DoodleDrop, a sticker and illustration business, and can only launch one product this month.',
+        '**Option 1**: students keep losing their water bottles because they all look the same.',
+        '**Option 2**: students want cooler notebook covers.',
+        'Using the Problem → Customer → Solution map, which problem is more specific and more clearly tied to a paying customer? **Write one sentence** defending your choice.',
+      ],
     },
     shopOsTieIn: {
       note: "Once you've written your Problem → Customer → Solution map, save it as your business's 'About' description in Shop OS — this is the story customers see when they visit your storefront.",
@@ -72,23 +83,30 @@ export const module1Lessons: Lesson[] = [
     moduleId: 'module-1',
     number: '1.2',
     title: "Market Research: Don't Guess",
-    estimatedMinutes: 35,
+    estimatedMinutes: 20,
     hook: '"Before Cozy Corner sold a single keychain, its founder Miggy asked 20 classmates one question: \'What\'s the last cute thing you bought, and why?\' Three answers changed his entire product line."',
-    simplifiedExplanation: 'Market research is the process of gathering real information about your customers, competitors, and industry before you make big decisions — instead of guessing. The SBA describes two broad types: primary research (information you collect yourself — surveys, interviews, observation) and secondary research (information that already exists — industry reports, government data, competitor websites). Primary research is more specific to your business but takes more time; secondary research is faster but more general.\n\nCommon primary research methods for a small business include: surveys (a short list of questions sent to many people), interviews (a deeper one-on-one conversation with a few people), and observation (watching how customers actually behave, e.g., which snacks disappear fastest at the canteen). None of these require money — they require curiosity and a plan.',
-    concept: {
-      body: "DTI's Negosyo Centers — set up nationwide under the Go Negosyo Act (RA 10644) — exist specifically to connect Philippine MSMEs to training in marketing and financial literacy before they scale. The distinction between primary research (surveys, interviews, observation you conduct yourself) and secondary research (existing reports and data) is a widely used international framework, also detailed in the SBA's guide to market research.",
-      sources: [
-        { title: 'Negosyo Center Program — FAQs, Philippine Department of Trade and Industry (DTI)', url: 'https://www.dti.gov.ph/negosyo/negosyo-center/faqs/' },
-        { title: 'Market Research and Competitive Analysis, U.S. Small Business Administration (SBA)', url: 'https://www.sba.gov/business-guide/plan-your-business/market-research-competitive-analysis' },
-      ],
-    },
+    beats: [
+      '**Market research** just means finding out what\'s actually true about your customers — instead of guessing.',
+      '**Primary research** is info you collect yourself: surveys, interviews, watching people. **Secondary research** is info that already exists: reports, competitor pages, existing data.',
+      "You don't need money for this — just curiosity. Ask 20 classmates one sharp question, or watch which snacks disappear fastest at the canteen.",
+    ],
+    whyItMatters: 'Skipping research means building your whole product line on a guess. **One real conversation** with a customer beats ten assumptions.',
+    quickStat: 'Observation costs nothing but attention — watching what already sells beats guessing what might.',
     activity: {
       title: 'Design a 5-Question Survey',
-      prompt: 'Write exactly 5 survey questions to test a product idea for one of the SproutSquad businesses (Crumb & Co., DoodleDrop, Cozy Corner, or PixelPop). At least 2 questions must be about the customer\'s current behavior (what they already do or buy), not their opinion of your idea — because people are better at describing what they do than predicting what they\'ll buy.',
+      steps: [
+        'Write exactly **5 survey questions** to test a product idea for one of the SproutSquad businesses (Crumb & Co., DoodleDrop, Cozy Corner, or PixelPop).',
+        "**At least 2 questions** must be about the customer's current behavior (what they already do or buy) — not their opinion of your idea.",
+        "People are better at describing what they do than predicting what they'll buy.",
+      ],
     },
     inLessonScenario: {
       title: 'Two Audiences, One Budget',
-      prompt: 'PixelPop (a digital design service) can only afford to research one audience this month: (A) students who need logos for their own small businesses, or (B) parents who want birthday invitation designs. Before choosing, PixelPop\'s founder must decide what to research first. List 3 questions she should answer through research (not guessing) before deciding which audience to target.',
+      steps: [
+        'PixelPop (a digital design service) can only afford to research one audience this month: **(A)** students who need logos for their own small businesses, or **(B)** parents who want birthday invitation designs.',
+        "Before choosing, PixelPop's founder must decide what to research first.",
+        '**List 3 questions** she should answer through research (not guessing) before deciding which audience to target.',
+      ],
     },
     quiz: [
       {
@@ -113,22 +131,32 @@ export const module1Lessons: Lesson[] = [
     moduleId: 'module-1',
     number: '1.3',
     title: 'STP: Find Your People',
-    estimatedMinutes: 35,
+    estimatedMinutes: 20,
     hook: '"Crumb & Co. tried to bake something for everyone — vegan, gluten-free, sugar-free, ultra-sweet — and ended up with a menu nobody loved. When they narrowed down to \'affordable, fun snacks for students with ₱30–₱50 to spend,\' sales tripled."',
-    simplifiedExplanation: 'No business can serve everyone well. Segmentation means dividing a broad market into smaller groups that share similar traits (age, interests, location, spending habits). Targeting means choosing which segment(s) your business will focus on. Positioning means deciding how you want your target customers to see your business compared to competitors — what makes you different in their minds. Together these three steps are called the STP model.\n\nSTP works because trying to appeal to everyone usually means appealing to no one strongly. A business that says \'we\'re for everyone\' competes with every other business on price alone. A business that says \'we\'re the fastest, most affordable snack for students between classes\' has a clear identity that\'s easier to market, price, and grow.',
-    concept: {
-      body: "OpenStax's Principles of Marketing explains that segmentation, targeting, and positioning are 'the major elements of a customer-driven marketing strategy,' since smart marketers know they can't reach and serve every buyer.",
-      sources: [
-        { title: 'Principles of Marketing, Ch. 5: Market Segmentation, Targeting, and Positioning — OpenStax / Rice University', url: 'https://openstax.org/books/principles-marketing/pages/5-5-selecting-target-markets' },
-      ],
-    },
+    beats: [
+      '**Segmentation**: splitting a broad market into smaller groups (by age, budget, habits). **Targeting**: picking which group you\'ll focus on. **Positioning**: deciding how that group sees you vs. everyone else.',
+      "Together, that's the **STP model** — and skipping it is why so many campus shops feel forgettable.",
+      '"We\'re for everyone" means you compete on price alone. "We\'re the fastest, most affordable snack between classes" gives people an actual reason to remember you.',
+    ],
+    whyItMatters: 'A **clear target** makes every other decision easier — pricing, marketing, even what to bake next. Trying to please everyone usually pleases no one.',
+    quickStat: "A target customer isn't a restriction — it's a filter that makes every other decision (pricing, flavors, marketing) easier.",
     activity: {
       title: 'Segment, Target, Position',
-      prompt: "Take a broad market: 'people who eat snacks at school.' Split it into 4 smaller segments (e.g., by budget, health goals, or snack timing). Circle the ONE segment you would target if you only had ₱500 in starting capital. Then write a one-sentence positioning statement: '[Business] is the [best/fastest/most affordable] choice for [target segment] because ______.'",
+      steps: [
+        "Take a broad market: 'people who eat snacks at school.'",
+        '**Split it into 4 smaller segments** (e.g., by budget, health goals, or snack timing).',
+        'Circle the **ONE segment** you would target if you only had ₱500 in starting capital.',
+        "Write a one-sentence **positioning statement**: '[Business] is the [best/fastest/most affordable] choice for [target segment] because ______.'",
+      ],
+      illustration: 'stp-funnel',
     },
     inLessonScenario: {
       title: "Crumb & Co.'s Crowd",
-      prompt: 'Crumb & Co. could target: (A) students who want a cheap daily snack, (B) parents ordering treats for class parties, or (C) teachers who want a mid-morning coffee pastry. Given a school-based business with limited baking capacity, which single segment should Crumb & Co. target first, and why does trying to serve all three at once usually backfire?',
+      steps: [
+        'Crumb & Co. could target: **(A)** students who want a cheap daily snack, **(B)** parents ordering treats for class parties, or **(C)** teachers who want a mid-morning coffee pastry.',
+        'Given a school-based business with limited baking capacity, **which single segment** should Crumb & Co. target first?',
+        'Why does trying to serve all three at once usually backfire?',
+      ],
     },
     shopOsTieIn: {
       note: 'Your target segment and positioning statement become the description and tags customers see when searching for your shop in Shop OS — clear positioning helps the right customers find you faster.',
@@ -137,8 +165,10 @@ export const module1Lessons: Lesson[] = [
     quiz: [
       {
         id: 'lesson-1-3-q1',
-        format: 'short_answer',
+        format: 'sort',
         prompt: 'Put these in the correct order: Segmentation, Targeting, Positioning.',
+        items: ['Segmentation', 'Targeting', 'Positioning'],
+        correctOrder: [0, 1, 2],
         modelAnswer: 'Segmentation first (divide the market), then Targeting (pick a segment), then Positioning (define how you\'re different).',
         explanation: 'You have to divide the market before you can choose a piece of it, and choose a piece before you can decide how to stand out within it.',
       },
@@ -157,23 +187,30 @@ export const module1Lessons: Lesson[] = [
     moduleId: 'module-1',
     number: '1.4',
     title: 'Value Proposition: Why You?',
-    estimatedMinutes: 35,
+    estimatedMinutes: 20,
     hook: '"Two students sell the same phone charms for the same price. One says \'I sell phone charms.\' The other says \'I make one-of-a-kind charms designed from your favorite anime in 24 hours.\' Guess who gets repeat customers."',
-    simplifiedExplanation: "A value proposition is a short, clear statement of why a customer should choose your product over any other option — including doing nothing at all. It answers: what does the customer get, and why is it better or different? A good value proposition focuses on the customer's benefit, not just your product's features. 'Handmade soap' is a feature. 'Soap gentle enough for sensitive skin, made fresh weekly' is a value proposition — it tells the customer what they get out of it.\n\nDifferentiation is what makes your value proposition unique compared to competitors. It doesn't have to be the product itself — it can be speed, price, customization, story, or experience. The goal isn't to be good at everything; it's to be clearly better at the one or two things your target customer cares about most.",
-    concept: {
-      body: "A value proposition is defined as 'a business or marketing statement that summarizes why a consumer should buy a product or use a service,' meant to convince a customer that one offering solves their problem or adds value better than similar alternatives.",
-      sources: [
-        { title: 'Value Proposition (Introduction to Business) — Lumen Learning (OER, based on Boundless/OpenStax material)', url: 'https://courses.lumenlearning.com/wm-introductiontobusiness/chapter/value-proposition/' },
-        { title: 'Introduction to Business, Ch. 11: Value Proposition & the Marketing Concept — OpenStax / Rice University', url: 'https://openstax.org/books/introduction-business/pages/11-key-terms' },
-      ],
-    },
+    beats: [
+      'A **value proposition** answers one question: why should someone choose you — over any competitor, or over doing nothing at all?',
+      '"Handmade soap" is a **feature**. "Gentle enough for sensitive skin, made fresh weekly" is a **value proposition** — it says what the customer actually gets.',
+      '**Differentiation** doesn\'t have to be the product itself. It can be speed, price, customization, or story. Pick one or two things to be clearly better at — not everything.',
+    ],
+    whyItMatters: 'Without a clear answer to "why you," a copycat with the same product at the same price beats you on price alone.',
     activity: {
       title: 'Feature → Benefit → Value Proposition',
-      prompt: "Take any product description (e.g., 'reusable water bottle, 500ml, pastel colors'). Turn each feature into a customer benefit ('keeps drinks cold for 12 hours so you're never stuck with warm water'), then combine the strongest benefits into one value-proposition sentence. Do this for a product from any SproutSquad business.",
+      steps: [
+        "Take any product description (e.g., 'reusable water bottle, 500ml, pastel colors').",
+        "**Turn each feature into a benefit** (e.g., 'keeps drinks cold for 12 hours so you're never stuck with warm water').",
+        'Combine the strongest benefits into **one value-proposition sentence**.',
+        'Do this for a product from any SproutSquad business.',
+      ],
     },
     inLessonScenario: {
       title: 'Cozy Corner vs. the Copycat',
-      prompt: "A new shop starts selling plush keychains identical to Cozy Corner's — same price, same materials. Cozy Corner's founder must identify why a customer should still choose her shop. List 3 things (besides the product itself) that could become her value proposition, and pick the strongest one.",
+      steps: [
+        "A new shop starts selling plush keychains identical to Cozy Corner's — same price, same materials.",
+        "Cozy Corner's founder must identify **why a customer should still choose her shop**.",
+        'List **3 things** (besides the product itself) that could become her value proposition, and pick the strongest one.',
+      ],
     },
     shopOsTieIn: {
       note: "Your value proposition becomes your storefront's headline in Shop OS — the first sentence customers read before deciding to browse further.",
@@ -202,22 +239,30 @@ export const module1Lessons: Lesson[] = [
     moduleId: 'module-1',
     number: '1.5',
     title: 'Messaging: What Should People Hear?',
-    estimatedMinutes: 35,
+    estimatedMinutes: 20,
     hook: "\"PixelPop's Instagram is playful and full of memes. Its actual storefront description reads like a formal business proposal. Customers get confused about who PixelPop even is.\"",
-    simplifiedExplanation: 'Business messaging is everything you communicate to customers — your captions, product descriptions, replies to comments, and even your tone when a customer complains. Your mission is why your business exists beyond making money. Your brand voice is the personality behind your words: are you playful, professional, warm, bold? Consistency means your brand voice sounds the same everywhere a customer meets you — social media, storefront, and in person.\n\nInconsistent messaging confuses customers and makes a business feel less trustworthy, even if the products are great. A simple test: if you covered up your business name, would a regular customer still recognize your post as yours, just from the tone and style?',
-    concept: {
-      body: "OpenStax's Principles of Marketing describes a brand as more than a logo — it is 'the feeling associated with a product or service' built through consistent promotion efforts reinforced 'at every touchpoint.'",
-      sources: [
-        { title: 'Principles of Marketing, 9.5: Branding and Brand Development — OpenStax / Rice University', url: 'https://openstax.org/books/principles-marketing/pages/9-5-branding-and-brand-development' },
-      ],
-    },
+    beats: [
+      '**Messaging** is everything you say to customers — captions, product descriptions, even how you reply to a complaint.',
+      'Your **brand voice** is your personality in words: playful, professional, warm, bold? **Consistency** means it sounds the same everywhere — social media, storefront, in person.',
+      'Quick test: cover up your shop name. Would a regular customer still recognize your post as yours, just from the tone?',
+    ],
+    whyItMatters: 'Inconsistent voice makes even a great product feel untrustworthy. **Sounding the same everywhere** is free trust-building.',
     activity: {
       title: 'Write a 2-Sentence Brand Message',
-      prompt: 'Pick one SproutSquad business. Write a 2-sentence message it could post on social media, using a brand voice you choose (playful, cozy, bold, or minimalist). Then write the same announcement in a completely different voice, so you can see how much tone changes a customer\'s impression.',
+      steps: [
+        'Pick one SproutSquad business.',
+        'Write a **2-sentence message** it could post on social media, using a brand voice you choose (playful, cozy, bold, or minimalist).',
+        "Then write the **same announcement in a completely different voice** — notice how much tone changes a customer's impression.",
+      ],
     },
     inLessonScenario: {
       title: 'Fix the Mismatch',
-      prompt: 'DoodleDrop\'s storefront bio says: \'Premium curated illustration services for discerning clients.\' Its Instagram captions say: \'yo check out this sticker lol.\' A customer messages: \'wait are these the same shop?\' Rewrite ONE of the two so they sound consistent, and explain in one sentence why you chose to change that one.',
+      steps: [
+        "DoodleDrop's storefront bio says: 'Premium curated illustration services for discerning clients.'",
+        "Its Instagram captions say: 'yo check out this sticker lol.'",
+        "A customer messages: 'wait are these the same shop?'",
+        '**Rewrite ONE of the two** so they sound consistent, and explain in one sentence why you chose to change that one.',
+      ],
     },
     shopOsTieIn: {
       note: 'Consistent messaging in Shop OS (shop name, tagline, and product descriptions) helps returning customers instantly recognize and trust your storefront.',

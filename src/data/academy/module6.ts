@@ -19,22 +19,30 @@ export const module6Lessons: Lesson[] = [
     moduleId: 'module-6',
     number: '6.1',
     title: 'Budgeting: Give Every Peso a Job',
-    estimatedMinutes: 35,
+    estimatedMinutes: 20,
     hook: '"Crumb & Co. earns ₱6,000 this month. Without a plan, it\'s gone within days — some on ingredients, some on a whim purchase, some unaccounted for."',
-    simplifiedExplanation: "A budget is a plan for how you expect to spend and earn money over a specific period — it assigns a 'job' to every peso before you spend it, instead of deciding in the moment. A basic budget includes three parts: expected income (how much you realistically expect to earn), planned expenses (categorized: ingredients/materials, packaging, marketing, savings), and priorities (what gets funded first if money is tight — usually essential costs before optional ones).\n\nBudgeting isn't about restricting spending for its own sake — it's about deciding in advance, calmly, instead of deciding under pressure when the money is already gone.",
-    concept: {
-      body: "DepEd's Grade 12 Business Finance curriculum has students identify the steps in the financial planning process and illustrate the formula and format for preparing budgets — giving every peso a job is the practical, beginner version of that same process.",
-      sources: [
-        { title: 'Business Finance (Curriculum Guide, Grade 12) — DepEd', url: 'https://lrmds.deped.gov.ph/detail/16007' },
-      ],
-    },
+    beats: [
+      "A **budget** is a plan for what comes in and what goes out — it gives every peso a job **before** you spend it, instead of deciding in the moment.",
+      "Split expected income into buckets: **ingredients/materials**, **packaging**, **marketing**, and **savings** — nothing left to chance.",
+      "Money tight? Decide your **priority order** now — essentials first, extras later — so you're never deciding under pressure.",
+    ],
+    whyItMatters: "**Every peso needs a job** before you spend it — skip the plan, and ₱6,000 quietly disappears into whims and unaccounted extras.",
+    quickStat: 'Rule of thumb: budget savings first, not last — treat it like a bill you owe yourself, not a leftover treat.',
     activity: {
       title: 'Give Every Peso a Job',
-      prompt: 'Crumb & Co. expects ₱6,000 income this month. Allocate it across at least 4 categories (ingredients, packaging, marketing, savings/emergency fund), explaining your reasoning for each amount.',
+      steps: [
+        'Crumb & Co. expects **₱6,000 income** this month.',
+        '**Allocate it across at least 4 categories**: ingredients, packaging, marketing, and savings/emergency fund.',
+        '**Explain your reasoning** for each amount.',
+      ],
+      illustration: 'budget-allocation',
     },
     inLessonScenario: {
       title: 'The No-Plan Trap',
-      prompt: 'Without a budget, Crumb & Co. spent ₱6,000 in two weeks — some on ingredients, some on a personal treat, and ran short before restocking for a big order. Identify 2 specific ways a simple budget would have prevented this.',
+      steps: [
+        'Without a budget, Crumb & Co. spent ₱6,000 in two weeks — some on ingredients, some on a personal treat, and ran short before restocking for a big order.',
+        '**Identify 2 specific ways** a simple budget would have prevented this.',
+      ],
     },
     shopOsTieIn: {
       note: "Shop OS's expense tracker can be tagged by category, letting you compare your planned budget to what you actually spent each month.",
@@ -56,22 +64,29 @@ export const module6Lessons: Lesson[] = [
     moduleId: 'module-6',
     number: '6.2',
     title: 'Forecasting: What Might Happen?',
-    estimatedMinutes: 35,
+    estimatedMinutes: 20,
     hook: '"Cozy Corner wants to know: if next month is slow, okay, or great — will they still be able to pay for materials?"',
-    simplifiedExplanation: "Forecasting means predicting future performance based on assumptions and current information — it's different from a budget (a plan) because a forecast is an estimate of what will likely happen, which gets updated as new information comes in. A useful forecast considers three scenarios: best case (things go better than expected), expected case (your most realistic guess), and worst case (things go worse than expected — e.g., low sales, a delayed order, or a broken supply chain).\n\nPreparing for the worst case in advance — even briefly — means a bad month becomes a manageable challenge instead of a crisis.",
-    concept: {
-      body: 'DepEd\'s Grade 12 Business Finance curriculum covers financial planning tools and projected financial statements — preparing multiple scenarios (best, expected, worst case) is a practical, beginner-level way to apply that same forward-looking planning.',
-      sources: [
-        { title: 'Business Finance (Curriculum Guide, Grade 12) — DepEd', url: 'https://lrmds.deped.gov.ph/detail/16007' },
-      ],
-    },
+    beats: [
+      "A **forecast** isn't a promise — it's your best current guess, and it updates as new information comes in (unlike a budget, which is locked in from day one).",
+      "Run three quick scenarios: **best case**, **expected case**, and **worst case** — a slow week, a broken supplier, a canceled order.",
+      "A rough plan for the worst case, made now, is what keeps a bad month **manageable** instead of a full-blown crisis.",
+    ],
+    whyItMatters: "**Planning for the worst case in advance** is what turns a bad month into an inconvenience instead of an emergency.",
+    quickStat: "Rule of thumb: a forecast you never update isn't a forecast — it's just an old guess.",
     activity: {
       title: 'Three Scenarios',
-      prompt: "For Cozy Corner's next month, write one sentence each for best case, expected case, and worst case sales performance, and one action Cozy Corner could take now to prepare for the worst case.",
+      steps: [
+        "For Cozy Corner's next month, write one sentence each for the **best case**, **expected case**, and **worst case** sales performance.",
+        'Then write **one action** Cozy Corner could take now to prepare for the worst case.',
+      ],
     },
     inLessonScenario: {
       title: "PixelPop's Slow Season",
-      prompt: "PixelPop knows that client requests usually slow down during school exam weeks. Using the three scenarios, forecast PixelPop's next exam-week month, and propose one action to prepare in advance.",
+      steps: [
+        'PixelPop knows that client requests usually slow down during school exam weeks.',
+        "**Using the three scenarios**, forecast PixelPop's next exam-week month.",
+        '**Propose one action** to prepare in advance.',
+      ],
     },
     quiz: [
       {
@@ -88,23 +103,30 @@ export const module6Lessons: Lesson[] = [
     moduleId: 'module-6',
     number: '6.3',
     title: 'Cash Flow: Keep the Shop Alive',
-    estimatedMinutes: 35,
+    estimatedMinutes: 20,
     hook: '"DoodleDrop is profitable every month on paper — but almost ran out of cash in March because three big customers all paid late at once."',
-    simplifiedExplanation: 'Cash flow tracks the actual timing of money moving in (inflows) and out (outflows) of a business. A cash-flow projection estimates future inflows and outflows so you can spot a potential shortage before it happens — for example, seeing that rent is due before an expected big payment arrives.\n\nComparing actual vs. projected cash flow regularly (weekly or monthly) helps a business catch surprises early instead of discovering a problem only when the money is already gone.',
-    concept: {
-      body: "DepEd's Grade 12 Business Finance curriculum explicitly teaches tools for managing cash, receivables, and inventory, and Grade 12 ABM (FABM2) has students prepare the Cash Flow Statement itself — the timing-gap problem in this lesson is exactly what both courses are designed to prevent.",
-      sources: [
-        { title: 'Business Finance (Curriculum Guide, Grade 12) — DepEd', url: 'https://lrmds.deped.gov.ph/detail/16007' },
-        { title: 'Fundamentals of Accountancy, Business and Management 2 (Curriculum Guide, Grade 12) — DepEd', url: 'https://lrmds.deped.gov.ph/detail/16013' },
-      ],
-    },
+    beats: [
+      "**Cash flow** is about timing, not totals — money moving in and out, and whether it lines up with when your bills are actually due.",
+      "A **cash-flow projection** flags trouble early: rent's due Tuesday, but your biggest payment isn't landing until Thursday.",
+      "Check **actual vs. projected** every week or month — small timing gaps are easy to fix early, brutal to discover last-minute.",
+    ],
+    whyItMatters: "You can be **profitable on paper** and still run out of cash — timing is what actually keeps the shop running.",
+    quickStat: 'Rule of thumb: profit is an opinion, cash is a fact — a bank balance never lies.',
     activity: {
       title: 'Build a Simple Cash-Flow Projection',
-      prompt: 'For the next 4 weeks, list expected cash IN (from sales) and cash OUT (for supplies, delivery, etc.) for a business of your choice. Identify any week where outflows might exceed inflows, and propose one way to prepare for it.',
+      steps: [
+        'For the next 4 weeks, list expected **cash IN** (from sales) and **cash OUT** (for supplies, delivery, etc.) for a business of your choice.',
+        '**Identify any week** where outflows might exceed inflows.',
+        '**Propose one way** to prepare for it.',
+      ],
     },
     inLessonScenario: {
       title: "DoodleDrop's Timing Gap",
-      prompt: 'DoodleDrop expects ₱4,000 from three big customers in the same week rent for a shared workspace (₱1,500) is due. If even one customer pays late, what happens? Propose one way DoodleDrop could reduce this risk in future months.',
+      steps: [
+        'DoodleDrop expects **₱4,000** from three big customers in the same week that **rent** for a shared workspace (₱1,500) is due.',
+        'If even one customer pays late, **what happens**?',
+        '**Propose one way** DoodleDrop could reduce this risk in future months.',
+      ],
     },
     shopOsTieIn: {
       note: "Shop OS's upcoming-payments view lets you see expected inflows before they arrive, so you can compare them against known upcoming expenses.",
@@ -125,22 +147,28 @@ export const module6Lessons: Lesson[] = [
     moduleId: 'module-6',
     number: '6.4',
     title: 'Plan for a Bad Month',
-    estimatedMinutes: 35,
+    estimatedMinutes: 20,
     hook: '"Every business eventually has a bad month. The businesses that survive are the ones that planned for it before it happened."',
-    simplifiedExplanation: "A bad month usually combines more than one problem at once: lower sales than expected, an unexpected expense (a broken tool, a sudden fee), a delayed payment from a customer, or an inventory problem (too much unsold stock, or not enough to fill an order).\n\nPlanning for a bad month means having at least a small buffer (savings) and a pre-decided priority list — what gets paid first if money is tight (usually: essential supplies and any owed payments before optional spending).",
-    concept: {
-      body: "DepEd's Grade 12 Business Finance curriculum frames financial planning around managing cash, receivables, and inventory together — a 'bad month' is what happens when all three go wrong at once, which is exactly why the planning process is taught as a combined skill, not separate topics.",
-      sources: [
-        { title: 'Business Finance (Curriculum Guide, Grade 12) — DepEd', url: 'https://lrmds.deped.gov.ph/detail/16007' },
-      ],
-    },
+    beats: [
+      "A bad month is rarely just one problem — usually it's **lower sales**, a **surprise expense**, a **late payment**, and an **inventory mismatch**, all landing at once.",
+      "The fix isn't luck — it's a small **buffer** (savings) and a **priority list** decided in advance, before the pressure hits.",
+      "When money's tight: essentials and anything you owe get paid first, everything optional waits.",
+    ],
+    whyItMatters: "**A priority list decided in advance** turns a bad month into a checklist instead of a panic.",
     activity: {
       title: 'Priority List for a Tight Month',
-      prompt: "List 5 possible expenses for a small business (rent, ingredients, owner's personal allowance, marketing, loan repayment). Rank them in the order they should be paid first if money is tight, and justify your #1 and #5 choices.",
+      steps: [
+        "**List 5 possible expenses** for a small business (rent, ingredients, owner's personal allowance, marketing, loan repayment).",
+        '**Rank them** in the order they should be paid first if money is tight.',
+        '**Justify your #1 and #5** choices.',
+      ],
     },
     inLessonScenario: {
       title: "Cozy Corner's Bad Month",
-      prompt: "Cozy Corner faces all four bad-month problems at once this month: sales down 30%, a sewing machine broke (₱1,000 repair), a customer's ₱800 payment is 2 weeks late, and there's ₱2,000 of unsold inventory sitting unused. Using your priority list approach, decide what Cozy Corner should do first, second, and third — and why.",
+      steps: [
+        "Cozy Corner faces all four bad-month problems at once this month: **sales down 30%**, a **sewing machine broke** (₱1,000 repair), a customer's **₱800 payment is 2 weeks late**, and there's **₱2,000 of unsold inventory** sitting unused.",
+        'Using your priority list approach, **decide what Cozy Corner should do first, second, and third** — and why.',
+      ],
     },
     quiz: [
       {
@@ -157,22 +185,29 @@ export const module6Lessons: Lesson[] = [
     moduleId: 'module-6',
     number: '6.5',
     title: 'Budget vs. Forecast vs. Actual',
-    estimatedMinutes: 35,
+    estimatedMinutes: 20,
     hook: '"Three numbers, three different questions: what did you plan, what do you now expect, and what actually happened?"',
-    simplifiedExplanation: "Budget = what you planned before the period started. Forecast = what you currently expect, updated as new information comes in during the period. Actual = what really happened once the period is over.\n\nComparing all three side by side — not just looking at 'actual' alone — shows whether your planning process is improving over time, and whether you're getting better at predicting your own business.",
-    concept: {
-      body: "DepEd's Grade 12 Business Finance curriculum has students prepare budgets and projected financial statements, then compare them against actual results as part of the financial planning process — the same budget/forecast/actual comparison practiced in this lesson.",
-      sources: [
-        { title: 'Business Finance (Curriculum Guide, Grade 12) — DepEd', url: 'https://lrmds.deped.gov.ph/detail/16007' },
-      ],
-    },
+    beats: [
+      "**Budget** = what you planned before the month started. **Forecast** = your updated guess as new info comes in. **Actual** = what really happened.",
+      "Comparing all three side by side shows whether your predictions are getting **sharper over time** — not just whether you hit the number.",
+    ],
+    whyItMatters: "**Comparing budget, forecast, and actual** turns every month into practice for predicting your own business better.",
+    quickStat: "PixelPop tracks all three every month — not to catch itself being wrong, but to get less wrong next time.",
     activity: {
       title: 'Three-Column Comparison',
-      prompt: 'Create a 3-column table (Budget / Forecast / Actual) for one month of sales for any SproutSquad business. Fill in believable numbers, then write one sentence explaining the biggest gap between any two columns and a possible reason for it.',
+      steps: [
+        'Create a **3-column table** (Budget / Forecast / Actual) for one month of sales for any SproutSquad business.',
+        '**Fill in believable numbers** for each column.',
+        'Write **one sentence** explaining the biggest gap between any two columns and a possible reason for it.',
+      ],
     },
     inLessonScenario: {
       title: "Crumb & Co.'s Report Card",
-      prompt: "Crumb & Co. budgeted ₱6,000 in sales, revised its forecast mid-month to ₱7,200 after a surprise bulk order, and actually earned ₱6,800. Explain what each number tells Crumb & Co., and whether this was a 'good' or 'concerning' result overall.",
+      steps: [
+        'Crumb & Co. **budgeted ₱6,000** in sales, **revised its forecast** mid-month to ₱7,200 after a surprise bulk order, and **actually earned ₱6,800**.',
+        '**Explain what each number tells** Crumb & Co.',
+        'Was this a "**good**" or "**concerning**" result overall?',
+      ],
     },
     shopOsTieIn: {
       note: "Shop OS lets you set a monthly sales goal (your budget) and compares it automatically against actual results at month's end.",
@@ -181,8 +216,13 @@ export const module6Lessons: Lesson[] = [
     quiz: [
       {
         id: 'lesson-6-5-q1',
-        format: 'short_answer',
+        format: 'match',
         prompt: 'Match: (a) Budget, (b) Forecast, (c) Actual — to: (1) what really happened, (2) what you planned, (3) your current updated expectation.',
+        pairs: [
+          { left: 'Budget', right: 'what you planned' },
+          { left: 'Forecast', right: 'your current updated expectation' },
+          { left: 'Actual', right: 'what really happened' },
+        ],
         modelAnswer: 'a-2, b-3, c-1.',
         explanation: 'Budget is the original plan made before the period started, forecast is the running updated estimate during the period, and actual is the final real result once it ends.',
       },

@@ -19,23 +19,27 @@ export const module3Lessons: Lesson[] = [
     moduleId: 'module-3',
     number: '3.1',
     title: 'Keep Business Money Separate',
-    estimatedMinutes: 35,
+    estimatedMinutes: 20,
     hook: "\"Miggy used his snack money to buy Cozy Corner supplies, then used shop earnings to buy lunch. Two months later, he had no idea if the business was actually making money.\"",
-    simplifiedExplanation: "One of the first habits every entrepreneur should build is keeping business money separate from personal money — even a simple envelope, notebook, or separate e-wallet counts. When personal and business money mix, it becomes almost impossible to tell if the business is actually profitable, and it makes basic recordkeeping (tracking what comes in and goes out) far harder.\n\nGood recordkeeping doesn't require fancy software when you're starting out. It requires consistency: writing down every sale and every expense, even small ones, as they happen — not from memory at the end of the month.",
-    concept: {
-      body: "The Philippine Department of Education's Grade 11 ABM curriculum (Fundamentals of Accountancy, Business and Management 1) teaches recordkeeping and the reasons businesses keep books of accounts from the very first lessons — separating business and personal money is the foundation everything else in this module builds on.",
-      sources: [
-        { title: 'Fundamentals of Accountancy, Business and Management 1 (Curriculum Guide, Grade 11) — DepEd', url: 'https://lrmds.deped.gov.ph/detail/16012' },
-        { title: 'Manage Your Finances — U.S. Small Business Administration (SBA)', url: 'https://www.sba.gov/business-guide/manage-your-business/manage-your-finances' },
-      ],
-    },
+    beats: [
+      "**Separate your money** from day one — a simple envelope, notebook, or dedicated e-wallet all count. Mix personal and business cash and you'll never know if you're actually profitable.",
+      "**Recordkeeping** doesn't need fancy software to start. It needs consistency — log every sale and expense as it happens, not from memory at the end of the month.",
+    ],
+    whyItMatters: "Mixed money means mixed-up answers — **you can't manage what you can't see clearly**.",
+    quickStat: "Even one 'quick borrow' from the register a week can turn a profitable month into a loss on paper.",
     activity: {
       title: 'Separate or Mixed?',
-      prompt: "Review 5 short transaction scenarios (e.g., 'bought ingredients using shop earnings,' 'used shop earnings to buy a phone case'). Label each as 'business expense' or 'personal expense — should NOT come from the shop.'",
+      steps: [
+        "**Review 5 short transaction scenarios** (e.g., 'bought ingredients using shop earnings,' 'used shop earnings to buy a phone case').",
+        "**Label each** as 'business expense' or 'personal expense — should NOT come from the shop.'",
+      ],
     },
     inLessonScenario: {
       title: "Crumb & Co.'s Missing Money",
-      prompt: "Crumb & Co. made ₱4,000 in sales this month but the owner isn't sure how much profit remains because some cash was used for snacks, some for ingredients, and some was lent to a friend. Propose one simple system (using a notebook, envelope, or e-wallet) Crumb & Co. could start using this week to avoid this next month.",
+      steps: [
+        "Crumb & Co. made ₱4,000 in sales this month, but the owner isn't sure how much profit remains because some cash was used for snacks, some for ingredients, and some was lent to a friend.",
+        '**Propose one simple system** (using a notebook, envelope, or e-wallet) Crumb & Co. could start using this week to avoid this next month.',
+      ],
     },
     shopOsTieIn: {
       note: "Shop OS keeps every sale and expense in one place automatically — once your habit of separating money is set, Shop OS becomes the 'notebook' that never mixes things up.",
@@ -56,22 +60,28 @@ export const module3Lessons: Lesson[] = [
     moduleId: 'module-3',
     number: '3.2',
     title: 'Money In, Money Out',
-    estimatedMinutes: 35,
+    estimatedMinutes: 20,
     hook: "\"Crumb & Co. sells a box of cookies for ₱150. But how much of that ₱150 is actually profit, once you count flour, sugar, packaging, and the tricycle ride to deliver it?\"",
-    simplifiedExplanation: "Revenue is all the money a business brings in from sales, before subtracting anything. Expenses are the costs of running the business. One special category of expense is COGS (Cost of Goods Sold) — the direct cost of making or acquiring exactly what you sold: direct materials (ingredients, fabric, beads), packaging, and transit/shipping to get the product to the customer. Other costs, like rent, marketing, or a phone bill, are operating expenses — they exist even if you sell nothing that day.\n\nExample: Crumb & Co. sells a box of cookies for ₱150 (Revenue). The flour, sugar, butter, and box cost ₱60 total (COGS). Revenue − COGS = ₱90 Gross Profit — the money left over before other operating costs like rent or delivery fuel are subtracted.",
-    concept: {
-      body: "DepEd's Grade 11 ABM curriculum has students prepare the Statement of Cost of Goods Sold and Gross Profit for a merchandising business — the exact calculation (Revenue − COGS = Gross Profit) taught in this lesson.",
-      sources: [
-        { title: 'Fundamentals of Accountancy, Business and Management 1 (Curriculum Guide, Grade 11) — DepEd', url: 'https://lrmds.deped.gov.ph/detail/16012' },
-      ],
-    },
+    beats: [
+      "**Revenue** is every peso that comes in from sales, before subtracting anything. **COGS** (Cost of Goods Sold) is the direct cost of what you actually sold — materials, packaging, and getting it to the customer.",
+      "Rent, marketing, your phone bill? Those are **operating expenses** — they show up whether you sell anything today or not.",
+      "**Revenue − COGS = Gross Profit.** Crumb & Co. sells cookies for ₱150 and spends ₱60 on flour, sugar, butter, and the box — that's ₱90 gross profit, before rent or delivery even enter the picture.",
+    ],
+    whyItMatters: "Mix up COGS with operating expenses and your **pricing math breaks** — you'll think you're earning more than you actually are.",
+    quickStat: "Forgetting packaging costs in your COGS is one of the most common pricing mistakes — even ₱5 a unit adds up fast at 100 sales.",
     activity: {
       title: 'Sort the Costs',
-      prompt: "You'll see a list of 8 costs for a small snack business (flour, rent, packaging, social media ads, sugar, delivery fuel for that specific order, phone bill, box printing). Sort each into 'COGS' or 'Operating Expense.'",
+      steps: [
+        "You'll see a list of **8 costs** for a small snack business (flour, rent, packaging, social media ads, sugar, delivery fuel for that specific order, phone bill, box printing).",
+        "**Sort each** into 'COGS' or 'Operating Expense.'",
+      ],
     },
     inLessonScenario: {
       title: "Cozy Corner's Cost Breakdown",
-      prompt: 'Cozy Corner sells a plush keychain for ₱180. Direct materials (fabric, stuffing, keyring) cost ₱65 and packaging costs ₱10. Calculate: Revenue, COGS, and Gross Profit for one keychain.',
+      steps: [
+        'Cozy Corner sells a plush keychain for ₱180. Direct materials (fabric, stuffing, keyring) cost ₱65 and packaging costs ₱10.',
+        '**Calculate**: Revenue, COGS, and Gross Profit for one keychain.',
+      ],
     },
     shopOsTieIn: {
       note: "Enter your product's COGS directly into Shop OS when you list a product — this lets Shop OS calculate your gross profit and margin automatically every time you make a sale.",
@@ -108,23 +118,28 @@ export const module3Lessons: Lesson[] = [
     moduleId: 'module-3',
     number: '3.3',
     title: 'Revenue Recognition: When Did You Earn It?',
-    estimatedMinutes: 35,
+    estimatedMinutes: 20,
     hook: "\"PixelPop finishes a logo design on March 28th but the client doesn't pay until April 3rd. Did PixelPop earn that money in March or April?\"",
-    simplifiedExplanation: "Revenue recognition is about timing — deciding when to count income as earned. Under the cash method, you record income only when cash is actually received, and expenses only when actually paid. Under the accrual method, you record income when it's earned (the work is done or the product delivered) even if payment comes later, and expenses when they're incurred, not necessarily when paid.\n\nMost very small or beginner businesses use the simpler cash method. As a business grows and starts offering credit terms or holding inventory, accrual accounting gives a more accurate month-to-month picture of performance.",
-    concept: {
-      body: "DepEd's Grade 11 ABM curriculum has students explain the accounting concepts and principles behind financial statements, which include the accrual basis of accounting used under Philippine Financial Reporting Standards. The cash-vs-accrual distinction itself is universal; the U.S. IRS's Publication 538 is cited here only for its especially clear plain-language definitions of the two methods.",
-      sources: [
-        { title: 'Fundamentals of Accountancy, Business and Management 1 (Curriculum Guide, Grade 11) — DepEd', url: 'https://lrmds.deped.gov.ph/detail/16012' },
-        { title: 'Publication 538: Accounting Periods and Methods — Internal Revenue Service (IRS)', url: 'https://www.irs.gov/publications/p538' },
-      ],
-    },
+    beats: [
+      "**Revenue recognition** is about timing — when do you actually count income as earned? Two methods answer that differently.",
+      "**Cash method**: record income only when cash lands in your hand, expenses only when paid. **Accrual method**: record income when it's earned — work done, product delivered — even if payment comes later.",
+      "Most brand-new businesses start with cash — it's simpler. Once you're extending credit or holding inventory, accrual gives a truer month-to-month picture.",
+    ],
+    whyItMatters: "Use the wrong method and a great month can look like a loss — **timing changes the whole story**.",
     activity: {
       title: 'Cash or Accrual?',
-      prompt: 'For each scenario, decide whether the business would record the income in March or April under (a) the cash method and (b) the accrual method: PixelPop finishes work March 28, gets paid April 3.',
+      steps: [
+        'PixelPop finishes work March 28, gets paid April 3.',
+        '**Decide** whether the business would record the income in March or April under **(a) the cash method** and **(b) the accrual method**.',
+      ],
     },
     inLessonScenario: {
       title: "DoodleDrop's Batch Order",
-      prompt: 'DoodleDrop delivers 50 stickers to a school club on May 30 but the club treasurer pays on June 5 (end of the school budget cycle). Under the accrual method, in which month should DoodleDrop record this as revenue? Why might this matter if DoodleDrop wants to know how well May actually performed?',
+      steps: [
+        'DoodleDrop delivers 50 stickers to a school club on May 30, but the club treasurer pays on June 5 (end of the school budget cycle).',
+        '**Under the accrual method**, in which month should DoodleDrop record this as revenue?',
+        'Why might this matter if DoodleDrop wants to know how well May actually performed?',
+      ],
     },
     jurisdictionNote: "For Philippine tax filing, the BIR has its own rules on which businesses may use the cash basis versus the accrual basis, and PFRS (Philippine Financial Reporting Standards, based on IFRS) generally requires accrual accounting for financial statements. This lesson teaches the underlying concept; check current BIR rules or a licensed accountant before choosing a method for real tax filing.",
     quiz: [
@@ -151,23 +166,29 @@ export const module3Lessons: Lesson[] = [
     moduleId: 'module-3',
     number: '3.4',
     title: 'Cash ≠ Profit',
-    estimatedMinutes: 35,
+    estimatedMinutes: 20,
     hook: "\"Crumb & Co.'s books say they made ₱8,000 profit this month. But there's only ₱1,200 in the cash box. What happened?\"",
-    simplifiedExplanation: "A business can be profitable on paper and still run out of cash — the actual money available right now. This happens when: customers haven't paid yet (unpaid orders / accounts receivable), bills are due later even though the expense already happened, or cash was spent buying inventory that hasn't sold yet.\n\nProfit measures performance over time; cash measures what's actually available today. This is one of the most common reasons small businesses struggle even when they look successful.",
-    concept: {
-      body: "DepEd's Grade 12 ABM curriculum (Fundamentals of Accountancy, Business and Management 2) devotes a full topic to the Cash Flow Statement precisely because profit and cash tell different stories. The FDIC/SBA's Money Smart for Small Business puts it plainly: 'even profitable businesses can fail if they don't have the right amount of cash available at the right time.'",
-      sources: [
-        { title: 'Fundamentals of Accountancy, Business and Management 2 (Curriculum Guide, Grade 12) — DepEd', url: 'https://lrmds.deped.gov.ph/detail/16013' },
-        { title: 'Money Smart for Small Business — Module 10: Managing Cash Flow — FDIC & SBA', url: 'https://www.fdic.gov/consumer-resource-center/mssb-m10-pg.pdf' },
-      ],
-    },
+    beats: [
+      "**Profitable on paper** doesn't always mean cash in the register. Unpaid customer orders, bills due later, or cash tied up in unsold inventory can all eat into what's actually sitting in the drawer.",
+      "**Profit** measures performance over time. **Cash** measures what you can spend right now. Two different questions, two different answers.",
+    ],
+    whyItMatters: "Even a genuinely profitable business can **run out of cash and fail** if the timing doesn't line up — this trips up more small businesses than bad products ever do.",
+    quickStat: "Rule of thumb: if more than 20-30% of your revenue is sitting in unpaid orders, double-check your cash cushion before you spend it.",
     activity: {
       title: 'Where Did the Cash Go?',
-      prompt: "Crumb & Co. shows ₱8,000 profit but only ₱1,200 cash. Given: ₱3,500 in unpaid customer orders, ₱2,000 spent on flour bought in bulk (not yet all used), ₱1,300 owed to a supplier due next week — explain in your own words where the 'missing' cash actually is.",
+      steps: [
+        'Crumb & Co. shows ₱8,000 profit but only ₱1,200 cash.',
+        '**Given**: ₱3,500 in unpaid customer orders, ₱2,000 spent on flour bought in bulk (not yet all used), and ₱1,300 owed to a supplier due next week.',
+        "**Explain in your own words** where the 'missing' cash actually is.",
+      ],
     },
     inLessonScenario: {
       title: 'The Big Order Trap',
-      prompt: "PixelPop accepts a huge client order and spends ₱5,000 upfront on premium design software to complete it, expecting ₱15,000 in revenue. The client won't pay until 30 days after delivery. What cash problem could PixelPop face in the meantime, even though the order is very profitable on paper?",
+      steps: [
+        'PixelPop accepts a huge client order and spends ₱5,000 upfront on premium design software to complete it, expecting ₱15,000 in revenue.',
+        "The client won't pay until **30 days after delivery**.",
+        '**What cash problem** could PixelPop face in the meantime, even though the order is very profitable on paper?',
+      ],
     },
     shopOsTieIn: {
       note: "Shop OS's dashboard shows both profit AND current cash on hand as separate numbers — checking both regularly helps you avoid the 'profitable but broke' trap.",
@@ -196,22 +217,31 @@ export const module3Lessons: Lesson[] = [
     moduleId: 'module-3',
     number: '3.5',
     title: 'The Business Equation',
-    estimatedMinutes: 35,
+    estimatedMinutes: 20,
     hook: '"Every business, no matter how small, follows one equation that always has to balance — like a seesaw that can never tip."',
-    simplifiedExplanation: "Assets = Liabilities + Equity. This is the accounting equation, and it must always balance. Assets are things the business owns that have value (cash, inventory, equipment, money owed to it by customers — called accounts receivable). Liabilities are what the business owes to others (money owed to suppliers — accounts payable — or loans). Equity is the owner's stake — what's left over for the owner after liabilities are subtracted from assets, including the owner's original investment.\n\nIf Cozy Corner has ₱10,000 in assets and owes ₱3,000 to a supplier, the owner's equity must be ₱7,000.",
-    concept: {
-      body: "The accounting equation is taught directly in DepEd's Grade 11 ABM curriculum: students are asked to 'illustrate the accounting equation' and 'perform operations involving simple cases with the use of accounting equation.'",
-      sources: [
-        { title: 'Fundamentals of Accountancy, Business and Management 1 (Curriculum Guide, Grade 11) — DepEd', url: 'https://lrmds.deped.gov.ph/detail/16012' },
-      ],
-    },
+    beats: [
+      "**Assets = Liabilities + Equity.** This is the accounting equation, and it always has to balance — no exceptions.",
+      "**Assets** are everything the business owns with value: cash, inventory, equipment, even money customers owe you (**accounts receivable**). **Liabilities** are what you owe others — suppliers (**accounts payable**), loans.",
+      "**Equity** is what's left for the owner once liabilities are subtracted from assets. Cozy Corner with ₱10,000 in assets and ₱3,000 owed to a supplier? Owner's equity is exactly ₱7,000.",
+    ],
+    whyItMatters: "If the equation doesn't balance, **something in your records is wrong** — it's the fastest gut-check for catching mistakes.",
+    quickStat: "Every peso a business owns is either borrowed (a liability) or earned by the owner (equity) — there's no third option.",
     activity: {
       title: 'Balance the Equation',
-      prompt: 'Fill in the missing number for 3 mini-cases: (1) Assets ₱12,000, Liabilities ₱4,500, Equity = ? (2) Liabilities ₱2,000, Equity ₱9,000, Assets = ? (3) Assets ₱6,300, Equity ₱6,300, Liabilities = ?',
+      steps: [
+        '**Fill in the missing number** for 3 mini-cases.',
+        '**Case 1**: Assets ₱12,000, Liabilities ₱4,500, Equity = ?',
+        '**Case 2**: Liabilities ₱2,000, Equity ₱9,000, Assets = ?',
+        '**Case 3**: Assets ₱6,300, Equity ₱6,300, Liabilities = ?',
+      ],
     },
     inLessonScenario: {
       title: "Cozy Corner's Snapshot",
-      prompt: "Cozy Corner has: ₱2,500 cash, ₱1,800 unsold inventory, and ₱900 owed by a customer (accounts receivable). It owes ₱1,200 to a fabric supplier (accounts payable). Calculate total assets, then calculate owner's equity.",
+      steps: [
+        'Cozy Corner has: ₱2,500 cash, ₱1,800 unsold inventory, and ₱900 owed by a customer (accounts receivable).',
+        'It owes ₱1,200 to a fabric supplier (accounts payable).',
+        "**Calculate total assets**, then calculate **owner's equity**.",
+      ],
     },
     shopOsTieIn: {
       note: "Shop OS's financial summary is built on this same equation — your 'Owner's Equity' figure updates automatically as your assets and what you owe change.",
@@ -241,29 +271,36 @@ export const module3Lessons: Lesson[] = [
     moduleId: 'module-3',
     number: '3.6',
     title: 'Meet the Financial Statements',
-    estimatedMinutes: 35,
+    estimatedMinutes: 20,
     hook: "\"If a bank asked to see Crumb & Co.'s finances, which single piece of paper would tell the whole story? The answer: no single one — you need three, and they're connected.\"",
-    simplifiedExplanation: "The Income Statement shows performance over a period of time — revenue, expenses, and resulting profit or loss. The Balance Sheet is a snapshot at one specific moment — what the business owns (assets) and owes (liabilities), and the resulting equity. The Cash Flow Statement tracks the actual cash moving in and out during a period, separate from profit.\n\nThese three connect: profit from the Income Statement flows into equity on the Balance Sheet, and the Cash Flow Statement explains why cash on hand doesn't always match reported profit.",
-    concept: {
-      body: "DepEd's Grade 12 ABM curriculum has students prepare and connect all of these: the Statement of Financial Position, Statement of Comprehensive Income, Statement of Changes in Equity, and Cash Flow Statement. The U.S. SEC's investor guide makes the same point in plainer terms: 'No one financial statement tells the complete story. But combined, they provide very powerful information.'",
-      sources: [
-        { title: 'Fundamentals of Accountancy, Business and Management 2 (Curriculum Guide, Grade 12) — DepEd', url: 'https://lrmds.deped.gov.ph/detail/16013' },
-        { title: "Beginners' Guide to Financial Statements — U.S. Securities and Exchange Commission (SEC)", url: 'https://www.sec.gov/about/reports-publications/beginners-guide-financial-statements' },
-      ],
-    },
+    beats: [
+      "The **Income Statement** shows performance over time — revenue, expenses, and the resulting profit or loss for a month, a quarter, whatever period you pick.",
+      "The **Balance Sheet** is a snapshot at one exact moment: what you own, what you owe, what's left over. The **Cash Flow Statement** tracks actual cash moving in and out, separate from profit.",
+      "They connect: profit from the Income Statement flows into equity on the Balance Sheet, and the Cash Flow Statement explains why cash on hand doesn't always match reported profit.",
+    ],
+    whyItMatters: "**No single statement tells the whole story** — reading just one is like judging a business with half a book.",
     activity: {
       title: 'Match the Statement',
-      prompt: "Match each question to the correct statement: (1) 'How much profit did we make in March?' (2) 'What do we own and owe right now?' (3) 'Did we actually receive enough cash to pay rent this week?'",
+      steps: [
+        '**Match each question** to the correct statement.',
+        '**(1)** "How much profit did we make in March?"',
+        '**(2)** "What do we own and owe right now?"',
+        '**(3)** "Did we actually receive enough cash to pay rent this week?"',
+      ],
     },
     inLessonScenario: {
       title: 'Investor Questions',
-      prompt: "A relative offers to lend PixelPop ₱10,000 but wants to see 'how the business is doing' first. Which financial statement(s) should PixelPop prepare, and what specific question does each one answer for the lender?",
+      steps: [
+        "A relative offers to lend PixelPop ₱10,000 but wants to see 'how the business is doing' first.",
+        '**Which financial statement(s)** should PixelPop prepare?',
+        '**What specific question** does each one answer for the lender?',
+      ],
     },
     shopOsTieIn: {
       note: 'Shop OS automatically generates simplified versions of all three statements from your recorded sales and expenses — no separate bookkeeping software needed to get started.',
       deepLink: { sellerTab: 'overview' },
     },
-    jurisdictionNote: "Under Philippine Financial Reporting Standards (PFRS), the 'Income Statement' is officially called the Statement of Comprehensive Income (SCI), and the 'Balance Sheet' is officially called the Statement of Financial Position (SFP) — these are the exact terms used on official Philippine financial statements, tax filings, and in DepEd's own ABM curriculum.",
+    jurisdictionNote: "Under Philippine Financial Reporting Standards (PFRS), the 'Income Statement' is officially called the Statement of Comprehensive Income (SCI), and the 'Balance Sheet' is officially called the Statement of Financial Position (SFP) — these are the exact terms you'll see on official Philippine financial statements and tax filings.",
     quiz: [
       {
         id: 'lesson-3-6-q1',
@@ -288,23 +325,28 @@ export const module3Lessons: Lesson[] = [
     moduleId: 'module-3',
     number: '3.7',
     title: 'Accounting Software & Records',
-    estimatedMinutes: 35,
+    estimatedMinutes: 20,
     hook: "\"Aya used to track DoodleDrop's sales in her memory. Now that she has 40 regular customers, memory isn't good enough anymore.\"",
-    simplifiedExplanation: "As a business grows, records — organized, dated information about every sale, expense, and customer interaction — become essential, not optional. Good records let an owner answer basic questions instantly: How much did we sell this week? What's our best-selling product? Are we actually profitable? Records also matter for tax registration and compliance once a business formalizes.\n\nElectronic records (spreadsheets, accounting apps, or built-in tools like Shop OS) reduce errors compared to memory or scattered paper notes, and make it much easier to spot problems early.",
-    concept: {
-      body: "DepEd's Grade 11 ABM curriculum has students identify the uses of the two books of accounts (journals and ledgers) and prepare a chart of accounts — the formal version of the recordkeeping habit this lesson introduces. Once a business registers with the BIR, keeping official books of accounts becomes a legal requirement, not just good practice.",
-      sources: [
-        { title: 'Fundamentals of Accountancy, Business and Management 1 (Curriculum Guide, Grade 11) — DepEd', url: 'https://lrmds.deped.gov.ph/detail/16012' },
-        { title: 'Registration Requirements — Philippine Bureau of Internal Revenue (BIR)', url: 'https://www.bir.gov.ph/registration-requirements-details' },
-      ],
-    },
+    beats: [
+      "**Records** — organized, dated info on every sale and expense — stop being optional once you have more customers than you can remember.",
+      "Good records answer instantly: how much did we sell this week, what's our best-seller, are we actually profitable? No guessing required.",
+      "A spreadsheet or an app like Shop OS beats memory and scattered paper notes — fewer errors, and problems get caught early instead of at month's end.",
+    ],
+    whyItMatters: "Once you register with the BIR, proper recordkeeping stops being a nice habit and becomes a **legal requirement** — build it early and it's just routine by then.",
     activity: {
       title: 'Design a Simple Record Sheet',
-      prompt: "Sketch a simple table with columns you'd use to record every sale for a week (e.g., Date, Product, Quantity, Price, Total, Payment Method). Add one column that would help you calculate profit later.",
+      steps: [
+        "**Sketch a simple table** with columns you'd use to record every sale for a week (e.g., Date, Product, Quantity, Price, Total, Payment Method).",
+        '**Add one column** that would help you calculate profit later.',
+      ],
     },
     inLessonScenario: {
       title: 'DoodleDrop Outgrows Memory',
-      prompt: "DoodleDrop now has 40 regular customers and can no longer remember who ordered what. What specific problems could this cause for pricing, restocking, and tax registration later, and what's the simplest first step DoodleDrop could take this week?",
+      steps: [
+        'DoodleDrop now has 40 regular customers and can no longer remember who ordered what.',
+        '**What specific problems** could this cause for pricing, restocking, and tax registration later?',
+        "**What's the simplest first step** DoodleDrop could take this week?",
+      ],
     },
     shopOsTieIn: {
       note: "This is exactly what Shop OS's order history and sales log are built for — every transaction is recorded automatically the moment a sale happens.",
