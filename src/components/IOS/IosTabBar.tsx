@@ -43,7 +43,7 @@ export const IosTabBar: React.FC<IosTabBarProps> = ({ activeTab, onTabChange }) 
     },
     {
       id: 'seller',
-      label: 'Shop OS',
+      label: 'Shop',
       icon: 'simulation-retail',
       badge: pendingSellerOrders > 0 ? pendingSellerOrders : undefined,
       badgeColor: 'bg-[#FFD3BA] text-[#7A341A]',

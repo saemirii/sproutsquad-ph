@@ -111,7 +111,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenCart, onOpenCreateBusiness
               }`}
             >
               <Icon name="mascot-owl" className="w-4 h-4" />
-              <span>Seller OS & Health</span>
+              <span>Shop & Health</span>
               {pendingSellerOrders > 0 && (
                 <span className="inline-flex items-center justify-center w-5 h-5 text-[10px] font-black text-[#7A341A] bg-[#FFD3BA] rounded-full border border-[#F8BA9E]">
                   {pendingSellerOrders}
@@ -274,7 +274,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenCart, onOpenCreateBusiness
             }`}
           >
             <Icon name="mascot-owl" className="w-3.5 h-3.5" />
-            <span>Seller OS</span>
+            <span>Shop</span>
           </button>
           <button
             onClick={() => setCurrentView('academy')}

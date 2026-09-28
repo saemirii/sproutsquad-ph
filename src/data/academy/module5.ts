@@ -94,7 +94,7 @@ export const module5Lessons: Lesson[] = [
       ],
     },
     shopOsTieIn: {
-      note: "Shop OS's storefront analytics show views, clicks, and completed orders — the exact stages of your funnel — so you can see where customers are dropping off.",
+      note: "The Shop tab's storefront analytics show views, clicks, and completed orders — the exact stages of your funnel — so you can see where customers are dropping off.",
       deepLink: { sellerTab: 'overview' },
     },
     quiz: [
@@ -139,7 +139,7 @@ export const module5Lessons: Lesson[] = [
       ],
     },
     shopOsTieIn: {
-      note: "Shop OS calculates your view-to-order conversion rate automatically in your analytics tab, so you don't need to do this math by hand once your shop is live.",
+      note: "Shop calculates your view-to-order conversion rate automatically in your analytics tab, so you don't need to do this math by hand once your shop is live.",
       deepLink: { sellerTab: 'overview' },
     },
     quiz: [
@@ -191,7 +191,7 @@ export const module5Lessons: Lesson[] = [
       ],
     },
     shopOsTieIn: {
-      note: "Shop OS's weekly summary highlights the biggest changes automatically — use the three-question framework any time a number surprises you.",
+      note: "The Shop tab's weekly summary highlights the biggest changes automatically — use the three-question framework any time a number surprises you.",
       deepLink: { sellerTab: 'overview' },
     },
     quiz: [
@@ -235,7 +235,7 @@ export const module5Lessons: Lesson[] = [
       illustration: 'conversion-funnel',
     },
     shopOsTieIn: {
-      note: "This kind of full-funnel view is exactly what Shop OS's analytics dashboard is built to show at a glance.",
+      note: "This kind of full-funnel view is exactly what the Shop tab's analytics dashboard is built to show at a glance.",
       deepLink: { sellerTab: 'overview' },
     },
     quiz: [

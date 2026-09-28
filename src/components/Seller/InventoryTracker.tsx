@@ -56,10 +56,10 @@ export const InventoryTracker: React.FC = () => {
             className="btn-bouncy w-full rounded-xl bg-[#207559] hover:bg-[#194E3B] text-white text-xs font-black py-2.5 flex items-center justify-center gap-1.5"
           >
             <Download className="w-3.5 h-3.5" />
-            Export to Google Sheets
+            Export CSV
           </button>
           <p className="text-[10px] text-[#8C7A6D] leading-4">
-            Downloads a CSV snapshot of your current inventory — open Google Sheets → File → Import → Upload to bring it in. This is a one-way export, not a live connected sync.
+            Downloads a CSV snapshot of your current inventory — open it in Excel, Google Sheets, or Numbers.
           </p>
         </>
       )}

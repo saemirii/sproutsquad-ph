@@ -104,6 +104,8 @@ export const ExpenseTracker: React.FC = () => {
   const sortedCategoryTotals = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1]);
 
   const totalExpense = sellerExpenses.reduce((sum, e) => sum + e.amount, 0);
+  const cogsTotal = COGS_CATEGORIES.reduce((sum, cat) => sum + (categoryTotals[cat] || 0), 0);
+  const cogsShareOfSpending = totalExpense > 0 ? Math.round((cogsTotal / totalExpense) * 100) : 0;
 
   const handleSaveExpense = (e: React.FormEvent) => {
     e.preventDefault();
@@ -171,13 +173,23 @@ export const ExpenseTracker: React.FC = () => {
       </div>
 
       {/* Expense Insights Summary Card */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="bg-white p-5 rounded-3xl border border-[#EDE4D8] shadow-xs">
-          <span className="text-[11px] font-bold text-[#8C7A6D]">Total Recorded Expenses</span>
+          <span className="text-[11px] font-bold text-[#8C7A6D]">Total Spending</span>
           <div className="text-2xl font-black text-[#8C3A27] font-['Nunito',sans-serif] mt-1">
             {formatPHP(totalExpense)}
           </div>
           <p className="text-[11px] text-[#7A6B5F] mt-1">{sellerExpenses.length} transaction entries</p>
+        </div>
+
+        <div className="bg-white p-5 rounded-3xl border border-[#EDE4D8] shadow-xs">
+          <span className="text-[11px] font-bold text-[#8C7A6D]">Cost of Goods Sold (COGS)</span>
+          <div className="text-2xl font-black text-[#194E3B] font-['Nunito',sans-serif] mt-1">
+            {formatPHP(cogsTotal)}
+          </div>
+          <p className="text-[11px] text-[#7A6B5F] mt-1">
+            {cogsShareOfSpending}% of total spending · Inventory, Materials & Supplies, Packaging
+          </p>
         </div>
 
         <div className="bg-white p-5 rounded-3xl border border-[#EDE4D8] shadow-xs sm:col-span-2">

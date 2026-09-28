@@ -49,7 +49,7 @@ export const module1Lessons: Lesson[] = [
       ],
     },
     shopOsTieIn: {
-      note: "Once you've written your Problem → Customer → Solution map, save it as your business's 'About' description in Shop OS — this is the story customers see when they visit your storefront.",
+      note: "Once you've written your Problem → Customer → Solution map, save it as your business's 'About' description in Shop — this is the story customers see when they visit your storefront.",
       deepLink: { sellerTab: 'settings' },
     },
     quiz: [
@@ -159,7 +159,7 @@ export const module1Lessons: Lesson[] = [
       ],
     },
     shopOsTieIn: {
-      note: 'Your target segment and positioning statement become the description and tags customers see when searching for your shop in Shop OS — clear positioning helps the right customers find you faster.',
+      note: 'Your target segment and positioning statement become the description and tags customers see when searching for your shop in Shop — clear positioning helps the right customers find you faster.',
       deepLink: { sellerTab: 'settings' },
     },
     quiz: [
@@ -213,7 +213,7 @@ export const module1Lessons: Lesson[] = [
       ],
     },
     shopOsTieIn: {
-      note: "Your value proposition becomes your storefront's headline in Shop OS — the first sentence customers read before deciding to browse further.",
+      note: "Your value proposition becomes your storefront's headline in Shop — the first sentence customers read before deciding to browse further.",
       deepLink: { sellerTab: 'settings' },
     },
     quiz: [
@@ -265,7 +265,7 @@ export const module1Lessons: Lesson[] = [
       ],
     },
     shopOsTieIn: {
-      note: 'Consistent messaging in Shop OS (shop name, tagline, and product descriptions) helps returning customers instantly recognize and trust your storefront.',
+      note: 'Consistent messaging in Shop (shop name, tagline, and product descriptions) helps returning customers instantly recognize and trust your storefront.',
       deepLink: { sellerTab: 'settings' },
     },
     quiz: [

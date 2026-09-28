@@ -35,7 +35,7 @@ interface SkillDelta {
  * screen instead of just dropping the learner back to the module. */
 export const LessonReader: React.FC<LessonReaderProps> = ({ lesson, onBack }) => {
   const { modules, completedLessonIds, completedChallengeIds, completeLessonWithQuiz, clearLastReward } = useAcademy();
-  const { setSellerTab, setCurrentView } = useSession();
+  const { setSellerTab, setPendingNavigation } = useSession();
   const isCompleted = completedLessonIds.includes(lesson.id);
   const [stepIndex, setStepIndex] = useState(0);
   const [revealedBeats, setRevealedBeats] = useState(1);
@@ -43,8 +43,12 @@ export const LessonReader: React.FC<LessonReaderProps> = ({ lesson, onBack }) =>
 
   const handleShopOsTieIn = () => {
     if (!lesson.shopOsTieIn?.deepLink) return;
-    setCurrentView('seller');
+    // The live iOS shell's active tab lives in App.tsx local state, not in
+    // AppContext — setCurrentView('seller') alone updates a context value
+    // App.tsx never reads. pendingNavigation is the established bridge for
+    // switching tabs from outside App.tsx (see notification deep-links).
     setSellerTab(lesson.shopOsTieIn.deepLink.sellerTab);
+    setPendingNavigation({ tab: 'seller' });
   };
 
   const handleQuizComplete = async (isFirstAttemptAllCorrect: boolean) => {
@@ -172,10 +176,10 @@ export const LessonReader: React.FC<LessonReaderProps> = ({ lesson, onBack }) =>
       ? [
           {
             key: 'shopos',
-            label: '🌿 Apply: In Shop OS',
+            label: '🌿 Apply: In Shop',
             render: () => (
               <div className="p-4 bg-[#F2FBF7] rounded-2xl border border-[#9FD9C3] space-y-2">
-                <h3 className="font-bold text-xs sm:text-sm text-[#194E3B]">Apply It in Shop OS</h3>
+                <h3 className="font-bold text-xs sm:text-sm text-[#194E3B]">Apply It in Shop</h3>
                 <p className="text-xs sm:text-sm text-[#194E3B] leading-relaxed"><RichText text={lesson.shopOsTieIn!.note} /></p>
                 {lesson.shopOsTieIn!.deepLink && (
                   <button

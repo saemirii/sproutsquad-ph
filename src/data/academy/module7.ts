@@ -43,7 +43,7 @@ export const module7Lessons: Lesson[] = [
       ],
     },
     shopOsTieIn: {
-      note: 'Shop OS shows gross profit per product automatically once you enter COGS — useful for spotting which products like Cookie B are quietly underperforming.',
+      note: 'Shop shows gross profit per product automatically once you enter COGS — useful for spotting which products like Cookie B are quietly underperforming.',
       deepLink: { sellerTab: 'products' },
     },
     quiz: [
@@ -134,7 +134,7 @@ export const module7Lessons: Lesson[] = [
       ],
     },
     shopOsTieIn: {
-      note: 'Shop OS displays gross margin % alongside peso amounts in your financial summary — always compare both, not peso amounts alone.',
+      note: 'Shop displays gross margin % alongside peso amounts in your financial summary — always compare both, not peso amounts alone.',
       deepLink: { sellerTab: 'overview' },
     },
     quiz: [
@@ -190,7 +190,7 @@ export const module7Lessons: Lesson[] = [
       ],
     },
     shopOsTieIn: {
-      note: 'Once you set your fixed costs and per-product contribution margin in Shop OS, it can calculate your break-even point automatically each month.',
+      note: 'Once you set your fixed costs and per-product contribution margin in Shop, it can calculate your break-even point automatically each month.',
       deepLink: { sellerTab: 'expenses' },
     },
     quiz: [
@@ -240,7 +240,7 @@ export const module7Lessons: Lesson[] = [
       ],
     },
     shopOsTieIn: {
-      note: "Shop OS's financial health panel calculates these same ratios automatically from your recorded assets, liabilities, and monthly profit.",
+      note: "The Shop tab's financial health panel calculates these same ratios automatically from your recorded assets, liabilities, and monthly profit.",
       deepLink: { sellerTab: 'overview' },
     },
     quiz: [

@@ -45,7 +45,7 @@ export const module6Lessons: Lesson[] = [
       ],
     },
     shopOsTieIn: {
-      note: "Shop OS's expense tracker can be tagged by category, letting you compare your planned budget to what you actually spent each month.",
+      note: "The Shop tab's expense tracker can be tagged by category, letting you compare your planned budget to what you actually spent each month.",
       deepLink: { sellerTab: 'expenses' },
     },
     quiz: [
@@ -129,7 +129,7 @@ export const module6Lessons: Lesson[] = [
       ],
     },
     shopOsTieIn: {
-      note: "Shop OS's upcoming-payments view lets you see expected inflows before they arrive, so you can compare them against known upcoming expenses.",
+      note: "The Shop tab's upcoming-payments view lets you see expected inflows before they arrive, so you can compare them against known upcoming expenses.",
       deepLink: { sellerTab: 'expenses' },
     },
     quiz: [
@@ -210,7 +210,7 @@ export const module6Lessons: Lesson[] = [
       ],
     },
     shopOsTieIn: {
-      note: "Shop OS lets you set a monthly sales goal (your budget) and compares it automatically against actual results at month's end.",
+      note: "Shop lets you set a monthly sales goal (your budget) and compares it automatically against actual results at month's end.",
       deepLink: { sellerTab: 'overview' },
     },
     quiz: [

@@ -89,7 +89,7 @@ export const module4Lessons: Lesson[] = [
       ],
     },
     shopOsTieIn: {
-      note: "Shop OS lets you set your shop's colors, tagline, and description in one place — use this checklist to make sure all three match your brand strategy before publishing.",
+      note: "Shop lets you set your shop's colors, tagline, and description in one place — use this checklist to make sure all three match your brand strategy before publishing.",
       deepLink: { sellerTab: 'settings' },
     },
     quiz: [
@@ -134,7 +134,7 @@ export const module4Lessons: Lesson[] = [
       ],
     },
     shopOsTieIn: {
-      note: 'Shop OS tracks which channel (link, QR code, or in-app storefront) each order came from, so you can see which channels are actually converting into sales.',
+      note: 'Shop tracks which channel (link, QR code, or in-app storefront) each order came from, so you can see which channels are actually converting into sales.',
       deepLink: { sellerTab: 'overview' },
     },
     quiz: [
@@ -181,7 +181,7 @@ export const module4Lessons: Lesson[] = [
       ],
     },
     shopOsTieIn: {
-      note: "When you update a product's price in Shop OS, its margin and gross profit recalculate instantly — helpful for testing different prices before committing.",
+      note: "When you update a product's price in Shop, its margin and gross profit recalculate instantly — helpful for testing different prices before committing.",
       deepLink: { sellerTab: 'products' },
     },
     quiz: [
@@ -236,7 +236,7 @@ export const module4Lessons: Lesson[] = [
       ],
     },
     shopOsTieIn: {
-      note: "Shop OS's order source tracking (from Lesson 4.3) is exactly how you'd measure your campaign's success metric in a real launch.",
+      note: "The Shop tab's order source tracking (from Lesson 4.3) is exactly how you'd measure your campaign's success metric in a real launch.",
       deepLink: { sellerTab: 'overview' },
     },
     quiz: [

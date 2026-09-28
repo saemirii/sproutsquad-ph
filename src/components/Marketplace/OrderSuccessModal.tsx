@@ -1,15 +1,10 @@
 import React from 'react';
 import {
-  CheckCircle2,
-  Sparkles,
-  ArrowRight,
-  Store,
   MapPin,
-  ShoppingBag,
   TrendingUp,
   X
 } from 'lucide-react';
-import { useSession, useShop } from '../../context/AppContext';
+import { useShop } from '../../context/AppContext';
 import { Order } from '../../types';
 import { formatPHP } from '../../utils/analytics';
 import { Icon } from '../Icon';
@@ -23,8 +18,7 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({
   orders,
   onClose,
 }) => {
-  const { setCurrentView, setSellerTab } = useSession();
-  const { setActiveBusiness, businesses } = useShop();
+  const { businesses } = useShop();
 
   if (!orders || orders.length === 0) return null;
 
@@ -120,25 +114,10 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({
           </span>
         </div>
 
-        {/* Dual Actions */}
+        {/* A buyer can never own the shop(s) they just checked out from
+            (self-purchases are blocked), so there's nothing here for them
+            to "manage" — just a way back to browsing. */}
         <div className="space-y-2 pt-2">
-          {relatedBusinesses.map((business) => (
-            <button
-              key={business.id}
-              onClick={() => {
-                setActiveBusiness(business);
-                setCurrentView('seller');
-                setSellerTab('orders');
-                onClose();
-              }}
-              className="w-full py-3 bg-[#B8E6D5] hover:bg-[#A3DEC9] text-[#194E3B] font-black text-xs rounded-2xl shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer btn-bouncy"
-            >
-              <Store className="w-4 h-4" />
-              <span>Switch to Seller OS for {business.name}</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          ))}
-
           <button
             onClick={onClose}
             className="w-full py-2.5 bg-[#FAF7F2] hover:bg-[#FAF3DE] text-[#54453C] font-bold text-xs rounded-2xl transition-colors cursor-pointer btn-bouncy"

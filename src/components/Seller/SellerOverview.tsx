@@ -30,7 +30,7 @@ export const SellerOverview: React.FC = () => {
     sellerExpenses,
     sellerProducts,
   } = useShop();
-  const { setSellerTab, setCurrentView } = useSession();
+  const { setSellerTab, setPendingNavigation } = useSession();
 
   const {
     revenue,
@@ -390,7 +390,7 @@ export const SellerOverview: React.FC = () => {
                         <button
                           onClick={() => {
                             if (ins.actionTab === 'academy') {
-                              setCurrentView('academy');
+                              setPendingNavigation({ tab: 'academy' });
                             } else {
                               setSellerTab(ins.actionTab as any);
                             }

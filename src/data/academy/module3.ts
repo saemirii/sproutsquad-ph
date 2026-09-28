@@ -42,7 +42,7 @@ export const module3Lessons: Lesson[] = [
       ],
     },
     shopOsTieIn: {
-      note: "Shop OS keeps every sale and expense in one place automatically — once your habit of separating money is set, Shop OS becomes the 'notebook' that never mixes things up.",
+      note: "Shop keeps every sale and expense in one place automatically — once your habit of separating money is set, Shop becomes the 'notebook' that never mixes things up.",
       deepLink: { sellerTab: 'expenses' },
     },
     quiz: [
@@ -84,7 +84,7 @@ export const module3Lessons: Lesson[] = [
       ],
     },
     shopOsTieIn: {
-      note: "Enter your product's COGS directly into Shop OS when you list a product — this lets Shop OS calculate your gross profit and margin automatically every time you make a sale.",
+      note: "Enter your product's COGS directly into Shop when you list a product — this lets Shop calculate your gross profit and margin automatically every time you make a sale.",
       deepLink: { sellerTab: 'products' },
     },
     quiz: [
@@ -191,7 +191,7 @@ export const module3Lessons: Lesson[] = [
       ],
     },
     shopOsTieIn: {
-      note: "Shop OS's dashboard shows both profit AND current cash on hand as separate numbers — checking both regularly helps you avoid the 'profitable but broke' trap.",
+      note: "The Shop tab's dashboard shows both profit AND current cash on hand as separate numbers — checking both regularly helps you avoid the 'profitable but broke' trap.",
       deepLink: { sellerTab: 'overview' },
     },
     quiz: [
@@ -244,7 +244,7 @@ export const module3Lessons: Lesson[] = [
       ],
     },
     shopOsTieIn: {
-      note: "Shop OS's financial summary is built on this same equation — your 'Owner's Equity' figure updates automatically as your assets and what you owe change.",
+      note: "The Shop tab's financial summary is built on this same equation — your 'Owner's Equity' figure updates automatically as your assets and what you owe change.",
       deepLink: { sellerTab: 'overview' },
     },
     quiz: [
@@ -297,7 +297,7 @@ export const module3Lessons: Lesson[] = [
       ],
     },
     shopOsTieIn: {
-      note: 'Shop OS automatically generates simplified versions of all three statements from your recorded sales and expenses — no separate bookkeeping software needed to get started.',
+      note: 'Shop automatically generates simplified versions of all three statements from your recorded sales and expenses — no separate bookkeeping software needed to get started.',
       deepLink: { sellerTab: 'overview' },
     },
     jurisdictionNote: "Under Philippine Financial Reporting Standards (PFRS), the 'Income Statement' is officially called the Statement of Comprehensive Income (SCI), and the 'Balance Sheet' is officially called the Statement of Financial Position (SFP) — these are the exact terms you'll see on official Philippine financial statements and tax filings.",
@@ -330,7 +330,7 @@ export const module3Lessons: Lesson[] = [
     beats: [
       "**Records** — organized, dated info on every sale and expense — stop being optional once you have more customers than you can remember.",
       "Good records answer instantly: how much did we sell this week, what's our best-seller, are we actually profitable? No guessing required.",
-      "A spreadsheet or an app like Shop OS beats memory and scattered paper notes — fewer errors, and problems get caught early instead of at month's end.",
+      "A spreadsheet or the Shop tab beats memory and scattered paper notes — fewer errors, and problems get caught early instead of at month's end.",
     ],
     whyItMatters: "Once you register with the BIR, proper recordkeeping stops being a nice habit and becomes a **legal requirement** — build it early and it's just routine by then.",
     activity: {
@@ -349,7 +349,7 @@ export const module3Lessons: Lesson[] = [
       ],
     },
     shopOsTieIn: {
-      note: "This is exactly what Shop OS's order history and sales log are built for — every transaction is recorded automatically the moment a sale happens.",
+      note: "This is exactly what the Shop tab's order history and sales log are built for — every transaction is recorded automatically the moment a sale happens.",
       deepLink: { sellerTab: 'orders' },
     },
     jurisdictionNote: 'Once a business formally registers with the BIR in the Philippines, it becomes legally required to keep official books of accounts and issue receipts — this lesson focuses on the general habit of recordkeeping; Module 2 covers the Philippine registration requirements themselves.',

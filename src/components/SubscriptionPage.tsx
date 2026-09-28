@@ -38,7 +38,7 @@ interface PlanFeature {
 
 const freeFeatures: PlanFeature[] = [
   { icon: <ShoppingBag className="w-4 h-4" />, title: 'Campus Marketplace', description: 'Browse & buy from student businesses across your campus.' },
-  { icon: <Gauge className="w-4 h-4" />, title: 'Shop OS', description: 'Manage your products, orders, delivery & expenses in one place.' },
+  { icon: <Gauge className="w-4 h-4" />, title: 'Shop', description: 'Manage your products, orders, delivery & expenses in one place.' },
   { icon: <Rocket className="w-4 h-4" />, title: 'SproutUp!', description: 'Get discovered through Hidden Gems, Rising Sprouts & curated picks.' },
   { icon: <BookOpen className="w-4 h-4" />, title: 'Sprout Academy', description: 'Learn practical business skills through bite-sized lessons.' },
   { icon: <PackageCheck className="w-4 h-4" />, title: 'Business Health Score', description: "Track your shop's financial performance at a glance." },
@@ -47,7 +47,7 @@ const freeFeatures: PlanFeature[] = [
 ];
 
 const sproutFeatures: PlanFeature[] = [
-  { icon: <RefreshCw className="w-4 h-4" />, title: 'Real-Time Inventory Tracking', description: 'Keep your stock updated automatically with Google Sheets integration.' },
+  { icon: <RefreshCw className="w-4 h-4" />, title: 'Real-Time Inventory Tracking', description: 'Keep your stock levels up to date and export your inventory as a CSV anytime.' },
   { icon: <CalendarClock className="w-4 h-4" />, title: 'Pre-Order System', description: 'Accept orders before a product is officially available.' },
   { icon: <Percent className="w-4 h-4" />, title: 'Discount & Coupon Generator', description: 'Create custom discounts and coupon codes for your customers.' },
   { icon: <Boxes className="w-4 h-4" />, title: 'Bundle Builder', description: 'Combine products into special bundles with their own pricing and inventory.' },

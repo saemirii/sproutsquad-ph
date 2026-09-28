@@ -680,7 +680,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
   // "first owned business" (in whatever order the backend happens to return
   // them — not guaranteed stable) on every single reload. Without this, a
   // seller with e.g. one active shop and one empty just-created one could
-  // land back on the empty shop at random and see Shop OS read all zeros.
+  // land back on the empty shop at random and see Shop read all zeros.
   const [activeBusinessId, setActiveBusinessId] = useState<string>(() => {
     if (!isSupabaseConfigured) return 'biz-1';
     const saved = localStorage.getItem(`sproutsquad_active_business_${authUser?.id || 'guest'}`);
@@ -1202,7 +1202,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
   // Realtime: order status changes. updateOrderStatus / confirm_order_received
   // only ever updated the *acting* client's own optimistic state plus the DB
   // row — with no subscription here, any other open session looking at the
-  // same order (the customer's own "My Bag" tab, a teammate's Shop OS tab,
+  // same order (the customer's own "My Bag" tab, a teammate's Shop tab,
   // another device) stayed frozen on the old status until a manual reload.
   // No `filter` is needed: Postgres Changes is RLS-scoped, so each client
   // only ever receives rows the same "Customers and shop owners can view
@@ -1291,6 +1291,21 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
   useEffect(() => {
     safeSetItem('sproutsquad_cart', JSON.stringify(cart));
   }, [cart]);
+
+  // Belt-and-suspenders against a stale cart holding an item from the
+  // user's own shop — e.g. one added before this restriction existed (and
+  // just sitting in the localStorage-persisted cart from a prior session),
+  // or a business they just gained access to (created a shop, or joined
+  // one via a Start-Up Key) after already adding one of its products as a
+  // plain shopper. addToCart blocks new additions, but this is what
+  // actually purges an already-present one — runs only when business
+  // ownership/access changes, not on every cart edit.
+  useEffect(() => {
+    setCart((prev) => {
+      const filtered = prev.filter((item) => !accessibleBusinessIds.includes(item.product.businessId));
+      return filtered.length === prev.length ? prev : filtered;
+    });
+  }, [accessibleBusinessIds]);
 
   // Derived state for the active business
   const activeBusiness = useMemo(() => (
@@ -1613,6 +1628,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
     setActiveBusinessId(newId);
     setCurrentView('seller');
     setSellerTab('settings');
+    setPendingNavigation({ tab: 'seller' });
     triggerConfetti();
   };
 

@@ -16,7 +16,7 @@ export const CampusStories: React.FC<CampusStoriesProps> = ({
   categoryFilter = 'All',
 }) => {
   const { businesses } = useShop();
-  const { setCurrentView, setSellerTab } = useSession();
+  const { setPendingNavigation, setSellerTab } = useSession();
 
   const visibleBusinesses = categoryFilter === 'All'
     ? businesses
@@ -40,8 +40,8 @@ export const CampusStories: React.FC<CampusStoriesProps> = ({
             // jumping straight to it. Online, this just opens the
             // application form + waiting modal — nothing to navigate to yet.
             if (!isSupabaseConfigured) {
-              setCurrentView('seller');
               setSellerTab('settings');
+              setPendingNavigation({ tab: 'seller' });
             }
           }}
           className="flex flex-col items-center gap-1.5 cursor-pointer group active:scale-95 transition-transform"

@@ -59,7 +59,7 @@ export const BusinessDetailView: React.FC<BusinessDetailViewProps> = ({
     reviewReportsByOrderId, fetchReviewReportsForOrders, reportReview, accessibleBusinessIds,
   } = useShop();
   const { addToCart } = useCart();
-  const { setCurrentView, setSellerTab, currentUser } = useSession();
+  const { setPendingNavigation, setSellerTab, currentUser } = useSession();
   const { favoritedBusinessIds, toggleFavoriteBusiness } = useNotifications();
   const isFavorited = favoritedBusinessIds.includes(business.id);
   // Covers a BES-key teammate too, not just the seller of record — matches
@@ -238,22 +238,22 @@ export const BusinessDetailView: React.FC<BusinessDetailViewProps> = ({
                 <span>{isFavorited ? 'Following' : 'Follow'}</span>
               </button>
 
-              {/* Only the shop's own owner can jump into Seller OS from here —
+              {/* Only the shop's own owner can jump into Shop from here —
                   this used to show on every shop's public page and silently
-                  pointed Shop OS at whatever business a buyer last viewed,
+                  pointed Shop at whatever business a buyer last viewed,
                   making revenue/orders there read 0 (it was filtering by the
                   wrong business, not losing any data). */}
               {isOwnBusiness && (
                 <button
                   onClick={() => {
                     setActiveBusiness(business);
-                    setCurrentView('seller');
                     setSellerTab('overview');
+                    setPendingNavigation({ tab: 'seller' });
                   }}
                   className="px-4 py-2 bg-[#B8E6D5] hover:bg-[#A3DEC9] text-[#194E3B] font-extrabold text-xs rounded-2xl border border-[#9FD9C3] shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer btn-bouncy"
                 >
                   <Store className="w-4 h-4" />
-                  <span>Manage this Shop in Seller OS</span>
+                  <span>Manage this Shop</span>
                 </button>
               )}
             </div>

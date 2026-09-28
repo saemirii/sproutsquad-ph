@@ -142,7 +142,7 @@ const MainAppContent: React.FC = () => {
         </div>
       )}
 
-      {/* 🐻 Tab 4: Shop OS (Seller Operating System) */}
+      {/* 🐻 Tab 4: Shop */}
       {activeTab === 'seller' && <IosSellerView />}
 
       {/* 🎒 Tab 5: My Bag & Campus Orders */}

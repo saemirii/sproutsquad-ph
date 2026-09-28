@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: 'Hug Me Tight';
+  src: url('/fonts/hug-me-tight.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 @layer base {
   /* Lock the document itself so it can never scroll/bounce on its own —
      without this, WKWebView's native rubber-band scroll can drag the whole

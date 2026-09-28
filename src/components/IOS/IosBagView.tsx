@@ -315,7 +315,7 @@ export const IosBagView: React.FC<IosBagViewProps> = ({
   };
 
   // RLS on `orders` lets a user read both orders they placed as a customer
-  // AND every order on a business they own as a seller (so Shop OS's own
+  // AND every order on a business they own as a seller (so Shop's own
   // order manager works) — without this filter, a seller who's also placed
   // test orders as a buyer would see their own customers' orders mixed into
   // this personal "My Bag" screen, and tapping "I Received My Order" on one
