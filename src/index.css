@@ -8,6 +8,14 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: 'Clarence World';
+  src: url('/fonts/clarence-world.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 @layer base {
   /* Lock the document itself so it can never scroll/bounce on its own —
      without this, WKWebView's native rubber-band scroll can drag the whole

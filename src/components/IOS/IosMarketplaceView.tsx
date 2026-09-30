@@ -109,7 +109,7 @@ export const IosMarketplaceView: React.FC<IosMarketplaceViewProps> = ({
         <div>
           <div className="flex items-center gap-1.5">
             <Icon name="level-sprout" className="w-4 h-4" />
-            <h1 className="font-normal text-2xl tracking-tight text-[#3B2F27] font-['Hug_Me_Tight',cursive]">
+            <h1 className="font-normal text-2xl tracking-[0.01em] text-[#3B2F27] font-['Clarence_World',cursive]">
               Sprout<span className="text-[#194E3B]">Squad</span>
             </h1>
           </div>
