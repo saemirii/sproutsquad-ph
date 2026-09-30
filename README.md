@@ -4,10 +4,6 @@
 
 ## 🌱 Inspiration
 
-Ever thought of a great business idea but didn’t know where to start?
-
-## 🌱 Inspiration
-
 Ever thought of a great business idea but didn’t know where to start? This is the problem many students face in the Philippines, where entrepreneurship opens the door to income, survival, and self-empowerment—yet remains locked behind limited market access, operational challenges, and gaps in business knowledge. 
 
 As two students tasked to run a business from start to finish as part of our high school curriculum, we experienced all the challenges that come with starting a business venture. We built from scratch—running marketing campaigns on social media, creating order forms, curating aesthetic websites, coordinating payments and deliveries, and tracking sales in complex spreadsheets. 
