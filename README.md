@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="" alt="SproutSquad - Plant, grow, and manage your student business." width="100%">
+  <img src="Your paragraph text (7).png" alt="SproutSquad - Plant, grow, and manage your student business." width="100%">
 </p>
 
 ## 🌱 Inspiration
