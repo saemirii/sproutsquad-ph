@@ -10,3 +10,6 @@ coverage/
 # Local Netlify folder
 .netlify
 deno.lock
+
+# Local video production assets
+video/
