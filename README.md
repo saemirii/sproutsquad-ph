@@ -1,3 +1,11 @@
+<p align="center">
+  <img src="" alt="SproutSquad - Plant, grow, and manage your student business." width="100%">
+</p>
+
+## 🌱 Inspiration
+
+Ever thought of a great business idea but didn’t know where to start?
+
 ## 🌱 Inspiration
 
 Ever thought of a great business idea but didn’t know where to start? This is the problem many students face in the Philippines, where entrepreneurship opens the door to income, survival, and self-empowerment—yet remains locked behind limited market access, operational challenges, and gaps in business knowledge. 
