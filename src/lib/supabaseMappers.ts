@@ -25,7 +25,7 @@ export const businessToRow = (b: Business) => ({
 
 // 1x1 transparent pixel — used while the (large, separately-fetched) logo/image
 // hasn't arrived yet, so <img> tags don't flash a broken-image icon meanwhile.
-const BLANK_IMAGE = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
+export const BLANK_IMAGE = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
 
 export const rowToBusiness = (row: any): Business => ({
   id: row.id,

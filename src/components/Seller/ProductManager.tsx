@@ -17,6 +17,7 @@ import {
 import { useShop, useSubscription } from '../../context/AppContext';
 import { Product, ProductCategory } from '../../types';
 import { formatPHP } from '../../utils/analytics';
+import { shrinkImageToDataUrl } from '../../utils/image';
 import { InfoTip } from '../InfoTip';
 import { CalendarClock, Lock, Rocket } from 'lucide-react';
 import { Icon } from '../Icon';
@@ -41,7 +42,9 @@ export const ProductManager: React.FC = () => {
 
   const handleRestock = (product: Product) => {
     if (restockAmount <= 0) return;
-    updateProduct({ ...product, inventoryCount: product.inventoryCount + restockAmount });
+    void updateProduct({ ...product, inventoryCount: product.inventoryCount + restockAmount }).then((result) => {
+      if (!result.success) alert(`Couldn't restock: ${result.message}`);
+    });
     setRestockingId(null);
     setRestockAmount(10);
   };
@@ -77,21 +80,28 @@ export const ProductManager: React.FC = () => {
     setPrice(calculatedSuggestedPrice);
   };
 
-  const handleProductImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const [isProcessingImage, setIsProcessingImage] = useState(false);
+
+  const handleProductImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target;
+    const file = input.files?.[0];
+    // Reset so picking the same photo again still fires onChange.
+    input.value = '';
     if (!file) return;
-    if (!file.type.startsWith('image/')) {
+    if (file.type && !file.type.startsWith('image/')) {
       alert('Please choose an image file.');
       return;
     }
-    if (file.size > 2 * 1024 * 1024) {
-      alert('Please choose an image smaller than 2MB.');
-      return;
-    }
 
-    const reader = new FileReader();
-    reader.onload = () => setImageUrl(String(reader.result));
-    reader.readAsDataURL(file);
+    setIsProcessingImage(true);
+    try {
+      setImageUrl(await shrinkImageToDataUrl(file));
+    } catch (error) {
+      console.error('Failed to process product image', error);
+      alert("Couldn't use that photo. Please try a different one.");
+    } finally {
+      setIsProcessingImage(false);
+    }
   };
 
   const openAddModal = () => {
@@ -146,7 +156,7 @@ export const ProductManager: React.FC = () => {
     setIsScheduled((prev) => !prev);
   };
 
-  const handleSaveProduct = (e: React.FormEvent) => {
+  const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     const tags = tagsInput
       .split(',')
@@ -161,7 +171,7 @@ export const ProductManager: React.FC = () => {
       : { dropDate: null };
 
     if (editingProduct) {
-      updateProduct({
+      const result = await updateProduct({
         ...editingProduct,
         name,
         description,
@@ -176,6 +186,11 @@ export const ProductManager: React.FC = () => {
         ...preOrderFields,
         ...scheduleFields,
       });
+      if (!result.success) {
+        // Keep the modal open so the edit (e.g. a newly picked image) isn't lost.
+        alert(`Couldn't save your changes: ${result.message}`);
+        return;
+      }
     } else {
       addProduct({
         name,
@@ -704,7 +719,7 @@ export const ProductManager: React.FC = () => {
                     />
                     <label className="inline-flex items-center gap-1.5 rounded-lg bg-[#B8E6D5] px-2.5 py-2 text-[10px] font-black text-[#194E3B] cursor-pointer hover:bg-[#A3DEC9]">
                       <Upload className="w-3.5 h-3.5" />
-                      <span>Upload image</span>
+                      <span>{isProcessingImage ? 'Processing…' : 'Upload image'}</span>
                       <input type="file" accept="image/*" onChange={handleProductImageUpload} className="sr-only" />
                     </label>
                   </div>
@@ -716,7 +731,6 @@ export const ProductManager: React.FC = () => {
                     placeholder="Or paste an image URL"
                     className="w-full px-3 py-2 bg-[#FAF7F2] border border-[#E5DACD] rounded-xl text-xs text-[#3B2F27] focus:outline-none focus:ring-2 focus:ring-[#B8E6D5]"
                   />
-                  <p className="mt-1 text-[10px] text-[#8C7A6D]">Images must be 2MB or smaller.</p>
                 </div>
 
                 <div>
@@ -744,7 +758,8 @@ export const ProductManager: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-[#B8E6D5] hover:bg-[#A3DEC9] text-[#194E3B] text-xs font-extrabold rounded-xl shadow-xs transition-colors cursor-pointer"
+                  disabled={isProcessingImage}
+                  className="px-5 py-2 disabled:opacity-50 bg-[#B8E6D5] hover:bg-[#A3DEC9] text-[#194E3B] text-xs font-extrabold rounded-xl shadow-xs transition-colors cursor-pointer"
                 >
                   {editingProduct ? 'Save Changes' : 'Create Product'}
                 </button>

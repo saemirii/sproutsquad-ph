@@ -47,35 +47,25 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
 
   // The real device already has its own Dynamic Island / notch, so the fake
   // pill-shaped chrome only makes sense for the web "simulated iPhone"
-  // preview. Native just needs the underlying cart + alert functionality,
-  // surfaced as plain inline controls in the status bar row.
+  // preview. Native leaves the top of the screen clear and shows alerts as a
+  // toast floating just above the tab bar; the bag is reached from the
+  // "My Bag" tab instead.
   if (isNativeApp) {
+    if (!activeAlert) return null;
     return (
-      <div className="flex items-center text-[#3B2F27]">
-        {activeAlert ? (
-          <div className="flex items-center gap-1.5 max-w-[220px] px-2.5 py-1 rounded-full bg-[#FAF3DE] border border-[#EDE4D8]">
-            <Icon name={activeAlert.icon} className="w-3.5 h-3.5 shrink-0" />
-            <div className="truncate text-left">
-              <p className="text-[11px] font-bold leading-tight truncate">{activeAlert.title}</p>
-              {activeAlert.subtitle && (
-                <p className="text-[9px] text-[#8C7A6D] leading-none truncate">{activeAlert.subtitle}</p>
-              )}
-            </div>
-          </div>
-        ) : onOpenBag && (
-          <button
-            onClick={() => { playIosTap(); onOpenBag(); }}
-            className="flex items-center gap-1 pl-2 pr-2.5 py-1 rounded-full bg-[#F2EAE0] active:scale-95 transition-transform"
-            title="Open bag"
-          >
-            <ShoppingBag className="w-3.5 h-3.5" strokeWidth={2.25} />
-            {cartCount > 0 && (
-              <span className="text-[10px] font-black leading-none">
-                {cartCount > 9 ? '9+' : cartCount}
-              </span>
+      <div
+        className="fixed inset-x-0 z-[60] flex justify-center px-4 pointer-events-none"
+        style={{ bottom: 'calc(max(0.25rem, env(safe-area-inset-bottom)) + 4.5rem)' }}
+      >
+        <div className="flex items-center gap-2 max-w-[320px] px-3.5 py-2 rounded-2xl bg-[#FFF9E6] border border-[#EDE4D8] shadow-lg text-[#3B2F27]">
+          <Icon name={activeAlert.icon} className="w-4 h-4 shrink-0" />
+          <div className="min-w-0 text-left">
+            <p className="text-xs font-bold leading-tight truncate">{activeAlert.title}</p>
+            {activeAlert.subtitle && (
+              <p className="text-[10px] text-[#8C7A6D] leading-snug truncate">{activeAlert.subtitle}</p>
             )}
-          </button>
-        )}
+          </div>
+        </div>
       </div>
     );
   }

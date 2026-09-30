@@ -110,6 +110,7 @@ import {
   rowToBusinessReview,
   rowToOrderIssue,
   rowToReviewReport,
+  BLANK_IMAGE,
 } from '../lib/supabaseMappers';
 import {
   rowToSproutUpNomination,
@@ -170,7 +171,7 @@ interface ShopContextType {
   sellerExpenses: Expense[];
   sellerCoupons: Coupon[];
   addProduct: (product: Omit<Product, 'id' | 'businessId' | 'businessName' | 'soldCount'>) => void;
-  updateProduct: (product: Product) => void;
+  updateProduct: (product: Product) => Promise<{ success: boolean; message?: string }>;
   deleteProduct: (productId: string) => void;
   updateOrderStatus: (orderId: string, status: OrderStatus) => void;
   markPaymentVerified: (orderId: string) => void;
@@ -982,6 +983,22 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
           });
         }
 
+        // Shops joined via Start-Up Key live server-side in business_members;
+        // localStorage alone only remembered them on the device the key was
+        // entered on (e.g. joined on web → no access in the iOS app).
+        void supabase.from('business_members').select('business_id').eq('user_id', authUser.id).then(({ data: memberships, error }) => {
+          if (cancelled) return;
+          if (error || !memberships) {
+            console.error('Failed to load shop memberships', error);
+            return;
+          }
+          const memberIds = memberships.map((row) => row.business_id as string);
+          setUnlockedBusinessIds((previous) => {
+            const merged = Array.from(new Set([...previous, ...memberIds]));
+            return merged.length === previous.length ? previous : merged;
+          });
+        });
+
         setProducts(((data.products || []) as any[]).map(rowToProduct));
         setOrders(((data.orders || []) as any[]).map(rowToOrder));
         setExpenses(((data.expenses || []) as any[]).map(rowToExpense));
@@ -1043,8 +1060,11 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
               return;
             }
             const imageById = new Map(data.map((row) => [row.id, row.image_url as string]));
+            // Only fill products still on the placeholder — one the seller
+            // already re-imaged while this (large, slow) fetch was in flight
+            // must not get reverted to the stale image it returned.
             setProducts((previous) => previous.map((p) => (
-              imageById.has(p.id) ? { ...p, imageUrl: imageById.get(p.id) || p.imageUrl } : p
+              imageById.has(p.id) && p.imageUrl === BLANK_IMAGE ? { ...p, imageUrl: imageById.get(p.id) || p.imageUrl } : p
             )));
           });
         };
@@ -1358,13 +1378,27 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, authUser, on
     triggerConfetti();
   };
 
-  const updateProduct = (updated: Product) => {
+  const updateProduct = async (updated: Product): Promise<{ success: boolean; message?: string }> => {
+    const previous = products.find((p) => p.id === updated.id);
     setProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
-    if (supabase) {
-      void supabase.from('products').update(productToRow(updated)).eq('id', updated.id).then(({ error }) => {
-        if (error) console.error('Failed to update product', error);
-      });
-    }
+    if (!supabase) return { success: true };
+
+    // `.select()` makes a write that RLS silently filtered out (0 rows
+    // updated, no error) detectable, instead of looking like a success.
+    // An image still on the placeholder (the background image fetch hadn't
+    // reached it yet) must not overwrite the real one saved in the database.
+    const row: Partial<ReturnType<typeof productToRow>> = productToRow(updated);
+    if (updated.imageUrl === BLANK_IMAGE) delete row.image_url;
+    const { data, error } = await supabase.from('products').update(row).eq('id', updated.id).select('id');
+    if (!error && data && data.length > 0) return { success: true };
+
+    console.error('Failed to update product', error ?? 'no rows updated (permission denied)');
+    // Roll back the optimistic edit so the screen matches what's actually saved.
+    if (previous) setProducts((prev) => prev.map((p) => (p.id === updated.id ? previous : p)));
+    return {
+      success: false,
+      message: error?.message || "You don't have permission to edit this product.",
+    };
   };
 
   const deleteProduct = (productId: string) => {
