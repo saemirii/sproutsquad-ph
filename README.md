@@ -22,7 +22,7 @@ From tracking orders to managing finances, this educational e-commerce app strea
 
 SproutSquad is home to an online marketplace where buyers and sellers meet. Eliminating the need for a separate website or order form, it gives startups visibility through the app’s catalog of registered shops and product listings. Customers can view student sellers’ social media pages and ratings and place orders as they would in any other e-commerce platform. Shops that are rapidly growing or are nominated by the community will earn a special feature in the SproutUp! showcase.
 
-### 🪴 2. **Shop **
+### 🪴 2. **Shop**
 
 SproutSquad’s Shop dashboard translates numbers into readable, actionable metrics and automates the manual processes every budding entrepreneur runs into. By tracking sales and inventory and evaluating a shop’s business health score from financial metrics, it saves student sellers time and energy to focus on growing their startup instead of handling administrative work. Here, shop owners can collaborate with business partners, track incoming orders and expenses, and customize their shop profile for customers to see in the marketplace.
 
